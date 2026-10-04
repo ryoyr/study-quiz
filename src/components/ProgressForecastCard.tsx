@@ -1,3 +1,4 @@
+
 import type { ProgressForecast } from '../services/progressForecastService';
 
 type Props = { forecast: ProgressForecast };

@@ -1,3 +1,4 @@
+
 export type CorrectionSuggestionStatus = 'pending' | 'approved' | 'rejected';
 export interface CorrectionSuggestion {
   id: string;

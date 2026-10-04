@@ -1,3 +1,4 @@
+
 import type { Question } from '../types/Question';
 export const buildQuestionContext=(question:Question):string=>[`カテゴリ: ${question.category}`,`問題: ${question.text}`,...question.choices.map((choice,index)=>`選択肢${index+1}: ${choice}`),`正解: 選択肢${question.answerIndex+1}`,`既存解説: ${question.explanation||'なし'}`,`重要度: ${question.weight}`,`難易度: ${question.difficulty}`].join('\n');
 export const buildPrompt=(template:string,question:Question):string=>template.includes('{{questionContext}}')?template.replaceAll('{{questionContext}}',buildQuestionContext(question)):`${template}\n\n${buildQuestionContext(question)}`;

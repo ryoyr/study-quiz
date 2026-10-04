@@ -1,9 +1,9 @@
-import { findSetup, persistSetup, removeSetup } from '../infrastructure/repositories/setupRepository';
+
 import type { Setup } from '../types/Setup';
 
-const LEGACY_STORAGE_KEY = 'study-quiz-setup-v1';
+const STORAGE_KEY = 'study-quiz-setup-v1';
 
-const normalizeLegacySetup = (value: Partial<Setup>): Setup => ({
+const normalizeSetup = (value: Partial<Setup>): Setup => ({
   name: value.name ?? 'LinuC 101',
   examDate: value.examDate ?? '',
   dailyNewLimit: value.dailyNewLimit ?? 10,
@@ -17,50 +17,21 @@ const normalizeLegacySetup = (value: Partial<Setup>): Setup => ({
   updatedAt: value.updatedAt ?? new Date().toISOString(),
 });
 
-const loadLegacySetup = (): Setup | null => {
+export const loadSetup = (): Setup | null => {
   try {
-    const value = localStorage.getItem(LEGACY_STORAGE_KEY);
-    return value ? normalizeLegacySetup(JSON.parse(value) as Partial<Setup>) : null;
+    const value = localStorage.getItem(STORAGE_KEY);
+    if (!value) return null;
+    return normalizeSetup(JSON.parse(value) as Partial<Setup>);
   } catch {
     return null;
   }
 };
 
-const saveLegacyShadow = (setup: Setup): void => {
-  try {
-    // 既存バックアップとの互換用。正本はIndexedDBであり、失敗しても保存結果には影響させない。
-    localStorage.setItem(LEGACY_STORAGE_KEY, JSON.stringify(setup));
-  } catch {
-    // Safariのプライベートモード等でlocalStorageが拒否されてもIndexedDBの保存を優先する。
-  }
+export const saveSetup = (setup: Setup): void => {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(setup));
 };
 
-export const loadSetup = async (): Promise<Setup | null> => {
-  const stored = await findSetup();
-  if (stored) {
-    saveLegacyShadow(stored);
-    return stored;
-  }
-
-  const legacy = loadLegacySetup();
-  if (!legacy) return null;
-  await persistSetup(legacy);
-  return legacy;
-};
-
-export const saveSetup = async (setup: Setup): Promise<void> => {
-  await persistSetup(setup);
-  saveLegacyShadow(setup);
-};
-
-export const clearSetup = async (): Promise<void> => {
-  await removeSetup();
-  try {
-    localStorage.removeItem(LEGACY_STORAGE_KEY);
-  } catch {
-    // IndexedDBの削除は完了しているため、互換領域の失敗は無視する。
-  }
-};
+export const clearSetup = (): void => localStorage.removeItem(STORAGE_KEY);
 
 export const getRemainingDays = (examDate: string): number => {
   const today = new Date();

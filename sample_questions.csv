@@ -1,3 +1,4 @@
+
 id,category,text,choice1,choice2,choice3,choice4,answer,explanation,weight,difficulty
 LINUX-001,Linux,lsコマンドの用途は？,一覧表示,削除,移動,圧縮,1,ディレクトリの内容を一覧表示します。,3,2
 LINUX-002,Linux,"カンマを含む問題文, の例です",選択肢A,選択肢B,,,2,"CSVではカンマを含む値をダブルクォートで囲みます。",1,1

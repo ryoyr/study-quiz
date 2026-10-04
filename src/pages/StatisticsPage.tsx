@@ -1,3 +1,4 @@
+
 import { useMemo, useState } from 'react';
 import type { Question } from '../types/Question';
 import type { QuestionState } from '../types/QuestionState';
@@ -106,7 +107,7 @@ export default function StatisticsPage({
             </div>
           </>
         )}
-        <button className="secondary-button" type="button" onClick={onBack}>ホームへ戻る</button>
+        <button className="secondary-button" type="button" onClick={onBack}>前のメニューへ戻る</button>
       </section>
     </main>
   );

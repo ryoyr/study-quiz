@@ -1,12 +1,12 @@
+
 import { useState } from 'react';
-import { ValidationError } from '../application/setup/SaveInitialSetupUseCase';
 import { validateSetup } from '../services/setupValidation';
 import type { SetupErrors } from '../services/setupValidation';
 import type { Setup } from '../types/Setup';
 
 type Props = {
   setup: Setup;
-  onSave: (setup: Setup) => Promise<void>;
+  onSave: (setup: Setup) => void;
 };
 
 type NumberKey =
@@ -31,14 +31,13 @@ export default function InitialSetupPage({ setup, onSave }: Props) {
     (setup.reservedDates ?? []).join(', '),
   );
   const [errors, setErrors] = useState<SetupErrors>({});
-  const [saveError, setSaveError] = useState('');
   const [saving, setSaving] = useState(false);
 
   const updateNumber = (key: NumberKey, value: string) => {
-    setDraft({ ...draft, [key]: value === '' ? Number.NaN : Number(value) });
+    setDraft({ ...draft, [key]: value === '' ? 0 : Number(value) });
   };
 
-  const save = async () => {
+  const save = () => {
     if (saving) return;
     const now = new Date().toISOString();
     const next: Setup = {
@@ -51,19 +50,10 @@ export default function InitialSetupPage({ setup, onSave }: Props) {
     };
     const validationErrors = validateSetup(next);
     setErrors(validationErrors);
-    setSaveError('');
     if (Object.keys(validationErrors).length !== 0) return;
-
     setSaving(true);
     try {
-      await onSave(next);
-    } catch (error) {
-      if (error instanceof ValidationError) {
-        setErrors(error.errors);
-      } else {
-        setSaveError('設定を保存できませんでした。ブラウザのストレージ設定を確認して再試行してください。');
-        console.error('Initial setup save failed.', error);
-      }
+      onSave(next);
     } finally {
       setSaving(false);
     }
@@ -93,27 +83,27 @@ export default function InitialSetupPage({ setup, onSave }: Props) {
           </label>
           <label className="form-item">
             <span>1日の新規問題上限</span>
-            <input type="number" min="1" max="500" value={Number.isNaN(draft.dailyNewLimit) ? '' : draft.dailyNewLimit} onChange={(e) => updateNumber('dailyNewLimit', e.target.value)} />
+            <input type="number" min="1" max="500" value={draft.dailyNewLimit} onChange={(e) => updateNumber('dailyNewLimit', e.target.value)} />
             {error('dailyNewLimit')}
           </label>
           <label className="form-item">
             <span>1日の総問題数上限</span>
-            <input type="number" min="1" max="1000" value={Number.isNaN(draft.dailyQuestionLimit) ? '' : draft.dailyQuestionLimit} onChange={(e) => updateNumber('dailyQuestionLimit', e.target.value)} />
+            <input type="number" min="1" max="1000" value={draft.dailyQuestionLimit} onChange={(e) => updateNumber('dailyQuestionLimit', e.target.value)} />
             {error('dailyQuestionLimit')}
           </label>
           <label className="form-item">
             <span>バッファ率（%）</span>
-            <input type="number" min="0" max="100" value={Number.isNaN(draft.bufferRate) ? '' : draft.bufferRate} onChange={(e) => updateNumber('bufferRate', e.target.value)} />
+            <input type="number" min="0" max="100" value={draft.bufferRate} onChange={(e) => updateNumber('bufferRate', e.target.value)} />
             {error('bufferRate')}
           </label>
           <label className="form-item">
             <span>即答判定秒数</span>
-            <input type="number" min="1" max="3600" value={Number.isNaN(draft.instantThresholdSeconds) ? '' : draft.instantThresholdSeconds} onChange={(e) => updateNumber('instantThresholdSeconds', e.target.value)} />
+            <input type="number" min="1" max="3600" value={draft.instantThresholdSeconds} onChange={(e) => updateNumber('instantThresholdSeconds', e.target.value)} />
             {error('instantThresholdSeconds')}
           </label>
           <label className="form-item">
             <span>今日の最低ライン（問）</span>
-            <input type="number" min="1" max={draft.dailyQuestionLimit} value={Number.isNaN(draft.dailyMinimumQuestions) ? '' : draft.dailyMinimumQuestions} onChange={(e) => updateNumber('dailyMinimumQuestions', e.target.value)} />
+            <input type="number" min="1" max={draft.dailyQuestionLimit} value={draft.dailyMinimumQuestions} onChange={(e) => updateNumber('dailyMinimumQuestions', e.target.value)} />
             <small>忙しい日に最低限回答する問題数です。</small>
             {error('dailyMinimumQuestions')}
           </label>
@@ -124,8 +114,7 @@ export default function InitialSetupPage({ setup, onSave }: Props) {
             {error('reservedDates')}
           </label>
         </div>
-        {saveError && <div className="error-box" role="alert">{saveError}</div>}
-        <button className="primary-button" type="button" disabled={saving} onClick={() => void save()}>
+        <button className="primary-button" type="button" disabled={saving} onClick={save}>
           {saving ? '保存中...' : '保存して開始'}
         </button>
       </section>

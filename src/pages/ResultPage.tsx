@@ -1,3 +1,4 @@
+
 type Props = {
   correctCount: number;
 
@@ -42,7 +43,7 @@ export default function ResultPage({
           className="primary-button"
           onClick={onRestart}
         >
-          ホームへ戻る
+          前のメニューへ戻る
         </button>
 
       </section>

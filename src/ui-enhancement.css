@@ -1,0 +1,368 @@
+:root{--blue:#1e5be8;--ink:#101828;--muted:#667085;--line:#d9e2ef;--bg:#f5f8fc}.app-with-nav{min-height:100dvh;padding-bottom:92px;background:var(--bg)}.dense-page{width:min(100%,820px);margin:auto;padding:18px 14px 28px}.dense-header{display:flex;align-items:center;gap:12px;padding:14px 4px 16px;border-bottom:1px solid var(--line)}.dense-logo{display:grid;width:48px;height:48px;place-items:center;border-radius:15px;background:var(--blue);color:#fff;font-weight:900}.dense-header h1{font-size:1.25rem}.dense-header p{margin:3px 0 0;color:var(--muted);font-weight:700}.dense-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:14px 0}.dense-card{margin:12px 0;padding:16px;border:1px solid var(--line);border-radius:20px;background:#fff;box-shadow:0 8px 24px rgba(16,24,40,.05);text-align:left}.dense-card h2{margin:0 0 14px;font-size:1.1rem}.metric{padding:14px;border:1px solid var(--line);border-radius:16px;background:#fff}.metric span{display:block;color:var(--muted);font-size:.75rem;font-weight:700}.metric strong{display:block;margin-top:4px;color:var(--blue);font-size:1.55rem}.visual-row{margin:12px 0}.visual-row header{display:flex;justify-content:space-between;font-weight:800}.visual-track{height:12px;margin-top:7px;overflow:hidden;border-radius:999px;background:#edf1f7}.visual-track div{height:100%;border-radius:inherit;background:var(--blue)}.forgetting-visual{position:relative;height:92px;margin-top:12px;border-bottom:1px solid var(--line);overflow:hidden}.forgetting-visual::before{content:"";position:absolute;left:0;right:0;top:7px;height:80px;border-radius:50%;border-top:5px solid var(--blue);transform:rotate(-7deg)}.forgetting-points{position:absolute;inset:0;display:flex;align-items:end;justify-content:space-around}.forgetting-points i{width:12px;height:12px;border:3px solid #fff;border-radius:50%;background:var(--blue);box-shadow:0 0 0 2px var(--blue)}.bottom-nav{position:fixed;z-index:900;left:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(5,1fr);padding:8px max(8px,env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom));border-top:1px solid var(--line);background:rgba(255,255,255,.97);backdrop-filter:blur(18px)}.bottom-nav button{display:flex;min-height:58px;flex-direction:column;align-items:center;justify-content:center;border:0;background:transparent;color:#667085;font-weight:800}.bottom-nav span{font-size:1.45rem;line-height:1}.bottom-nav small{margin-top:5px}.bottom-nav button.is-active{color:var(--blue)}.ai-question-panel{margin-top:16px}.ai-open-button{width:100%;min-height:50px;border:0;border-radius:14px;background:var(--blue);color:#fff;font-weight:900}.ai-question-body{margin-top:10px;padding:14px;border:1px solid #c7d7ff;border-radius:15px;background:#f7f9ff}.ai-template-chips{display:flex;gap:6px;overflow:auto}.ai-template-chips button{flex:0 0 auto;padding:7px 10px;border:1px solid #b8c9f5;border-radius:999px;background:#fff;color:#1746ac}.ai-question-body textarea{width:100%;margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:10px;font:inherit}.ai-result{margin-top:10px;padding:12px;border-radius:12px;background:#fff;white-space:pre-wrap}.ai-result p{line-height:1.7}.ai-result small,.security-note{color:var(--muted)}.gemini-settings label{display:block;margin:12px 0;font-weight:800}.gemini-settings input{width:100%;min-height:44px;margin-top:6px;padding:8px 10px;border:1px solid var(--line);border-radius:10px}.key-row{display:grid;grid-template-columns:1fr auto;gap:6px}.key-row button,.action-row button{min-height:44px;padding:8px 12px;border:1px solid var(--blue);border-radius:10px;background:#fff;color:var(--blue);font-weight:800}.action-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.connection-message{margin-top:10px;padding:10px;border-radius:10px;background:#eef4ff;color:#1746ac;font-weight:700}@media(max-width:520px){.dense-page{padding:10px}.dense-card{border-radius:16px}.action-row{grid-template-columns:1fr}.bottom-nav small{font-size:.68rem}}
+
+
+/*
+ * iPhone 18 Pro portrait layout
+ * The screen dimensions are not hard-coded on-device. The application follows
+ * the actual visual viewport and the iOS safe-area values so Dynamic Island,
+ * rounded corners and the home indicator cannot overlap interactive content.
+ */
+:root {
+  --app-phone-width: 430px;
+  --app-safe-top: env(safe-area-inset-top, 0px);
+  --app-safe-right: env(safe-area-inset-right, 0px);
+  --app-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --app-safe-left: env(safe-area-inset-left, 0px);
+  --app-header-height: 76px;
+  --app-nav-height: 78px;
+}
+
+.app-frame {
+  width: 100%;
+  min-height: 100svh;
+  margin: 0 auto;
+  overflow-x: clip;
+  background:
+    radial-gradient(circle at 15% 0%, rgba(37, 99, 235, .13), transparent 31%),
+    linear-gradient(180deg, #f7faff 0%, #eef3f8 52%, #e8eef6 100%);
+}
+
+.app-frame .app-shell {
+  display: block;
+  width: 100%;
+  min-height: 100svh;
+  padding-top: calc(var(--app-safe-top) + var(--app-header-height) + 14px);
+  padding-right: calc(var(--app-safe-right) + 12px);
+  padding-bottom: calc(var(--app-safe-bottom) + var(--app-nav-height) + 18px);
+  padding-left: calc(var(--app-safe-left) + 12px);
+  background: transparent;
+}
+
+#root > .app-shell {
+  display: block;
+  min-height: 100svh;
+  padding-top: calc(var(--app-safe-top) + 18px);
+  padding-right: calc(var(--app-safe-right) + 12px);
+  padding-bottom: calc(var(--app-safe-bottom) + 18px);
+  padding-left: calc(var(--app-safe-left) + 12px);
+}
+
+.app-frame .home-card,
+#root > .app-shell > .home-card {
+  width: min(100%, var(--app-phone-width));
+  max-width: var(--app-phone-width);
+  min-height: calc(100svh - var(--app-safe-top) - var(--app-safe-bottom) - var(--app-header-height) - var(--app-nav-height) - 32px);
+  margin: 0 auto;
+  padding: 22px 18px;
+  border-radius: 24px;
+  text-align: left;
+}
+
+.app-frame .home-card > .eyebrow,
+.app-frame .home-card > h1,
+#root > .app-shell > .home-card > .eyebrow,
+#root > .app-shell > .home-card > h1 {
+  text-align: center;
+}
+
+.app-status-bar {
+  box-sizing: border-box;
+  padding-top: var(--app-safe-top);
+  padding-right: var(--app-safe-right);
+  padding-left: var(--app-safe-left);
+}
+
+.app-status-inner {
+  width: min(calc(100% - 24px), var(--app-phone-width));
+  min-height: var(--app-header-height);
+  padding: 10px 2px 9px;
+  display: grid;
+  align-content: center;
+  gap: 7px;
+  white-space: normal;
+}
+
+.app-status-topline,
+.app-status-metrics {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.app-status-topline > strong {
+  color: #172554;
+  font-size: .82rem;
+  letter-spacing: .01em;
+}
+
+.app-status-topline .connection-status {
+  font-size: .66rem;
+}
+
+.app-status-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  color: #475569;
+  font-size: .65rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.app-status-metrics span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-status-metrics span + span {
+  border-left: 1px solid #dbe3ee;
+}
+
+.bottom-navigation {
+  padding-top: 7px;
+  padding-right: calc(var(--app-safe-right) + 8px);
+  padding-bottom: calc(var(--app-safe-bottom) + 7px);
+  padding-left: calc(var(--app-safe-left) + 8px);
+}
+
+.bottom-navigation-inner {
+  width: min(100%, var(--app-phone-width));
+}
+
+.bottom-nav-item {
+  min-height: 56px;
+  border-radius: 14px;
+}
+
+.dashboard-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.dashboard-heading {
+  margin-bottom: 18px;
+}
+
+.dashboard-heading h1 {
+  font-size: clamp(1.45rem, 7vw, 2rem);
+  overflow-wrap: anywhere;
+}
+
+.today-action-card {
+  padding: 17px;
+  border-radius: 18px;
+}
+
+.home-overview {
+  gap: 9px;
+  margin-top: 14px;
+}
+
+.home-overview article {
+  min-height: 92px;
+  padding: 12px;
+}
+
+.home-activity-card {
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid #c7d7f2;
+  border-radius: 16px;
+  background: linear-gradient(145deg, #f8fbff, #eef5ff);
+}
+
+.home-activity-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.home-activity-heading span,
+.home-activity-heading strong {
+  display: block;
+}
+
+.home-activity-heading span {
+  color: #64748b;
+  font-size: .7rem;
+  font-weight: 800;
+}
+
+.home-activity-heading strong {
+  margin-top: 3px;
+  color: #1e3a8a;
+  font-size: 1rem;
+}
+
+.home-activity-heading button {
+  min-height: 36px;
+  padding: 6px 8px;
+  border: 0;
+  background: transparent;
+  color: #2563eb;
+  font-size: .72rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.home-activity-track {
+  height: 8px;
+  margin: 11px 0;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #dbeafe;
+}
+
+.home-activity-track div {
+  height: 100%;
+  min-width: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #2563eb, #0ea5e9);
+}
+
+.home-activity-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.home-activity-metrics span {
+  color: #64748b;
+  font-size: .66rem;
+  text-align: center;
+}
+
+.home-activity-metrics strong {
+  display: block;
+  margin-top: 2px;
+  color: #334155;
+  font-size: .78rem;
+}
+
+.home-alert {
+  margin-top: 12px;
+}
+
+.feature-hub-card,
+.statistics-card,
+.settings-card,
+.question-admin-card,
+.csv-card,
+.mistake-notes-card,
+.annotations-card,
+.correction-card,
+.learning-history-card,
+.backup-center-card,
+.ai-template-card,
+.speed-analysis-card,
+.fact-check-card {
+  max-width: var(--app-phone-width);
+}
+
+@supports (height: 100dvh) {
+  .app-frame,
+  .app-frame .app-shell,
+  #root > .app-shell {
+    min-height: 100dvh;
+  }
+
+  .app-frame .home-card,
+  #root > .app-shell > .home-card {
+    min-height: calc(100dvh - var(--app-safe-top) - var(--app-safe-bottom) - var(--app-header-height) - var(--app-nav-height) - 32px);
+  }
+}
+
+@media (max-width: 480px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+
+  .dashboard-heading {
+    gap: 13px;
+  }
+
+  .dashboard-heading .compact-brand {
+    width: 48px;
+    height: 48px;
+    flex-basis: 48px;
+    border-radius: 15px;
+  }
+
+  .today-action-heading strong {
+    font-size: 1.55rem;
+  }
+
+  .large-button {
+    min-height: 56px;
+  }
+}
+
+@media (max-width: 365px) {
+  .app-status-metrics {
+    font-size: .59rem;
+  }
+
+  .app-frame .home-card,
+  #root > .app-shell > .home-card {
+    padding-right: 14px;
+    padding-left: 14px;
+  }
+
+  .home-overview,
+  .home-activity-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .home-overview article {
+    min-height: auto;
+  }
+}
+
+@media (max-height: 720px) and (orientation: portrait) {
+  :root {
+    --app-header-height: 64px;
+    --app-nav-height: 70px;
+  }
+
+  .app-status-inner {
+    gap: 4px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+
+  .bottom-nav-item {
+    min-height: 50px;
+  }
+}
+
+@media (min-width: 700px) {
+  #root {
+    width: min(100%, var(--app-phone-width));
+    margin: 0 auto;
+    box-shadow: 0 0 60px rgba(15, 23, 42, .18);
+  }
+
+  .app-status-bar,
+  .bottom-navigation {
+    right: auto;
+    left: 50%;
+    width: var(--app-phone-width);
+    transform: translateX(-50%);
+  }
+}
+
+@media (max-width: 390px) {
+  .app-status-inner .app-status-topline span.connection-status {
+    display: inline-flex;
+  }
+
+  .app-status-inner .app-status-metrics span:nth-child(2) {
+    display: block;
+  }
+}

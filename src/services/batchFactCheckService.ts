@@ -1,3 +1,4 @@
+
 import type { Question } from '../types/Question';
 export interface FactCheckFinding { questionId:string; status:'ok'|'needs_correction'|'uncertain'; summary:string; suggestion:string; reason:string; reference:string; }
 export const buildBatchFactCheckPrompt=(questions:Question[]):string=>{const payload=questions.map((q)=>({id:q.id,category:q.category,question:q.text,choices:q.choices,answerIndex:q.answerIndex,explanation:q.explanation}));return `以下の問題をファクトチェックしてください。各問題について、正解・解説・選択肢の技術的正確性を確認し、推測せず、不明な場合は uncertain としてください。出力は説明文を付けず、次のJSON配列形式だけにしてください。\n\n[{"questionId":"ID","status":"ok|needs_correction|uncertain","summary":"確認結果","suggestion":"修正案。修正不要なら空文字","reason":"判断理由","reference":"確認に用いた一次情報名またはURL。不明なら空文字"}]\n\n対象問題:\n${JSON.stringify(payload,null,2)}`;};

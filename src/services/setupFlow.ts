@@ -1,15 +1,15 @@
-import { SaveInitialSetupUseCase } from '../application/setup/SaveInitialSetupUseCase';
+
 import type { Setup } from '../types/Setup';
 import { createDefaultSetup } from '../types/Setup';
-import { loadSetup } from './setupStorage';
+import { loadSetup, saveSetup } from './setupStorage';
 
 export interface SetupFlowState {
   setup: Setup;
   requiresInitialSetup: boolean;
 }
 
-export const loadSetupFlowState = async (): Promise<SetupFlowState> => {
-  const stored = await loadSetup();
+export const loadSetupFlowState = (): SetupFlowState => {
+  const stored = loadSetup();
   if (!stored) {
     return {
       setup: createDefaultSetup(),
@@ -22,5 +22,12 @@ export const loadSetupFlowState = async (): Promise<SetupFlowState> => {
   };
 };
 
-export const completeInitialSetup = async (setup: Setup): Promise<Setup> =>
-  new SaveInitialSetupUseCase().execute(setup);
+export const completeInitialSetup = (setup: Setup): Setup => {
+  const completed: Setup = {
+    ...setup,
+    setupCompleted: true,
+    updatedAt: new Date().toISOString(),
+  };
+  saveSetup(completed);
+  return completed;
+};
