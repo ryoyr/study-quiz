@@ -1,208 +1,451 @@
-import { useMemo, useState } from 'react'
-import './App.css'
-import { questions } from './data/questions'
-import { clearHistory, loadHistory, saveHistory } from './services/historyStorage'
-import type { Question } from './types/Question'
-import type { StudyHistory } from './types/StudyHistory'
+import { useEffect, useMemo, useState } from "react";
+import "./App.css";
 
-type Screen = 'home' | 'quiz' | 'result'
+import { loadSetup, saveSetup } from "./services/setupStorage";
 
-type SessionResult = {
-  questionId: string
-  selectedIndex: number
-  correct: boolean
-}
+import { loadHistory, saveHistory } from "./services/historyStorage";
 
-const shuffle = <T,>(items: T[]): T[] => {
-  const copied = [...items]
-  for (let index = copied.length - 1; index > 0; index -= 1) {
-    const randomIndex = Math.floor(Math.random() * (index + 1))
-    ;[copied[index], copied[randomIndex]] = [copied[randomIndex], copied[index]]
-  }
-  return copied
-}
+import type { StudyHistory } from "./types/StudyHistory";
 
-const calculatePercentage = (correct: number, total: number): number =>
-  total === 0 ? 0 : Math.round((correct / total) * 100)
+import type { Setup } from "./types/Setup";
+import { createDefaultSetup } from "./types/Setup";
 
-function App() {
-  const [screen, setScreen] = useState<Screen>('home')
-  const [sessionQuestions, setSessionQuestions] = useState<Question[]>([])
-  const [currentIndex, setCurrentIndex] = useState(0)
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
-  const [answered, setAnswered] = useState(false)
-  const [sessionResults, setSessionResults] = useState<SessionResult[]>([])
-  const [history, setHistory] = useState<StudyHistory[]>(() => loadHistory())
+import { questions } from "./data/questions";
 
-  const currentQuestion = sessionQuestions[currentIndex]
-  const sessionCorrectCount = useMemo(
-    () => sessionResults.filter((result) => result.correct).length,
-    [sessionResults],
-  )
-  const totalCorrectCount = useMemo(
-    () => history.filter((entry) => entry.correct).length,
-    [history],
-  )
-  const totalPercentage = calculatePercentage(totalCorrectCount, history.length)
-  const lastStudiedAt = history[0]?.answeredAt
-    ? new Intl.DateTimeFormat('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(history[0].answeredAt))
-    : '未学習'
+import { createTodaySession } from "./services/sessionService";
 
-  const startQuiz = () => {
-    setSessionQuestions(shuffle(questions))
-    setCurrentIndex(0)
-    setSelectedIndex(null)
-    setAnswered(false)
-    setSessionResults([])
-    setScreen('quiz')
-  }
+export default function App() {
+  const [quizStarted, setQuizStarted] = useState(false);
+  const [questionIndex, setQuestionIndex] = useState(0);
+  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
+  const [showAnswer, setShowAnswer] = useState(false);
 
-  const submitAnswer = () => {
-    if (selectedIndex === null || !currentQuestion) return
+  const [setup, setSetup] = useState<Setup>(createDefaultSetup());
+  const [history, setHistory] = useState<StudyHistory[]>([]);
 
-    const correct = selectedIndex === currentQuestion.answerIndex
-    const newSessionResult: SessionResult = {
-      questionId: currentQuestion.id,
-      selectedIndex,
-      correct,
+  const [loaded, setLoaded] = useState(false);
+
+  const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
+
+  const [showSetup, setShowSetup] = useState(false);
+
+  const [sessionStarted, setSessionStarted] = useState(false);
+
+  useEffect(() => {
+    const saved = loadSetup();
+
+    if (saved) {
+      setSetup(saved);
     }
-    const newHistoryEntry: StudyHistory = {
+
+    const savedHistory = loadHistory();
+
+    setHistory(savedHistory);
+
+    setLoaded(true);
+  }, []);
+
+  const categories = useMemo(() => {
+    return ["ALL", ...new Set(questions.map((question) => question.category))];
+  }, []);
+
+  const filteredQuestions = useMemo(() => {
+    if (selectedCategory === "ALL") {
+      return questions;
+    }
+
+    return questions.filter(
+      (question) => question.category === selectedCategory,
+    );
+  }, [selectedCategory]);
+
+  const session = createTodaySession(setup);
+
+  const remainingDays = useMemo(() => {
+    const today = new Date();
+
+    today.setHours(0, 0, 0, 0);
+
+    const exam = new Date(setup.examDate);
+
+    exam.setHours(0, 0, 0, 0);
+
+    return Math.ceil(
+      (exam.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
+    );
+  }, [setup.examDate]);
+
+  const saveAnswerHistory = (correct: boolean) => {
+    const item: StudyHistory = {
       id: crypto.randomUUID(),
-      questionId: currentQuestion.id,
-      category: currentQuestion.category,
-      selectedIndex,
+
+      questionId: filteredQuestions[questionIndex].id,
+
+      category: filteredQuestions[questionIndex].category,
+
+      selectedIndex: selectedAnswer ?? -1,
+
       correct,
+
       answeredAt: new Date().toISOString(),
-    }
-    const updatedHistory = [newHistoryEntry, ...history]
+    };
 
-    setSessionResults((current) => [...current, newSessionResult])
-    setHistory(updatedHistory)
-    saveHistory(updatedHistory)
-    setAnswered(true)
-  }
+    const updated = [item, ...history];
 
-  const nextQuestion = () => {
-    if (currentIndex + 1 >= sessionQuestions.length) {
-      setScreen('result')
-      return
-    }
-    setCurrentIndex((index) => index + 1)
-    setSelectedIndex(null)
-    setAnswered(false)
-  }
+    setHistory(updated);
 
-  const resetHistory = () => {
-    if (!window.confirm('端末に保存された学習履歴を削除しますか？')) return
-    clearHistory()
-    setHistory([])
-  }
+    saveHistory(updated);
+  };
 
-  if (screen === 'result') {
-    const percentage = calculatePercentage(sessionCorrectCount, sessionQuestions.length)
+  if (!loaded) {
     return (
       <main className="app-shell">
-        <section className="home-card result-card" aria-labelledby="result-title">
-          <p className="eyebrow">SESSION COMPLETE</p>
-          <h1 id="result-title">学習結果</h1>
-          <div className="score-circle" aria-label={`正答率 ${percentage}%`}>
-            <strong>{percentage}%</strong>
-            <span>{sessionCorrectCount} / {sessionQuestions.length}問正解</span>
-          </div>
-          <p className="lead">今回の回答は端末内の学習履歴へ保存されました。</p>
-          <button className="primary-button large-button" type="button" onClick={startQuiz}>もう一度学習する</button>
-          <button className="secondary-button" type="button" onClick={() => setScreen('home')}>ホームへ戻る</button>
+        <section className="home-card">
+          <h1>Loading...</h1>
         </section>
       </main>
-    )
+    );
   }
 
-  if (screen === 'quiz' && currentQuestion) {
-    const isCorrect = selectedIndex === currentQuestion.answerIndex
-    const progress = ((currentIndex + 1) / sessionQuestions.length) * 100
+  if (showSetup) {
+    return (
+      <main className="app-shell">
+        <section className="home-card">
+          <h1>設定変更</h1>
+
+          <div className="form-grid">
+            <label className="form-item">
+              <span>試験名</span>
+              <input
+                value={setup.name}
+                onChange={(e) =>
+                  setSetup({
+                    ...setup,
+                    name: e.target.value,
+                  })
+                }
+              />
+            </label>
+
+            <label className="form-item">
+              <span>試験日</span>
+              <input
+                type="date"
+                value={setup.examDate}
+                onChange={(e) =>
+                  setSetup({
+                    ...setup,
+                    examDate: e.target.value,
+                  })
+                }
+              />
+            </label>
+          </div>
+
+          <button
+            className="primary-button"
+            onClick={() => {
+              saveSetup(setup);
+              setShowSetup(false);
+            }}
+          >
+            保存
+          </button>
+
+          <button
+            className="secondary-button"
+            onClick={() => setShowSetup(false)}
+          >
+            戻る
+          </button>
+        </section>
+      </main>
+    );
+  }
+
+  if (sessionStarted) {
+    return (
+      <main className="app-shell">
+        <section className="home-card">
+          <p className="eyebrow">SESSION</p>
+
+          <h1>学習セッション</h1>
+
+          <div className="exam-summary">
+            <div className="summary-row">
+              <span>カテゴリ</span>
+
+              <strong>{selectedCategory}</strong>
+            </div>
+
+            <div className="summary-row">
+              <span>対象問題数</span>
+
+              <strong>{filteredQuestions.length}</strong>
+            </div>
+
+            <div className="summary-row">
+              <span>今日の目標</span>
+
+              <strong>{session.totalQuestions}問</strong>
+            </div>
+          </div>
+
+          {/* Session画面 */}
+          <button
+            className="primary-button"
+            type="button"
+            onClick={() => {
+              setSessionStarted(false);
+              setQuizStarted(true);
+              setQuestionIndex(0);
+              setSelectedAnswer(null);
+              setShowAnswer(false);
+            }}
+          >
+            学習開始
+          </button>
+
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={() => setSessionStarted(false)}
+          >
+            戻る
+          </button>
+        </section>
+      </main>
+    );
+  }
+
+  if (quizStarted) {
+    const question = filteredQuestions[questionIndex];
 
     return (
       <main className="app-shell">
-        <section className="quiz-card" aria-labelledby="question-title">
-          <div className="quiz-header">
-            <button className="text-button" type="button" onClick={() => setScreen('home')}>中断する</button>
-            <span className="progress-label">問題 {currentIndex + 1} / {sessionQuestions.length}</span>
-          </div>
-          <div className="progress-track" aria-hidden="true"><span style={{ width: `${progress}%` }} /></div>
-          <p className="eyebrow">{currentQuestion.category}</p>
-          <h1 id="question-title">{currentQuestion.text}</h1>
+        <section className="home-card">
+          <p className="eyebrow">{question.category}</p>
 
-          <div className="choice-list" role="radiogroup" aria-label="回答の選択肢">
-            {currentQuestion.choices.map((choice, index) => {
-              const selected = selectedIndex === index
-              const resultClass = answered
-                ? index === currentQuestion.answerIndex
-                  ? 'choice-correct'
-                  : selected
-                    ? 'choice-wrong'
-                    : ''
-                : ''
+          <h1
+            style={{
+              fontSize: "1.6rem",
+            }}
+          >
+            {question.text}
+          </h1>
 
-              return (
-                <button
-                  className={`choice-button ${selected ? 'choice-selected' : ''} ${resultClass}`}
-                  type="button"
-                  role="radio"
-                  aria-checked={selected}
-                  disabled={answered}
-                  key={choice}
-                  onClick={() => setSelectedIndex(index)}
-                >
-                  <span className="choice-index">{String.fromCharCode(65 + index)}</span>
-                  <span>{choice}</span>
-                </button>
-              )
-            })}
-          </div>
-
-          {!answered ? (
-            <button className="primary-button" type="button" disabled={selectedIndex === null} onClick={submitAnswer}>回答する</button>
-          ) : (
-            <div className={`result-panel ${isCorrect ? 'result-correct' : 'result-wrong'}`}>
-              <strong>{isCorrect ? '正解です' : '不正解です'}</strong>
-              <p>{currentQuestion.explanation}</p>
-              <button className="primary-button" type="button" onClick={nextQuestion}>
-                {currentIndex + 1 === sessionQuestions.length ? '結果を見る' : '次の問題へ'}
+          <div className="form-grid">
+            {question.choices.map((choice, index) => (
+              <button
+                key={index}
+                className="secondary-button"
+                onClick={() => setSelectedAnswer(index)}
+              >
+                {choice}
               </button>
-            </div>
+            ))}
+          </div>
+
+          {selectedAnswer !== null && (
+            <button
+              className="primary-button"
+              onClick={() => {
+                const correct = selectedAnswer === question.answerIndex;
+
+                saveAnswerHistory(correct);
+
+                setShowAnswer(true);
+              }}
+            >
+              回答する
+            </button>
+          )}
+
+          {showAnswer && (
+            <>
+              <div className="exam-summary">
+                <div className="summary-row">
+                  <span>判定</span>
+
+                  <strong>
+                    {selectedAnswer === question.answerIndex
+                      ? "正解"
+                      : "不正解"}
+                  </strong>
+                </div>
+
+                <div className="summary-row">
+                  <span>解説</span>
+
+                  <strong>{question.explanation}</strong>
+                </div>
+              </div>
+
+              <button
+                className="primary-button"
+                onClick={() => {
+                  if (questionIndex + 1 < filteredQuestions.length) {
+                    setQuestionIndex(questionIndex + 1);
+                    setSelectedAnswer(null);
+                    setShowAnswer(false);
+                  } else {
+                    setQuizStarted(false);
+                    setQuestionIndex(0);
+                    setSelectedAnswer(null);
+                    setShowAnswer(false);
+                  }
+                }}
+              >
+                {questionIndex + 1 < filteredQuestions.length
+                  ? "次の問題"
+                  : "終了"}
+              </button>
+            </>
           )}
         </section>
       </main>
-    )
+    );
   }
 
   return (
     <main className="app-shell">
-      <section className="home-card" aria-labelledby="app-title">
-        <div className="brand-mark" aria-hidden="true">Q</div>
-        <p className="eyebrow">LOCAL FIRST LEARNING</p>
-        <h1 id="app-title">Study Quiz</h1>
-        <p className="lead">すきま時間に学び、忘れる前に復習する。<br />回答履歴はこの端末内へ保存されます。</p>
+      <section className="home-card">
+        <div className="brand-mark">Q</div>
 
-        <div className="stats-grid" aria-label="学習統計">
-          <article><span>累計回答</span><strong>{history.length}</strong><small>問</small></article>
-          <article><span>累計正答率</span><strong>{totalPercentage}</strong><small>%</small></article>
-          <article><span>最終学習</span><strong className="date-value">{lastStudiedAt}</strong></article>
+        <p className="eyebrow">EXAM MODE</p>
+
+        <h1>{setup.name}</h1>
+
+        <div className="exam-summary">
+          <div className="summary-row">
+            <span>試験日</span>
+
+            <strong>{setup.examDate}</strong>
+          </div>
+
+          <div className="summary-row">
+            <span>残り日数</span>
+
+            <strong>{remainingDays}日</strong>
+          </div>
         </div>
 
-        <button className="primary-button large-button" type="button" onClick={startQuiz}>{questions.length}問の学習を開始する</button>
-        {history.length > 0 && (
-          <button className="danger-text-button" type="button" onClick={resetHistory}>学習履歴を削除</button>
-        )}
+        <div className="stats-grid">
+          <article>
+            <span>回答数</span>
 
-        <div className="feature-grid" aria-label="アプリの特徴">
-          <article><strong>端末内保存</strong><span>回答履歴をブラウザーへ保存</span></article>
-          <article><strong>進捗表示</strong><span>現在の問題数と進捗を確認</span></article>
-          <article><strong>学習統計</strong><span>累計回答数と正答率を表示</span></article>
+            <strong>{history.length}</strong>
+
+            <small>問</small>
+          </article>
+
+          <article>
+            <span>正解数</span>
+
+            <strong>{history.filter((h) => h.correct).length}</strong>
+
+            <small>問</small>
+          </article>
         </div>
+        <div className="stats-grid">
+          <article>
+            <span>新規上限</span>
+
+            <strong>{setup.dailyNewLimit}</strong>
+
+            <small>問</small>
+          </article>
+
+          <article>
+            <span>総問題上限</span>
+
+            <strong>{setup.dailyQuestionLimit}</strong>
+
+            <small>問</small>
+          </article>
+
+          <article>
+            <span>バッファ率</span>
+
+            <strong>{setup.bufferRate}</strong>
+
+            <small>%</small>
+          </article>
+        </div>
+
+        <div className="exam-summary">
+          <div className="summary-row">
+            <span>今日の新規</span>
+
+            <strong>{session.newQuestions}</strong>
+          </div>
+
+          <div className="summary-row">
+            <span>今日の復習</span>
+
+            <strong>{session.reviewQuestions}</strong>
+          </div>
+
+          <div className="summary-row">
+            <span>今日の合計</span>
+
+            <strong>{session.totalQuestions}</strong>
+          </div>
+        </div>
+
+        <div className="form-grid">
+          <label className="form-item">
+            <span>学習カテゴリ</span>
+
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+            >
+              {categories.map((category) => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        <div className="exam-summary">
+          <div className="summary-row">
+            <span>対象問題数</span>
+
+            <strong>{filteredQuestions.length}</strong>
+          </div>
+
+          <div className="summary-row">
+            <span>即答閾値</span>
+
+            <strong>{setup.instantThresholdSeconds}秒</strong>
+          </div>
+        </div>
+
+        <button
+          className="primary-button"
+          type="button"
+          onClick={() => {
+            setSessionStarted(true);
+            setQuizStarted(false);
+            setQuestionIndex(0);
+            setSelectedAnswer(null);
+            setShowAnswer(false);
+          }}
+        >
+          学習開始
+        </button>
+
+        <button
+          className="secondary-button"
+          type="button"
+          onClick={() => setShowSetup(true)}
+        >
+          設定変更
+        </button>
       </section>
     </main>
-  )
+  );
 }
-
-export default App
