@@ -48,6 +48,7 @@ import { createFinalReviewPlan } from './services/finalReviewService';
 import { detectForgettingCandidates, selectForgettingQuestions } from './services/forgettingDetectionService';
 import { scheduleFsrs, type FsrsRating } from './services/fsrsAdapter';
 import { loadHistory, saveHistory } from './services/historyStorage';
+import { saveLearningProgress } from './services/learningProgressStorage';
 import { loadMistakeNotes } from './services/mistakeNoteStorage';
 import { calculateProgressForecast } from './services/progressForecastService';
 import { loadQuestionAnnotations } from './services/questionAnnotationStorage';
@@ -56,6 +57,7 @@ import { loadQuestionStates, saveQuestionStates, updateQuestionStates } from './
 import { generateStudySession } from './services/sessionGenerator';
 import { loadCorrectionSuggestions } from './services/correctionSuggestionStorage';
 import { loadSetup, saveSetup } from './services/setupStorage';
+import { recoverStorageTransaction } from './services/storageTransaction';
 import { findSetup, persistSetup } from './infrastructure/repositories/setupRepository';
 import { SaveInitialSetupUseCase } from './application/setup/SaveInitialSetupUseCase';
 import { calculateStudyStreak } from './services/streakService';
@@ -139,10 +141,16 @@ export default function App() {
   const [sessionCorrectCount, setSessionCorrectCount] = useState(0);
   const [sessionResult, setSessionResult] = useState({ correctCount: 0, totalCount: 0 });
   const [editQuestionId, setEditQuestionId] = useState('');
+  const [storageError, setStorageError] = useState('');
 
   useEffect(() => {
     let cancelled = false;
     const initialize = async () => {
+      try {
+        recoverStorageTransaction();
+      } catch (error) {
+        setStorageError(error instanceof Error ? error.message : '前回の保存状態を確認できませんでした。');
+      }
       const localSetup = loadSetup();
       let saved = localSetup;
       try {
@@ -255,16 +263,23 @@ export default function App() {
       return;
     }
     setTimeBudgetMessage(fitted.length < targets.length ? `残り時間に合わせて ${fitted.length}問へ調整しました。` : '');
+    let snapshot: ActiveSessionSnapshot;
+    try {
+      snapshot = saveActiveSession({
+        questionIds: fitted.map((question) => question.id),
+        currentIndex: 0,
+        correctCount: 0,
+        startedAt: new Date().toISOString(),
+      });
+    } catch (error) {
+      setStorageError(error instanceof Error ? error.message : '学習セッションを保存できませんでした。');
+      return;
+    }
+    setStorageError('');
     setActiveQuestions(fitted);
     setQuestionIndex(0);
     setSessionCorrectCount(0);
     setWeakMessage('');
-    const snapshot = saveActiveSession({
-      questionIds: fitted.map((question) => question.id),
-      currentIndex: 0,
-      correctCount: 0,
-      startedAt: new Date().toISOString(),
-    });
     setResumableSession(snapshot);
     setScreen('quiz');
     resetQuestionState();
@@ -322,6 +337,7 @@ export default function App() {
       instantScore,
     };
     setPendingHistory(item);
+    setStorageError('');
     setCurrentResponseTime(responseTimeSeconds);
     setCurrentInstantScore(instantScore);
     setShowAnswer(true);
@@ -332,8 +348,6 @@ export default function App() {
     const fsrsCard = scheduleFsrs(previous?.fsrsCard ?? null, rating, new Date(pendingHistory.answeredAt));
     const item: StudyHistory = { ...pendingHistory, fsrsRating: rating };
     const updated = [item, ...history];
-    setHistory(updated);
-    saveHistory(updated);
     let updatedStates = updateQuestionStates(questionStates, item);
     updatedStates = updatedStates.map((state) => state.questionId === item.questionId ? {
       ...state,
@@ -342,24 +356,37 @@ export default function App() {
       fsrsStability: fsrsCard.stability,
       fsrsDifficulty: fsrsCard.difficulty,
     } : state);
-    setQuestionStates(updatedStates);
-    saveQuestionStates(updatedStates);
-    setPendingHistory(null);
     const correctCountForSession = sessionCorrectCount + (item.correct ? 1 : 0);
-    setSessionCorrectCount(correctCountForSession);
-    if (questionIndex + 1 < activeQuestions.length) {
-      const nextIndex = questionIndex + 1;
-      setQuestionIndex(nextIndex);
-      const snapshot = saveActiveSession({
-        questionIds: activeQuestions.map((question) => question.id),
-        currentIndex: nextIndex,
-        correctCount: correctCountForSession,
-        startedAt: resumableSession?.startedAt ?? new Date().toISOString(),
+    const hasNextQuestion = questionIndex + 1 < activeQuestions.length;
+    const nextIndex = questionIndex + 1;
+    const nextSnapshot: ActiveSessionSnapshot | null = hasNextQuestion ? {
+      questionIds: activeQuestions.map((question) => question.id),
+      currentIndex: nextIndex,
+      correctCount: correctCountForSession,
+      startedAt: resumableSession?.startedAt ?? new Date().toISOString(),
+    } : null;
+
+    try {
+      saveLearningProgress({
+        history: updated,
+        questionStates: updatedStates,
+        activeSession: nextSnapshot,
       });
-      setResumableSession(snapshot);
+    } catch (error) {
+      setStorageError(error instanceof Error ? error.message : '回答結果を保存できませんでした。もう一度お試しください。');
+      return;
+    }
+
+    setStorageError('');
+    setHistory(updated);
+    setQuestionStates(updatedStates);
+    setPendingHistory(null);
+    setSessionCorrectCount(correctCountForSession);
+    if (hasNextQuestion && nextSnapshot) {
+      setQuestionIndex(nextIndex);
+      setResumableSession(nextSnapshot);
       resetQuestionState();
     } else {
-      clearActiveSession();
       setResumableSession(null);
       setSessionResult({ correctCount: correctCountForSession, totalCount: activeQuestions.length });
       setQuestionIndex(0);
@@ -383,6 +410,12 @@ export default function App() {
       dailyMinimum={dailyMinimumProgress.minimum}
       streakDays={studyStreak.currentDays}
     >
+      {storageError && (
+        <aside className="storage-error-banner" role="alert">
+          <span>{storageError}</span>
+          <button type="button" onClick={() => setStorageError('')}>閉じる</button>
+        </aside>
+      )}
       {content}
     </AppChrome>
   );
@@ -618,6 +651,7 @@ export default function App() {
               </div>
               <AiQuestionPanel question={question} selectedIndex={selectedAnswer} />
               <button className="correction-open-button" type="button" onClick={() => { setCorrectionQuestionId(question.id); setScreen('corrections'); }}>問題の修正を提案</button>
+              {storageError && <div className="error-box" role="alert">{storageError}</div>}
               <div className="fsrs-rating">
                 <p>記憶の状態を選択してください</p>
                 <div className="fsrs-rating-grid">

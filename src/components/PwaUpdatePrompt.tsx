@@ -10,6 +10,7 @@ export default function PwaUpdatePrompt() {
   useEffect(() => {
     if (!('serviceWorker' in navigator) || import.meta.env.DEV) return;
     let refreshing = false;
+    let disposed = false;
     const onControllerChange = () => {
       if (refreshing) return;
       refreshing = true;
@@ -17,7 +18,11 @@ export default function PwaUpdatePrompt() {
     };
     navigator.serviceWorker.addEventListener('controllerchange', onControllerChange);
     navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).then((registration) => {
-      if (!navigator.serviceWorker.controller) setNotice('offline');
+      if (!navigator.serviceWorker.controller) {
+        void navigator.serviceWorker.ready.then(() => {
+          if (!disposed) setNotice('offline');
+        });
+      }
       if (registration.waiting) {
         waitingWorker.current = registration.waiting;
         setNotice('update');
@@ -33,7 +38,10 @@ export default function PwaUpdatePrompt() {
         });
       });
     }).catch((error: unknown) => console.error('Service Worker registration failed.', error));
-    return () => navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
+    return () => {
+      disposed = true;
+      navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
+    };
   }, []);
 
   if (!notice) return null;
