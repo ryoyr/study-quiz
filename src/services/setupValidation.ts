@@ -1,26 +1,55 @@
-import type { Setup } from "../types/Setup";
+import type { Setup } from '../types/Setup';
 
-export const validateSetup = (
-  setup: Setup,
-): string => {
-  if (
-    !setup.name.trim()
-  ) {
-    return "試験名を入力してください";
+export type SetupErrors = Partial<Record<
+  'name' | 'examDate' | 'dailyNewLimit' | 'dailyQuestionLimit' | 'bufferRate' | 'instantThresholdSeconds' | 'dailyMinimumQuestions' | 'reservedDates',
+  string
+>>;
+
+const localDate = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const isValidDate = (value: string): boolean => {
+  const matched = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!matched) return false;
+  const [, yearText, monthText, dayText] = matched;
+  const year = Number(yearText);
+  const month = Number(monthText);
+  const day = Number(dayText);
+  const date = new Date(year, month - 1, day);
+  return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
+};
+
+export const validateSetup = (setup: Setup, now = new Date()): SetupErrors => {
+  const errors: SetupErrors = {};
+  const today = localDate(now);
+  if (!setup.name.trim()) errors.name = '試験名は必須です。';
+  if (!isValidDate(setup.examDate)) errors.examDate = '正しい試験日を入力してください。';
+  else if (setup.examDate < today) errors.examDate = '試験日は本日以降です。';
+  if (!Number.isInteger(setup.dailyNewLimit) || setup.dailyNewLimit < 1 || setup.dailyNewLimit > 500) {
+    errors.dailyNewLimit = '1～500の整数で指定してください。';
+  }
+  if (!Number.isInteger(setup.dailyQuestionLimit) || setup.dailyQuestionLimit < setup.dailyNewLimit || setup.dailyQuestionLimit > 1000) {
+    errors.dailyQuestionLimit = '新規問題上限以上、1000以下の整数で指定してください。';
+  }
+  if (!Number.isFinite(setup.bufferRate) || setup.bufferRate < 0 || setup.bufferRate > 100) {
+    errors.bufferRate = '0～100%で指定してください。';
+  }
+  if (!Number.isInteger(setup.instantThresholdSeconds) || setup.instantThresholdSeconds < 1 || setup.instantThresholdSeconds > 3600) {
+    errors.instantThresholdSeconds = '1～3600秒の整数で指定してください。';
+  }
+  if (!Number.isInteger(setup.dailyMinimumQuestions) || setup.dailyMinimumQuestions < 1 || setup.dailyMinimumQuestions > setup.dailyQuestionLimit) {
+    errors.dailyMinimumQuestions = '1以上、1日の総問題数上限以下で指定してください。';
   }
 
-  if (
-    !setup.examDate
-  ) {
-    return "試験日を入力してください";
+  const dates = setup.reservedDates ?? [];
+  if (new Set(dates).size !== dates.length) {
+    errors.reservedDates = '学習しない日が重複しています。';
+  } else if (dates.some((date) => !isValidDate(date) || date < today || date >= setup.examDate)) {
+    errors.reservedDates = '学習しない日は本日から試験日前日までです。';
   }
-
-  if (
-    setup.dailyQuestionLimit <
-    setup.dailyNewLimit
-  ) {
-    return "総問題上限は新規上限以上にしてください";
-  }
-
-  return "";
+  return errors;
 };
