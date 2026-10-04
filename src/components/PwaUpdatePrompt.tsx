@@ -1,3 +1,4 @@
+
 import { useEffect, useRef, useState } from 'react';
 
 type Notice = 'offline' | 'update' | null;

@@ -1,3 +1,4 @@
+
 export type MainTab = 'home' | 'study' | 'questions' | 'analytics' | 'settings';
 type Props = { active: MainTab; onChange: (tab: MainTab) => void };
 const items: Array<{ id: MainTab; icon: string; label: string }> = [

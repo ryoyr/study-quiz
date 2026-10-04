@@ -1,5 +1,6 @@
 
 
+
 import type { Setup } from '../types/Setup';
 
 const STORAGE_KEY = 'study-quiz-setup-v1';

@@ -1,5 +1,6 @@
 
 
+
 import type { Question } from '../types/Question';import type { StudyHistory } from '../types/StudyHistory';
 const KEY='study-quiz-daily-time-budget-v1';
 export interface DailyTimeBudget { limitMinutes:number; usedSeconds:number; remainingSeconds:number; rate:number; reached:boolean; }

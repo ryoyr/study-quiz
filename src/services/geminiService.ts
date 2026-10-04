@@ -1,3 +1,4 @@
+
 import type { Question } from '../types/Question';
 
 const KEY = 'study-quiz-gemini-api-key-v1';

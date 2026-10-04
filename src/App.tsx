@@ -1,4 +1,5 @@
 
+
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import './App.css';
 import { questions } from './data/questions';
@@ -747,7 +748,7 @@ export default function App() {
           <section className="app-info-panel" aria-label="アプリ情報">
             <div><span>保存先</span><strong>この端末内</strong></div>
             <div><span>利用形態</span><strong>PWA・オフライン対応</strong></div>
-            <p>学習データはV1では端末外へ送信しません。更新がある場合は画面下部に通知します。</p>
+            <p>通常の学習データは端末内に保存します。AI質問を実行した場合のみ、表示中の問題情報と入力内容をGeminiへ送信します。APIキーはバックアップへ含めません。</p>
           </section>
         </section>
       </main>,

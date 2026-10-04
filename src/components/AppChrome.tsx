@@ -1,4 +1,5 @@
 
+
 import { useEffect, useState, type ReactNode } from 'react';
 
 export type NavigationSection = 'home' | 'learn' | 'records' | 'manage' | 'more';

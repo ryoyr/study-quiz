@@ -9,29 +9,43 @@ export interface ActiveSessionSnapshot {
   startedAt: string;
 }
 
-const isSnapshot = (value: unknown): value is ActiveSessionSnapshot => {
+export const isActiveSessionSnapshot = (value: unknown): value is ActiveSessionSnapshot => {
   if (!value || typeof value !== 'object') return false;
   const item = value as Partial<ActiveSessionSnapshot>;
-  return Array.isArray(item.questionIds)
-    && item.questionIds.length > 0
-    && item.questionIds.every((id) => typeof id === 'string')
-    && Number.isInteger(item.currentIndex)
-    && (item.currentIndex ?? -1) >= 0
-    && Number.isInteger(item.correctCount)
-    && (item.correctCount ?? -1) >= 0
-    && typeof item.startedAt === 'string';
+  if (
+    !Array.isArray(item.questionIds)
+    || item.questionIds.length === 0
+    || !item.questionIds.every((id) => typeof id === 'string' && id.trim().length > 0)
+    || new Set(item.questionIds).size !== item.questionIds.length
+    || !Number.isInteger(item.currentIndex)
+    || !Number.isInteger(item.correctCount)
+    || typeof item.startedAt !== 'string'
+    || !Number.isFinite(Date.parse(item.startedAt))
+  ) return false;
+
+  const currentIndex = item.currentIndex ?? -1;
+  const correctCount = item.correctCount ?? -1;
+  return currentIndex >= 0
+    && currentIndex < item.questionIds.length
+    && correctCount >= 0
+    && correctCount <= currentIndex;
 };
 
 export const loadActiveSession = (): ActiveSessionSnapshot | null => {
   try {
     const parsed: unknown = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? 'null');
-    return isSnapshot(parsed) ? parsed : null;
+    if (isActiveSessionSnapshot(parsed)) return parsed;
+    localStorage.removeItem(STORAGE_KEY);
+    return null;
   } catch {
+    try { localStorage.removeItem(STORAGE_KEY); }
+    catch { /* 読み書き不可の環境ではメモリ上だけで継続する。 */ }
     return null;
   }
 };
 
 export const saveActiveSession = (snapshot: ActiveSessionSnapshot): ActiveSessionSnapshot => {
+  if (!isActiveSessionSnapshot(snapshot)) throw new Error('中断セッションの状態が不正です。');
   localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
   return snapshot;
 };
@@ -43,5 +57,7 @@ export const resolveActiveSessionQuestions = (
   questions: Question[],
 ): Question[] => {
   const byId = new Map(questions.map((question) => [question.id, question]));
-  return snapshot.questionIds.map((id) => byId.get(id)).filter((item): item is Question => Boolean(item));
+  return snapshot.questionIds
+    .map((id) => byId.get(id))
+    .filter((item): item is Question => Boolean(item));
 };

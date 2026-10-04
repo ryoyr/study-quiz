@@ -1,5 +1,6 @@
 
 
+
 import { useState } from 'react';import type { DailyTimeBudget } from '../services/dailyTimeBudgetService';
 type Props={budget:DailyTimeBudget;onSave:(minutes:number)=>void};const OPTIONS=[0,15,30,60,90];
 const minutes=(seconds:number)=>Number.isFinite(seconds)?Math.round(seconds/60):0;

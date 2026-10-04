@@ -1,3 +1,4 @@
+
 type Props = {
   correctCount: number;
   totalCount: number;

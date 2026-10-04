@@ -1,5 +1,6 @@
 
 
+
 import type { DailyMinimumProgress } from '../services/dailyMinimumService';
 
 type Props = { progress: DailyMinimumProgress };

@@ -1,5 +1,6 @@
 
 
+
 import type { StudyStreak } from '../services/streakService';
 type Props = { streak: StudyStreak };
 export default function StreakCard({ streak }: Props) {

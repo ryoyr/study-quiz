@@ -1,4 +1,5 @@
 
+
 const DATABASE_NAME = 'study-quiz';
 const DATABASE_VERSION = 1;
 

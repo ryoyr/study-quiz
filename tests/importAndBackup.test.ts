@@ -1,3 +1,4 @@
+
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { parseQuestionCsv } from '../src/services/csvImportService.ts';
@@ -33,7 +34,7 @@ test('旧バックアップの回答履歴キーを現行キーへ移行する',
     exportedAt: '2026-10-04T00:00:00.000Z',
     entries: { 'study-quiz-history-v1': '[]' },
   }));
-  assert.equal(backup.version, 3);
+  assert.equal(backup.version, 4);
   assert.equal(backup.entries['study-quiz-answer-history-v1'], '[]');
   assert.equal(backup.entries['study-quiz-history-v1'], undefined);
 });
