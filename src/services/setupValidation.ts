@@ -1,4 +1,5 @@
 
+
 import type { Setup } from '../types/Setup';
 
 export type SetupErrors = Partial<Record<
@@ -23,9 +24,9 @@ const isValidDate = (value: string): boolean => {
   return parsed.getFullYear() === year && parsed.getMonth() === month - 1 && parsed.getDate() === day;
 };
 
-export const validateSetup = (setup: Setup): SetupErrors => {
+export const validateSetup = (setup: Setup, now = new Date()): SetupErrors => {
   const errors: SetupErrors = {};
-  const today = localDate(new Date());
+  const today = localDate(now);
   if (!setup.name.trim()) errors.name = '試験名は必須です。';
   if (!isValidDate(setup.examDate)) errors.examDate = '正しい試験日を入力してください。';
   else if (setup.examDate < today) errors.examDate = '試験日は本日以降です。';

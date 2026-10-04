@@ -1,4 +1,5 @@
 
+
 import type { CorrectionSuggestion, CorrectionSuggestionStatus } from '../types/CorrectionSuggestion';
 const STORAGE_KEY = 'study-quiz-correction-suggestions-v1';
 export const loadCorrectionSuggestions = (): CorrectionSuggestion[] => {

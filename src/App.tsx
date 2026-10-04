@@ -1,8 +1,9 @@
+
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import './App.css';
-import './ui-enhancement.css';
 import { questions } from './data/questions';
 import AppChrome, { type NavigationSection } from './components/AppChrome';
+import AiQuestionPanel from './components/AiQuestionPanel';
 import DailyMinimumCard from './components/DailyMinimumCard';
 import DailyTimeBudgetCard from './components/DailyTimeBudgetCard';
 import FeatureLink from './components/FeatureLink';
@@ -24,9 +25,17 @@ import LearningHistoryPage from './pages/LearningHistoryPage';
 import MistakeNotesPage from './pages/MistakeNotesPage';
 import QuestionManagementPage from './pages/QuestionManagementPage';
 import ResponseSpeedAnalysisPage from './pages/ResponseSpeedAnalysisPage';
+import ResultPage from './pages/ResultPage';
 import SettingsPage from './pages/SettingsPage';
 import StatisticsPage from './pages/StatisticsPage';
 import { loadAiPromptTemplates } from './services/aiPromptTemplateStorage';
+import {
+  clearActiveSession,
+  loadActiveSession,
+  resolveActiveSessionQuestions,
+  saveActiveSession,
+  type ActiveSessionSnapshot,
+} from './services/activeSessionStorage';
 import { calculateDailyMinimumProgress } from './services/dailyMinimumService';
 import {
   calculateDailyTimeBudget,
@@ -45,8 +54,9 @@ import { loadQuestions, saveQuestions } from './services/questionStorage';
 import { loadQuestionStates, saveQuestionStates, updateQuestionStates } from './services/questionStateService';
 import { generateStudySession } from './services/sessionGenerator';
 import { loadCorrectionSuggestions } from './services/correctionSuggestionStorage';
-import { completeInitialSetup } from './services/setupFlow';
 import { loadSetup, saveSetup } from './services/setupStorage';
+import { findSetup, persistSetup } from './infrastructure/repositories/setupRepository';
+import { SaveInitialSetupUseCase } from './application/setup/SaveInitialSetupUseCase';
 import { calculateStudyStreak } from './services/streakService';
 import { selectWeakQuestions } from './services/weakQuestionService';
 import type { AiPromptTemplate } from './types/AiPromptTemplate';
@@ -67,6 +77,7 @@ type Screen =
   | 'more'
   | 'session'
   | 'quiz'
+  | 'result'
   | 'statistics'
   | 'setup'
   | 'questions'
@@ -84,7 +95,7 @@ const calculateInstantScore = (responseTimeSeconds: number, thresholdSeconds: nu
   thresholdSeconds <= 0 ? 0 : Math.max(0, 1 - responseTimeSeconds / thresholdSeconds);
 
 const sectionForScreen = (screen: Screen): NavigationSection => {
-  if (screen === 'learn' || screen === 'session') return 'learn';
+  if (screen === 'learn' || screen === 'session' || screen === 'result') return 'learn';
   if (['records', 'statistics', 'history', 'speedAnalysis', 'mistakeNotes'].includes(screen)) return 'records';
   if (['manage', 'questions', 'csvImport', 'annotations', 'corrections', 'factCheck'].includes(screen)) return 'manage';
   if (['more', 'setup', 'backupCenter', 'aiTemplates'].includes(screen)) return 'more';
@@ -123,25 +134,45 @@ export default function App() {
   const [questionShownAt, setQuestionShownAt] = useState<number | null>(null);
   const [currentResponseTime, setCurrentResponseTime] = useState(0);
   const [currentInstantScore, setCurrentInstantScore] = useState(0);
+  const [resumableSession, setResumableSession] = useState<ActiveSessionSnapshot | null>(null);
+  const [sessionCorrectCount, setSessionCorrectCount] = useState(0);
+  const [sessionResult, setSessionResult] = useState({ correctCount: 0, totalCount: 0 });
+  const [editQuestionId, setEditQuestionId] = useState('');
 
   useEffect(() => {
-    const saved = loadSetup();
-    if (saved) {
-      setSetup(saved);
-      setRequiresInitialSetup(saved.setupCompleted !== true);
-    } else {
-      setRequiresInitialSetup(true);
-    }
-    const loadedHistory = loadHistory();
-    setHistory(loadedHistory);
-    setMistakeNotes(loadMistakeNotes());
-    setAnnotations(loadQuestionAnnotations());
-    setCorrectionSuggestions(loadCorrectionSuggestions());
-    setAiPromptTemplates(loadAiPromptTemplates());
-    setDailyTimeLimit(loadDailyTimeLimit());
-    setQuestionStates(loadQuestionStates(loadedHistory));
-    setStoredQuestions(loadQuestions());
-    setLoaded(true);
+    let cancelled = false;
+    const initialize = async () => {
+      const localSetup = loadSetup();
+      let saved = localSetup;
+      try {
+        const indexedSetup = await findSetup();
+        if (indexedSetup) saved = indexedSetup;
+        else if (localSetup) await persistSetup(localSetup);
+      } catch {
+        // IndexedDBを利用できない環境では既存の端末内データで継続する。
+      }
+      if (cancelled) return;
+      if (saved) {
+        setSetup(saved);
+        saveSetup(saved);
+        setRequiresInitialSetup(saved.setupCompleted !== true);
+      } else {
+        setRequiresInitialSetup(true);
+      }
+      const loadedHistory = loadHistory();
+      setHistory(loadedHistory);
+      setMistakeNotes(loadMistakeNotes());
+      setAnnotations(loadQuestionAnnotations());
+      setCorrectionSuggestions(loadCorrectionSuggestions());
+      setAiPromptTemplates(loadAiPromptTemplates());
+      setDailyTimeLimit(loadDailyTimeLimit());
+      setQuestionStates(loadQuestionStates(loadedHistory));
+      setStoredQuestions(loadQuestions());
+      setResumableSession(loadActiveSession());
+      setLoaded(true);
+    };
+    void initialize();
+    return () => { cancelled = true; };
   }, []);
 
   const categories = useMemo(
@@ -206,7 +237,6 @@ export default function App() {
   const unlearnedCount = Math.max(0, storedQuestions.length - masteredCount - learningCount);
   const correctCount = history.filter((item) => item.correct).length;
   const accuracy = history.length ? Math.round(correctCount / history.length * 100) : 0;
-  const masteryRate = storedQuestions.length ? Math.round(masteredCount / storedQuestions.length * 100) : 0;
 
   const startQuestionTimer = () => setQuestionShownAt(performance.now());
   const resetQuestionState = () => {
@@ -226,9 +256,38 @@ export default function App() {
     setTimeBudgetMessage(fitted.length < targets.length ? `残り時間に合わせて ${fitted.length}問へ調整しました。` : '');
     setActiveQuestions(fitted);
     setQuestionIndex(0);
+    setSessionCorrectCount(0);
     setWeakMessage('');
+    const snapshot = saveActiveSession({
+      questionIds: fitted.map((question) => question.id),
+      currentIndex: 0,
+      correctCount: 0,
+      startedAt: new Date().toISOString(),
+    });
+    setResumableSession(snapshot);
     setScreen('quiz');
     resetQuestionState();
+  };
+  const resumeQuiz = () => {
+    if (!resumableSession) return;
+    const targets = resolveActiveSessionQuestions(resumableSession, storedQuestions);
+    if (targets.length === 0 || resumableSession.currentIndex >= targets.length) {
+      clearActiveSession();
+      setResumableSession(null);
+      return;
+    }
+    setActiveQuestions(targets);
+    setQuestionIndex(resumableSession.currentIndex);
+    setSessionCorrectCount(resumableSession.correctCount);
+    setScreen('quiz');
+    resetQuestionState();
+  };
+  const abandonSession = () => {
+    clearActiveSession();
+    setResumableSession(null);
+    setPendingHistory(null);
+    setSelectedAnswer(null);
+    setShowAnswer(false);
   };
   const beginWeakQuiz = () => {
     const targets = selectWeakQuestions(storedQuestions, history, setup.dailyQuestionLimit);
@@ -285,12 +344,25 @@ export default function App() {
     setQuestionStates(updatedStates);
     saveQuestionStates(updatedStates);
     setPendingHistory(null);
+    const correctCountForSession = sessionCorrectCount + (item.correct ? 1 : 0);
+    setSessionCorrectCount(correctCountForSession);
     if (questionIndex + 1 < activeQuestions.length) {
-      setQuestionIndex((value) => value + 1);
+      const nextIndex = questionIndex + 1;
+      setQuestionIndex(nextIndex);
+      const snapshot = saveActiveSession({
+        questionIds: activeQuestions.map((question) => question.id),
+        currentIndex: nextIndex,
+        correctCount: correctCountForSession,
+        startedAt: resumableSession?.startedAt ?? new Date().toISOString(),
+      });
+      setResumableSession(snapshot);
       resetQuestionState();
     } else {
+      clearActiveSession();
+      setResumableSession(null);
+      setSessionResult({ correctCount: correctCountForSession, totalCount: activeQuestions.length });
       setQuestionIndex(0);
-      setScreen('home');
+      setScreen('result');
       setSelectedAnswer(null);
       setShowAnswer(false);
     }
@@ -321,8 +393,9 @@ export default function App() {
     return (
       <InitialSetupPage
         setup={setup}
-        onSave={(next) => {
-          const completed = completeInitialSetup(next);
+        onSave={async (next) => {
+          const completed = await new SaveInitialSetupUseCase().execute(next);
+          saveSetup(completed);
           setSetup(completed);
           setRequiresInitialSetup(false);
           setScreen('home');
@@ -349,6 +422,8 @@ export default function App() {
       <QuestionManagementPage
         questions={storedQuestions}
         questionStates={questionStates}
+        initialQuestionId={editQuestionId}
+        onInitialEditHandled={() => setEditQuestionId('')}
         onChange={(items) => {
           setStoredQuestions(items);
           saveQuestions(items);
@@ -405,6 +480,11 @@ export default function App() {
         items={correctionSuggestions}
         initialQuestionId={correctionQuestionId}
         onChange={setCorrectionSuggestions}
+        onEditQuestion={(questionId) => {
+          setEditQuestionId(questionId);
+          setCorrectionQuestionId('');
+          setScreen('questions');
+        }}
         onBack={() => {
           setCorrectionQuestionId('');
           setScreen('manage');
@@ -452,8 +532,9 @@ export default function App() {
         setup={setup}
         history={history}
         questionStates={questionStates}
-        onSave={(next) => {
+        onSave={async (next) => {
           const completed = { ...next, setupCompleted: true };
+          await persistSetup(completed);
           setSetup(completed);
           saveSetup(completed);
           setRequiresInitialSetup(false);
@@ -464,6 +545,7 @@ export default function App() {
           setSetup(restored);
           setHistory(nextHistory);
           saveSetup(restored);
+          void persistSetup(restored);
           saveHistory(nextHistory);
           setQuestionStates(nextStates);
           saveQuestionStates(nextStates);
@@ -477,7 +559,6 @@ export default function App() {
     return withChrome(
       <main className="app-shell">
         <section className="home-card">
-          <p className="eyebrow">SESSION</p>
           <h1>学習セッション</h1>
           <div className="exam-summary">
             <div className="summary-row"><span>カテゴリ</span><strong>{selectedCategory}</strong></div>
@@ -492,14 +573,28 @@ export default function App() {
       </main>,
     );
   }
+  if (screen === 'result') {
+    return withChrome(
+      <ResultPage
+        correctCount={sessionResult.correctCount}
+        totalCount={sessionResult.totalCount}
+        onHome={() => setScreen('home')}
+        onRetry={() => beginQuiz(activeQuestions)}
+      />,
+    );
+  }
   if (screen === 'quiz') {
     const question = activeQuestions[questionIndex];
     if (!question) return null;
     return (
       <main className="app-shell quiz-shell">
         <section className="home-card quiz-card">
-          <div className="quiz-progress">{questionIndex + 1} / {activeQuestions.length}</div>
-          <p className="eyebrow">{question.category}</p>
+          <div className="quiz-toolbar">
+            <button type="button" onClick={() => { setResumableSession(loadActiveSession()); setScreen('learn'); }}>中断</button>
+            <div className="quiz-progress" aria-label={`${activeQuestions.length}問中${questionIndex + 1}問目`}>{questionIndex + 1} / {activeQuestions.length}</div>
+          </div>
+          <div className="quiz-progress-track" aria-hidden="true"><span style={{ width: `${(questionIndex + 1) / activeQuestions.length * 100}%` }} /></div>
+          <p className="question-meta">{question.category}{question.subcategory ? ` / ${question.subcategory}` : ''}</p>
           <h1 className="question-title">{question.text}</h1>
           <div className="form-grid">
             {question.choices.map((choice, index) => {
@@ -508,7 +603,7 @@ export default function App() {
               if (!showAnswer && selected) className += ' choice-selected';
               if (showAnswer && index === question.answerIndex) className += ' choice-correct';
               if (showAnswer && selected && index !== question.answerIndex) className += ' choice-wrong';
-              return <button key={choice} className={className} type="button" disabled={showAnswer} onClick={() => setSelectedAnswer(index)}>{choice}</button>;
+              return <button key={`${question.id}-${index}`} className={className} type="button" aria-pressed={selected} disabled={showAnswer} onClick={() => setSelectedAnswer(index)}><span className="choice-index" aria-hidden="true">{String.fromCharCode(65 + index)}</span><span>{choice}</span></button>;
             })}
           </div>
           {selectedAnswer !== null && !showAnswer && <button className="primary-button" type="button" onClick={answerQuestion}>回答する</button>}
@@ -520,14 +615,15 @@ export default function App() {
                 <div className="summary-row"><span>即答スコア</span><strong>{Math.round(currentInstantScore * 100)}%</strong></div>
                 <div className="explanation-row"><span>解説</span><p>{question.explanation}</p></div>
               </div>
+              <AiQuestionPanel question={question} selectedIndex={selectedAnswer} />
               <button className="correction-open-button" type="button" onClick={() => { setCorrectionQuestionId(question.id); setScreen('corrections'); }}>問題の修正を提案</button>
               <div className="fsrs-rating">
                 <p>記憶の状態を選択してください</p>
                 <div className="fsrs-rating-grid">
-                  <button className="rating-again" type="button" onClick={() => applyFsrsRating('AGAIN')}>Again<small>忘れた</small></button>
-                  <button className="rating-hard" type="button" onClick={() => applyFsrsRating('HARD')}>Hard<small>難しい</small></button>
-                  <button className="rating-good" type="button" onClick={() => applyFsrsRating('GOOD')}>Good<small>思い出せた</small></button>
-                  <button className="rating-easy" type="button" onClick={() => applyFsrsRating('EASY')}>Easy<small>簡単</small></button>
+                  <button className="rating-again" type="button" onClick={() => applyFsrsRating('AGAIN')}>忘れた<small>すぐ復習</small></button>
+                  <button className="rating-hard" type="button" onClick={() => applyFsrsRating('HARD')}>難しい<small>短めの間隔</small></button>
+                  <button className="rating-good" type="button" onClick={() => applyFsrsRating('GOOD')}>思い出せた<small>標準の間隔</small></button>
+                  <button className="rating-easy" type="button" onClick={() => applyFsrsRating('EASY')}>簡単<small>長めの間隔</small></button>
                 </div>
               </div>
             </>
@@ -546,6 +642,12 @@ export default function App() {
             <h1>学習</h1>
             <p>今日の計画、学習種別、使える時間から開始方法を選べます。</p>
           </div>
+          {resumableSession && (
+            <section className="resume-session-card" aria-label="中断した学習">
+              <div><span>中断した学習</span><strong>{resumableSession.currentIndex + 1}問目から再開できます</strong></div>
+              <div className="resume-session-actions"><button type="button" onClick={resumeQuiz}>再開</button><button type="button" onClick={abandonSession}>破棄</button></div>
+            </section>
+          )}
           <section className="hub-section">
             <h2>今日の学習計画</h2>
             <div className="compact-plan-grid">
@@ -664,6 +766,13 @@ export default function App() {
           </div>
         </div>
 
+        {resumableSession && (
+          <section className="resume-session-card" aria-label="中断した学習">
+            <div><span>続きから</span><strong>{resumableSession.currentIndex + 1} / {resumableSession.questionIds.length}問</strong></div>
+            <div className="resume-session-actions"><button type="button" onClick={resumeQuiz}>学習を再開</button><button type="button" onClick={abandonSession}>破棄</button></div>
+          </section>
+        )}
+
         <section className="today-action-card">
           <div className="today-action-heading">
             <div><span>今日の学習</span><strong>{sessionPreview.totalCount}問</strong></div>
@@ -699,24 +808,6 @@ export default function App() {
             <strong>{masteredCount}問</strong>
             <small>学習中 {learningCount}・未学習 {unlearnedCount}</small>
           </article>
-        </section>
-
-        <section className="home-activity-card" aria-label="これまでの学習状況">
-          <div className="home-activity-heading">
-            <div>
-              <span>これまでの学習</span>
-              <strong>定着度 {masteryRate}%</strong>
-            </div>
-            <button type="button" onClick={() => setScreen('records')}>詳しく見る ›</button>
-          </div>
-          <div className="home-activity-track" aria-hidden="true">
-            <div style={{ width: `${masteryRate}%` }} />
-          </div>
-          <div className="home-activity-metrics">
-            <span>回答数 <strong>{history.length}問</strong></span>
-            <span>正答率 <strong>{accuracy}%</strong></span>
-            <span>習得済み <strong>{masteredCount}問</strong></span>
-          </div>
         </section>
 
         {forgettingCandidates.length > 0 && (

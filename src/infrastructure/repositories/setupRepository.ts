@@ -1,3 +1,4 @@
+
 import type { Setup } from '../../types/Setup';
 import {
   clearInitialSetupRecords,
@@ -19,7 +20,7 @@ export const findSetup = async (): Promise<Setup | null> => {
     // 画面・ドメイン層は百分率、IndexedDBは設計どおり0.0～1.0で保持する。
     bufferRate: exam.bufferRate * 100,
     instantThresholdSeconds: exam.instantThresholdSeconds,
-    dailyMinimumQuestions: exam.dailyMinimumQuestions,
+    dailyMinimumQuestions: exam.dailyMinimumQuestions ?? Math.min(15, exam.dailyQuestionLimit),
     reservedDates: records.reservedDates.map((item) => item.date),
     setupCompleted: records.setupCompleted,
     createdAt: exam.createdAt,

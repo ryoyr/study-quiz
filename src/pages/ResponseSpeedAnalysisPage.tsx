@@ -1,4 +1,5 @@
 
+
 import { useMemo, useState } from 'react';import type { Question } from '../types/Question';import type { StudyHistory } from '../types/StudyHistory';import { analyzeResponseSpeed, selectSlowQuestions } from '../services/responseSpeedAnalysisService';
 type Props={questions:Question[];history:StudyHistory[];limit:number;onStart:(questions:Question[])=>void;onBack:()=>void};
 const sign=(value:number,unit:string)=>`${value>0?'+':''}${value.toFixed(1)}${unit}`;

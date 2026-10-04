@@ -1,4 +1,5 @@
 
+
 import { useState } from 'react';
 import { validateSetup } from '../services/setupValidation';
 import type { SetupErrors } from '../services/setupValidation';
@@ -6,7 +7,7 @@ import type { Setup } from '../types/Setup';
 
 type Props = {
   setup: Setup;
-  onSave: (setup: Setup) => void;
+  onSave: (setup: Setup) => Promise<void>;
 };
 
 type NumberKey =
@@ -32,12 +33,13 @@ export default function InitialSetupPage({ setup, onSave }: Props) {
   );
   const [errors, setErrors] = useState<SetupErrors>({});
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
 
   const updateNumber = (key: NumberKey, value: string) => {
     setDraft({ ...draft, [key]: value === '' ? 0 : Number(value) });
   };
 
-  const save = () => {
+  const save = async () => {
     if (saving) return;
     const now = new Date().toISOString();
     const next: Setup = {
@@ -50,10 +52,13 @@ export default function InitialSetupPage({ setup, onSave }: Props) {
     };
     const validationErrors = validateSetup(next);
     setErrors(validationErrors);
+    setSaveError('');
     if (Object.keys(validationErrors).length !== 0) return;
     setSaving(true);
     try {
-      onSave(next);
+      await onSave(next);
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : '設定を保存できませんでした。');
     } finally {
       setSaving(false);
     }
@@ -65,7 +70,6 @@ export default function InitialSetupPage({ setup, onSave }: Props) {
   return (
     <main className="app-shell">
       <section className="home-card settings-card">
-        <p className="eyebrow">INITIAL SETUP</p>
         <h1>初回設定</h1>
         <p className="planning-note">
           学習計画に必要な情報を入力してください。保存後はホーム画面へ移動します。
@@ -114,7 +118,8 @@ export default function InitialSetupPage({ setup, onSave }: Props) {
             {error('reservedDates')}
           </label>
         </div>
-        <button className="primary-button" type="button" disabled={saving} onClick={save}>
+        {saveError && <div className="error-box" role="alert">{saveError}</div>}
+        <button className="primary-button" type="button" disabled={saving} onClick={() => void save()}>
           {saving ? '保存中...' : '保存して開始'}
         </button>
       </section>

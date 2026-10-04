@@ -1,3 +1,4 @@
+
 import { useEffect, useState, type ReactNode } from 'react';
 
 export type NavigationSection = 'home' | 'learn' | 'records' | 'manage' | 'more';
@@ -45,17 +46,12 @@ function AppStatusBar({ remainingDays, completedToday, dailyMinimum, streakDays 
   return (
     <header className="app-status-bar" aria-label="学習ステータス">
       <div className="app-status-inner">
-        <div className="app-status-topline">
-          <strong>Study Quiz</strong>
-          <span className={online ? 'connection-status is-online' : 'connection-status is-offline'}>
-            <i aria-hidden="true" />{online ? 'オンライン' : 'オフライン'}
-          </span>
-        </div>
-        <div className="app-status-metrics">
-          <span>{examLabel}</span>
-          <span>{minimumLabel}</span>
-          <span>連続 {streakDays}日</span>
-        </div>
+        <span className={online ? 'connection-status is-online' : 'connection-status is-offline'}>
+          <i aria-hidden="true" />{online ? 'オンライン' : 'オフライン'}
+        </span>
+        <span>{examLabel}</span>
+        <span>{minimumLabel}</span>
+        <span>連続 {streakDays}日</span>
       </div>
     </header>
   );

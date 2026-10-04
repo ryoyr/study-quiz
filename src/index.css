@@ -1,36 +1,5 @@
 
+
 html { min-width: 320px; min-height: 100%; }
 body { margin: 0; min-width: 320px; min-height: 100%; }
 button, a { -webkit-tap-highlight-color: transparent; }
-
-html {
-  background: #dfe7f1;
-  -webkit-text-size-adjust: 100%;
-  text-size-adjust: 100%;
-}
-
-body,
-#root {
-  width: 100%;
-  min-height: 100svh;
-}
-
-body {
-  overflow-x: hidden;
-  overscroll-behavior-y: none;
-  -webkit-font-smoothing: antialiased;
-}
-
-button,
-input,
-select,
-textarea {
-  touch-action: manipulation;
-}
-
-@supports (height: 100dvh) {
-  body,
-  #root {
-    min-height: 100dvh;
-  }
-}

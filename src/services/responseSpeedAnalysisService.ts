@@ -1,4 +1,5 @@
 
+
 import type { Question } from '../types/Question';
 import type { StudyHistory } from '../types/StudyHistory';
 export interface QuestionSpeedAnalysis { question:Question; attempts:number; accuracy:number; averageSeconds:number; recentAverageSeconds:number; responseDeltaSeconds:number; averageInstantScore:number; recentInstantScore:number; instantDelta:number; needsReview:boolean; }
