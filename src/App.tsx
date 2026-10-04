@@ -1,11 +1,13 @@
 import { useMemo, useState } from 'react'
 import './App.css'
 import { questions } from './data/questions'
+import { clearHistory, loadHistory, saveHistory } from './services/historyStorage'
 import type { Question } from './types/Question'
+import type { StudyHistory } from './types/StudyHistory'
 
 type Screen = 'home' | 'quiz' | 'result'
 
-type AnswerResult = {
+type SessionResult = {
   questionId: string
   selectedIndex: number
   correct: boolean
@@ -20,33 +22,63 @@ const shuffle = <T,>(items: T[]): T[] => {
   return copied
 }
 
+const calculatePercentage = (correct: number, total: number): number =>
+  total === 0 ? 0 : Math.round((correct / total) * 100)
+
 function App() {
   const [screen, setScreen] = useState<Screen>('home')
   const [sessionQuestions, setSessionQuestions] = useState<Question[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
   const [answered, setAnswered] = useState(false)
-  const [results, setResults] = useState<AnswerResult[]>([])
+  const [sessionResults, setSessionResults] = useState<SessionResult[]>([])
+  const [history, setHistory] = useState<StudyHistory[]>(() => loadHistory())
 
   const currentQuestion = sessionQuestions[currentIndex]
-  const correctCount = useMemo(() => results.filter((result) => result.correct).length, [results])
+  const sessionCorrectCount = useMemo(
+    () => sessionResults.filter((result) => result.correct).length,
+    [sessionResults],
+  )
+  const totalCorrectCount = useMemo(
+    () => history.filter((entry) => entry.correct).length,
+    [history],
+  )
+  const totalPercentage = calculatePercentage(totalCorrectCount, history.length)
+  const lastStudiedAt = history[0]?.answeredAt
+    ? new Intl.DateTimeFormat('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(history[0].answeredAt))
+    : '未学習'
 
   const startQuiz = () => {
     setSessionQuestions(shuffle(questions))
     setCurrentIndex(0)
     setSelectedIndex(null)
     setAnswered(false)
-    setResults([])
+    setSessionResults([])
     setScreen('quiz')
   }
 
   const submitAnswer = () => {
     if (selectedIndex === null || !currentQuestion) return
+
     const correct = selectedIndex === currentQuestion.answerIndex
-    setResults((current) => [
-      ...current,
-      { questionId: currentQuestion.id, selectedIndex, correct },
-    ])
+    const newSessionResult: SessionResult = {
+      questionId: currentQuestion.id,
+      selectedIndex,
+      correct,
+    }
+    const newHistoryEntry: StudyHistory = {
+      id: crypto.randomUUID(),
+      questionId: currentQuestion.id,
+      category: currentQuestion.category,
+      selectedIndex,
+      correct,
+      answeredAt: new Date().toISOString(),
+    }
+    const updatedHistory = [newHistoryEntry, ...history]
+
+    setSessionResults((current) => [...current, newSessionResult])
+    setHistory(updatedHistory)
+    saveHistory(updatedHistory)
     setAnswered(true)
   }
 
@@ -60,8 +92,14 @@ function App() {
     setAnswered(false)
   }
 
+  const resetHistory = () => {
+    if (!window.confirm('端末に保存された学習履歴を削除しますか？')) return
+    clearHistory()
+    setHistory([])
+  }
+
   if (screen === 'result') {
-    const percentage = Math.round((correctCount / sessionQuestions.length) * 100)
+    const percentage = calculatePercentage(sessionCorrectCount, sessionQuestions.length)
     return (
       <main className="app-shell">
         <section className="home-card result-card" aria-labelledby="result-title">
@@ -69,9 +107,9 @@ function App() {
           <h1 id="result-title">学習結果</h1>
           <div className="score-circle" aria-label={`正答率 ${percentage}%`}>
             <strong>{percentage}%</strong>
-            <span>{correctCount} / {sessionQuestions.length}問正解</span>
+            <span>{sessionCorrectCount} / {sessionQuestions.length}問正解</span>
           </div>
-          <p className="lead">学習おつかれさまでした。もう一度実行すると、問題順がランダムに変わります。</p>
+          <p className="lead">今回の回答は端末内の学習履歴へ保存されました。</p>
           <button className="primary-button large-button" type="button" onClick={startQuiz}>もう一度学習する</button>
           <button className="secondary-button" type="button" onClick={() => setScreen('home')}>ホームへ戻る</button>
         </section>
@@ -104,6 +142,7 @@ function App() {
                     ? 'choice-wrong'
                     : ''
                 : ''
+
               return (
                 <button
                   className={`choice-button ${selected ? 'choice-selected' : ''} ${resultClass}`}
@@ -143,12 +182,23 @@ function App() {
         <div className="brand-mark" aria-hidden="true">Q</div>
         <p className="eyebrow">LOCAL FIRST LEARNING</p>
         <h1 id="app-title">Study Quiz</h1>
-        <p className="lead">すきま時間に学び、忘れる前に復習する。<br />端末内で動く勉強用クイズアプリです。</p>
+        <p className="lead">すきま時間に学び、忘れる前に復習する。<br />回答履歴はこの端末内へ保存されます。</p>
+
+        <div className="stats-grid" aria-label="学習統計">
+          <article><span>累計回答</span><strong>{history.length}</strong><small>問</small></article>
+          <article><span>累計正答率</span><strong>{totalPercentage}</strong><small>%</small></article>
+          <article><span>最終学習</span><strong className="date-value">{lastStudiedAt}</strong></article>
+        </div>
+
         <button className="primary-button large-button" type="button" onClick={startQuiz}>{questions.length}問の学習を開始する</button>
+        {history.length > 0 && (
+          <button className="danger-text-button" type="button" onClick={resetHistory}>学習履歴を削除</button>
+        )}
+
         <div className="feature-grid" aria-label="アプリの特徴">
-          <article><strong>ランダム出題</strong><span>学習開始ごとに問題順を変更</span></article>
+          <article><strong>端末内保存</strong><span>回答履歴をブラウザーへ保存</span></article>
           <article><strong>進捗表示</strong><span>現在の問題数と進捗を確認</span></article>
-          <article><strong>結果確認</strong><span>終了時に正答率を表示</span></article>
+          <article><strong>学習統計</strong><span>累計回答数と正答率を表示</span></article>
         </div>
       </section>
     </main>
