@@ -1,4 +1,3 @@
-
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
@@ -31,13 +30,15 @@ test("ビルドに必要な設定ファイルが揃っている", () => {
   ]) {
     assert.equal(existsSync(path), true, `${path} がありません`);
   }
+
   const packageJson = JSON.parse(readFileSync("package.json", "utf8")) as {
-    scripts?: Record<string, string>;
+    scripts: Record<string, string>;
   };
-  assert.equal(typeof packageJson.scripts?.["verify:structure"], "string");
-  assert.equal(typeof packageJson.scripts?.check, "string");
+
+  assert.equal(typeof packageJson.scripts["verify:structure"], "string");
+  assert.equal(typeof packageJson.scripts.check, "string");
   assert.match(packageJson.scripts.check, /verify:structure/);
-  assert.equal(typeof packageJson.scripts?.build, "string");
+  assert.equal(typeof packageJson.scripts.build, "string");
 });
 
 test("統合済みの旧画面・重複サービス・未参照資材が残っていない", () => {
@@ -52,6 +53,7 @@ test("外部AIへの自動送信実装とHTML直接挿入を含まない", () =>
     readFileSync("src/components/AiQuestionPanel.tsx", "utf8") +
     readFileSync("src/pages/AiPromptTemplatesPage.tsx", "utf8") +
     readFileSync("src/pages/SimilarQuestionGeneratorPage.tsx", "utf8");
+
   assert.doesNotMatch(
     sources,
     /dangerouslySetInnerHTML|generativelanguage\.googleapis\.com/,
@@ -60,12 +62,14 @@ test("外部AIへの自動送信実装とHTML直接挿入を含まない", () =>
 
 test("PWA更新通知と共通エラー境界をアプリルートへ接続している", () => {
   const main = readFileSync("src/main.tsx", "utf8");
+
   assert.match(main, /<ErrorBoundary>/);
   assert.match(main, /<PwaUpdatePrompt\s*\/>/);
 });
 
 test("類似問題生成を管理画面へ統合している", () => {
   const app = readFileSync("src/App.tsx", "utf8");
+
   assert.match(app, /SimilarQuestionGeneratorPage/);
   assert.match(app, /setScreen\("similarQuestion"\)/);
 });
