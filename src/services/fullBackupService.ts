@@ -42,7 +42,7 @@ export const BACKUP_ENTRIES: BackupEntryDefinition[] =
     storageFormat: format,
   }));
 
-const APP_VERSION = "3.0.0";
+const APP_VERSION = "3.0.1";
 const LEGACY_HISTORY_KEY = STORAGE_KEYS.legacyHistory;
 const API_KEY = STORAGE_KEYS.geminiApiKey;
 const LEGACY_MODEL_KEY = STORAGE_KEYS.geminiModel;

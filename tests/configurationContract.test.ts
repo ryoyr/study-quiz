@@ -32,3 +32,25 @@ test("checkは構成検証・単体試験・ビルド・E2Eを順に実行する
     "npm run verify:structure && npm run test && npm run build && npm run test:e2e",
   );
 });
+
+test("CIはロックファイルに基づく再現可能な依存関係を使う", () => {
+  const workflow = readFileSync(".github/workflows/deploy.yml", "utf8");
+  assert.match(workflow, /cache:\s*npm/);
+  assert.match(workflow, /npm ci --no-audit --no-fund/);
+  assert.doesNotMatch(workflow, /npm install --no-audit --no-fund/);
+});
+
+test("アプリ版・ロックファイル・バックアップ版の表示が一致する", () => {
+  const packageJson = readJson("package.json");
+  const packageLock = readJson("package-lock.json");
+  const backupService = readFileSync(
+    "src/services/fullBackupService.ts",
+    "utf8",
+  );
+  assert.equal(packageLock.version, packageJson.version);
+  assert.equal(packageLock.packages[""].version, packageJson.version);
+  assert.match(
+    backupService,
+    new RegExp(`const APP_VERSION = ["']${packageJson.version}["']`),
+  );
+});

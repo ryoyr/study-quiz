@@ -77,7 +77,10 @@ export const openDatabase = (): Promise<IDBDatabase> => {
     });
     request.addEventListener("success", () => {
       const database = request.result;
-      database.addEventListener("versionchange", () => database.close());
+      database.addEventListener("versionchange", () => {
+        databasePromise = null;
+        database.close();
+      });
       resolve(database);
     });
     request.addEventListener("blocked", () => {

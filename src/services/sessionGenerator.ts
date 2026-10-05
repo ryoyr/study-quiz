@@ -9,6 +9,10 @@ import type {
 } from "../types/StudySession";
 import { analyzeWeakQuestions } from "./weakQuestionService.ts";
 import { getEffectiveReservedDates } from "./reservedDayService.ts";
+import {
+  differenceInCalendarDays,
+  formatLocalDate,
+} from "./localDateService.ts";
 type Candidate = {
   question: Question;
   sourceTypes: Set<SourceType>;
@@ -19,16 +23,8 @@ type Candidate = {
   lastAnsweredAt: string;
 };
 const clamp = (v: number) => Math.min(1, Math.max(0, v));
-const dateOnly = (date: Date) =>
-  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-const daysUntil = (date: string, now: Date) => {
-  const target = new Date(`${date}T00:00:00`);
-  const base = new Date(now);
-  base.setHours(0, 0, 0, 0);
-  return Math.ceil((target.getTime() - base.getTime()) / 86400000);
-};
 const countFutureReservedDates = (setup: Setup, now: Date) => {
-  const today = dateOnly(now);
+  const today = formatLocalDate(now);
   const reservedDates = getEffectiveReservedDates(setup, now);
   return reservedDates.length === 0
     ? 0
@@ -43,7 +39,8 @@ export const calculateRequiredNewCount = (
 ) => {
   const effectiveDays = Math.max(
     1,
-    daysUntil(setup.examDate, now) - countFutureReservedDates(setup, now),
+    differenceInCalendarDays(setup.examDate, now) -
+      countFutureReservedDates(setup, now),
   );
   if (remaining === 0) return { effectiveDays, requiredNewCount: 0 };
   const base = Math.ceil(remaining / effectiveDays);

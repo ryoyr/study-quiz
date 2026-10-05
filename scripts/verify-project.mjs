@@ -27,6 +27,9 @@ const readPngSize = (path) => {
 const requiredFiles = [
   "index.html",
   "package.json",
+  "package-lock.json",
+  "README.md",
+  "UPGRADE_REPORT.md",
   "tsconfig.json",
   "tsconfig.app.json",
   "tsconfig.node.json",

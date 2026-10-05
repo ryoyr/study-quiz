@@ -39,7 +39,7 @@ import {
 import {
   clearActiveSession,
   loadActiveSession,
-  resolveActiveSessionQuestions,
+  reconcileActiveSessionSnapshot,
   saveActiveSession,
   type ActiveSessionSnapshot,
 } from "./services/activeSessionStorage";
@@ -83,7 +83,11 @@ import {
   loadCorrectionSuggestions,
   saveCorrectionSuggestions,
 } from "./services/correctionSuggestionStorage";
-import { loadSetup, saveSetup } from "./services/setupStorage";
+import {
+  getRemainingDays,
+  loadSetup,
+  saveSetup,
+} from "./services/setupStorage";
 import { recoverStorageTransaction } from "./services/storageTransaction";
 import { migrateLegacyStorage } from "./services/storageMigration";
 import {
@@ -344,11 +348,7 @@ export default function App() {
     [availableQuestions, history, setup, questionStates, studySelection],
   );
   const remainingDays = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const exam = new Date(setup.examDate);
-    exam.setHours(0, 0, 0, 0);
-    return Math.ceil((exam.getTime() - today.getTime()) / 86400000);
+    return getRemainingDays(setup.examDate);
   }, [setup.examDate]);
   const progressForecast = useMemo(
     () =>
@@ -480,6 +480,20 @@ export default function App() {
     setCurrentInstantScore(0);
     setTimeout(startQuestionTimer, 0);
   };
+  const discardActiveSession = (): boolean => {
+    try {
+      clearActiveSession();
+      setResumableSession(null);
+      return true;
+    } catch (error) {
+      setStorageError(
+        error instanceof Error
+          ? error.message
+          : "中断セッションを削除できませんでした。",
+      );
+      return false;
+    }
+  };
   const beginQuiz = (targets: Question[]) => {
     if (targets.length === 0) return;
     const fitted = fitQuestionsToTimeBudget(targets, dailyTimeBudget);
@@ -521,27 +535,34 @@ export default function App() {
   };
   const resumeQuiz = () => {
     if (!resumableSession) return;
-    const targets = resolveActiveSessionQuestions(
+    const reconciled = reconcileActiveSessionSnapshot(
       resumableSession,
       availableQuestions,
     );
-    if (
-      targets.length === 0 ||
-      resumableSession.currentIndex >= targets.length
-    ) {
-      clearActiveSession();
-      setResumableSession(null);
+    if (!reconciled) {
+      discardActiveSession();
       return;
     }
-    setActiveQuestions(targets);
-    setQuestionIndex(resumableSession.currentIndex);
-    setSessionCorrectCount(resumableSession.correctCount);
+    if (reconciled.changed) {
+      try {
+        saveActiveSession(reconciled.snapshot);
+      } catch (error) {
+        setStorageError(
+          error instanceof Error
+            ? error.message
+            : "中断セッションの補正結果を保存できませんでした。",
+        );
+      }
+    }
+    setActiveQuestions(reconciled.questions);
+    setQuestionIndex(reconciled.snapshot.currentIndex);
+    setSessionCorrectCount(reconciled.snapshot.correctCount);
+    setResumableSession(reconciled.snapshot);
     setScreen("quiz");
     resetQuestionState();
   };
   const abandonSession = () => {
-    clearActiveSession();
-    setResumableSession(null);
+    if (!discardActiveSession()) return;
     setPendingHistory(null);
     setSelectedAnswer(null);
     setShowAnswer(false);

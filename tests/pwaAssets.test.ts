@@ -40,3 +40,9 @@ test("iOS用アイコンとService Workerのプリキャッシュ対象が存在
   assert.match(worker, /matchAll/);
   assert.match(worker, /js\|css/);
 });
+
+test("Service Workerのキャッシュ世代はv3.0.1配布版へ更新されている", () => {
+  const serviceWorker = readFileSync("public/sw.js", "utf8");
+  assert.match(serviceWorker, /study-quiz-shell-/);
+  assert.match(serviceWorker, /CACHE_NAME = `\$\{CACHE_PREFIX\}v13`/);
+});

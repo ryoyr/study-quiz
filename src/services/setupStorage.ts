@@ -2,6 +2,7 @@ import { LPIC101_EXAM_SCOPE_ID } from "../types/ExamScope";
 import type { MasteryFilter, QuestionMode, Setup, ThemePreference } from "../types/Setup";
 import { STORAGE_KEYS } from "./storageKeyRegistry.ts";
 import { legacyCategoryFromCategories, normalizeStudyCategories } from "./studyRangeService.ts";
+import { differenceInCalendarDays } from "./localDateService.ts";
 
 const STORAGE_KEY = STORAGE_KEYS.setup;
 const MASTERY_FILTERS: MasteryFilter[] = ["ALL", "UNLEARNED", "LEARNING", "MASTERED"];
@@ -57,9 +58,7 @@ export const saveSetup = (setup: Setup): void => {
 
 export const clearSetup = (): void => localStorage.removeItem(STORAGE_KEY);
 
-export const getRemainingDays = (examDate: string): number => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const exam = new Date(`${examDate}T00:00:00`);
-  return Math.ceil((exam.getTime() - today.getTime()) / 86400000);
-};
+export const getRemainingDays = (
+  examDate: string,
+  now = new Date(),
+): number => differenceInCalendarDays(examDate, now);

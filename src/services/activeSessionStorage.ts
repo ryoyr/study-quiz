@@ -10,6 +10,12 @@ export interface ActiveSessionSnapshot {
   startedAt: string;
 }
 
+export interface ReconciledActiveSession {
+  snapshot: ActiveSessionSnapshot;
+  questions: Question[];
+  changed: boolean;
+}
+
 export const isActiveSessionSnapshot = (
   value: unknown,
 ): value is ActiveSessionSnapshot => {
@@ -72,9 +78,40 @@ export const clearActiveSession = (): void =>
 export const resolveActiveSessionQuestions = (
   snapshot: ActiveSessionSnapshot,
   questions: Question[],
-): Question[] => {
+): Question[] => reconcileActiveSessionSnapshot(snapshot, questions)?.questions ?? [];
+
+/**
+ * セッション保存後に問題がアーカイブ・削除された場合でも、未回答の先頭を
+ * 正しい再開位置に補正する。回答済み件数も現存する出題数の範囲へ収める。
+ */
+export const reconcileActiveSessionSnapshot = (
+  snapshot: ActiveSessionSnapshot,
+  questions: Question[],
+): ReconciledActiveSession | null => {
   const byId = new Map(questions.map((question) => [question.id, question]));
-  return snapshot.questionIds
-    .map((id) => byId.get(id))
-    .filter((item): item is Question => Boolean(item));
+  const answeredIds = snapshot.questionIds
+    .slice(0, snapshot.currentIndex)
+    .filter((id) => byId.has(id));
+  const unansweredIds = snapshot.questionIds
+    .slice(snapshot.currentIndex)
+    .filter((id) => byId.has(id));
+  if (unansweredIds.length === 0) return null;
+
+  const questionIds = [...answeredIds, ...unansweredIds];
+  const currentIndex = answeredIds.length;
+  const reconciled: ActiveSessionSnapshot = {
+    ...snapshot,
+    questionIds,
+    currentIndex,
+    correctCount: Math.min(snapshot.correctCount, currentIndex),
+  };
+  const changed =
+    currentIndex !== snapshot.currentIndex ||
+    reconciled.correctCount !== snapshot.correctCount ||
+    questionIds.length !== snapshot.questionIds.length;
+  return {
+    snapshot: reconciled,
+    questions: questionIds.map((id) => byId.get(id) as Question),
+    changed,
+  };
 };

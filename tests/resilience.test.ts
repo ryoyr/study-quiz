@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { isActiveSessionSnapshot } from "../src/services/activeSessionStorage.ts";
+import {
+  isActiveSessionSnapshot,
+  reconcileActiveSessionSnapshot,
+} from "../src/services/activeSessionStorage.ts";
 import {
   createFullBackup,
   parseFullBackup,
@@ -8,6 +11,7 @@ import {
   type FullBackupFile,
 } from "../src/services/fullBackupService.ts";
 import { migrateLegacyStorage } from "../src/services/storageMigration.ts";
+import type { Question } from "../src/types/Question.ts";
 
 class MemoryStorage {
   private readonly values = new Map<string, string>();
@@ -161,4 +165,47 @@ test("中断セッションは範囲外位置・重複ID・不正日時を拒否
     }),
     false,
   );
+});
+
+test("中断後に問題が削除されても未回答の先頭から安全に再開する", () => {
+  const question = (id: string): Question => ({
+    id,
+    examScopeId: "lpic101",
+    category: "101.1",
+    text: id,
+    choices: ["A", "B"],
+    answerIndex: 0,
+    explanation: "",
+    weight: 1,
+    difficulty: 1,
+  });
+  const reconciled = reconcileActiveSessionSnapshot(
+    {
+      questionIds: ["Q-1", "Q-2", "Q-3"],
+      currentIndex: 1,
+      correctCount: 1,
+      startedAt: "2026-10-05T00:00:00.000Z",
+    },
+    [question("Q-2"), question("Q-3")],
+  );
+
+  assert.ok(reconciled);
+  assert.deepEqual(reconciled.snapshot.questionIds, ["Q-2", "Q-3"]);
+  assert.equal(reconciled.snapshot.currentIndex, 0);
+  assert.equal(reconciled.snapshot.correctCount, 0);
+  assert.deepEqual(reconciled.questions.map((item) => item.id), ["Q-2", "Q-3"]);
+  assert.equal(reconciled.changed, true);
+});
+
+test("中断セッションの未回答問題がすべて削除済みなら再開しない", () => {
+  const reconciled = reconcileActiveSessionSnapshot(
+    {
+      questionIds: ["Q-1", "Q-2"],
+      currentIndex: 1,
+      correctCount: 1,
+      startedAt: "2026-10-05T00:00:00.000Z",
+    },
+    [],
+  );
+  assert.equal(reconciled, null);
 });
