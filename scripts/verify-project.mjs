@@ -71,7 +71,6 @@ const retiredPaths = [
   "src/pages/QuizPage.tsx",
   "src/pages/SetupPage.tsx",
   "src/services/backupService.ts",
-  "src/services/geminiService.ts",
   "src/services/setupFlow.ts",
   "src/services/sessionService.ts",
   "src/types/AppScreen.ts",

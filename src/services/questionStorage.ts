@@ -3,6 +3,8 @@ import type { Question } from "../types/Question";
 import { STORAGE_KEYS } from "./storageKeyRegistry.ts";
 
 const STORAGE_KEY = STORAGE_KEYS.questions;
+const SEED_VERSION_KEY = STORAGE_KEYS.questionSeedVersion;
+const CURRENT_SEED_VERSION = "2";
 
 const isQuestion = (value: unknown): value is Question => {
   if (!value || typeof value !== "object") return false;
@@ -48,7 +50,18 @@ export const loadQuestions = (): Question[] => {
     if (parsed.length === 0) return [];
     const valid = parsed.filter(isQuestion);
     const unique = [...new Map(valid.map((item) => [item.id, item])).values()];
-    return unique.length > 0 ? unique : [...seedQuestions];
+    if (unique.length === 0) return [...seedQuestions];
+
+    if (localStorage.getItem(SEED_VERSION_KEY) !== CURRENT_SEED_VERSION) {
+      const ids = new Set(unique.map((item) => item.id));
+      const upgraded = [
+        ...unique,
+        ...seedQuestions.filter((item) => !ids.has(item.id)),
+      ];
+      saveQuestions(upgraded);
+      return upgraded;
+    }
+    return unique;
   } catch {
     return [...seedQuestions];
   }
@@ -62,5 +75,5 @@ export const saveQuestions = (items: Question[]): void => {
     throw new Error("問題IDが重複しているため保存できません。");
   }
   localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+  localStorage.setItem(SEED_VERSION_KEY, CURRENT_SEED_VERSION);
 };
-

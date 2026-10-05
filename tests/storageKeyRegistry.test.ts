@@ -40,8 +40,8 @@ test("バックアップ対象はRegistryの定義と一致し、内部・廃止
     expected,
   );
   assert.equal(expected.includes(STORAGE_KEYS.transactionJournal), false);
-  assert.equal(expected.includes(STORAGE_KEYS.legacyGeminiApiKey), false);
-  assert.equal(expected.includes(STORAGE_KEYS.legacyGeminiModel), false);
+  assert.equal(expected.includes(STORAGE_KEYS.geminiApiKey), false);
+  assert.equal(expected.includes(STORAGE_KEYS.geminiModel), false);
 });
 
 test("物理ストレージキーをRegistry以外の実装へ直書きしない", () => {

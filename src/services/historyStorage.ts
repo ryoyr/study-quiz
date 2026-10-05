@@ -75,4 +75,3 @@ export const saveHistory = (history: StudyHistory[]): void => {
 };
 
 export const clearHistory = (): void => localStorage.removeItem(STORAGE_KEY);
-

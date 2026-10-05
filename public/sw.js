@@ -1,7 +1,7 @@
 
 
 const CACHE_PREFIX = "study-quiz-shell-";
-const CACHE_NAME = `${CACHE_PREFIX}v9`;
+const CACHE_NAME = `${CACHE_PREFIX}v10`;
 const BASE_URL = new URL("./", self.registration.scope);
 const APP_SHELL = [
   "./",
@@ -104,4 +104,3 @@ self.addEventListener("fetch", (event) => {
     }),
   );
 });
-

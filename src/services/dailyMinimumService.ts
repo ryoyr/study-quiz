@@ -32,4 +32,3 @@ export const calculateDailyMinimumProgress = (
     achieved: completed >= normalizedMinimum,
   };
 };
-

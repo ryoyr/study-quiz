@@ -335,6 +335,29 @@ const run = async () => {
       );
       reports.push(await evaluate(client, auditExpression(heading)));
     }
+    await client.send("Emulation.setDeviceMetricsOverride", {
+      width: 393,
+      height: 852,
+      deviceScaleFactor: 1,
+      mobile: true,
+    });
+    await clickNavigation(client, "その他");
+    await waitFor(client, `document.querySelector("main h1")?.textContent?.trim() === "その他"`, "その他画面");
+    await clickButton(client, "設定");
+    await waitFor(client, `document.querySelector("main h1")?.textContent?.trim() === "学習設定"`, "iPhone幅の設定画面");
+    reports.push(await evaluate(client, auditExpression("学習設定（393px）")));
+    const dateInputFits = await evaluate(
+      client,
+      `(() => { const input = document.querySelector('input[type="date"]'); if (!input) return false; const rect = input.getBoundingClientRect(); return rect.left >= 0 && rect.right <= document.documentElement.clientWidth + 1; })()`,
+    );
+    if (!dateInputFits) failures.push("学習設定（393px）: 試験日入力が画面幅からはみ出しています。");
+    const chromeBehavior = await evaluate(
+      client,
+      `(async () => { window.scrollTo(0, document.documentElement.scrollHeight); await new Promise((resolve) => setTimeout(resolve, 120)); const header = document.querySelector('.app-status-bar'); const bottom = document.querySelector('.bottom-navigation'); return { headerScrolledAway: Boolean(header && header.getBoundingClientRect().bottom <= 1), bottomFixed: Boolean(bottom && getComputedStyle(bottom).position === 'fixed') }; })()`,
+    );
+    if (!chromeBehavior.headerScrolledAway) failures.push("上部ステータスがスクロール後も画面上部に残っています。");
+    if (!chromeBehavior.bottomFixed) failures.push("下部ナビゲーションが固定表示ではありません。");
+    await evaluate(client, "window.scrollTo(0, 0); true");
     await evaluate(client, "document.activeElement?.blur(); document.body.focus(); true");
     await client.send("Input.dispatchKeyEvent", { type: "keyDown", key: "Tab", code: "Tab", windowsVirtualKeyCode: 9 });
     await client.send("Input.dispatchKeyEvent", { type: "keyUp", key: "Tab", code: "Tab", windowsVirtualKeyCode: 9 });
@@ -352,7 +375,7 @@ const run = async () => {
     if (failures.length) {
       throw new Error(`E2Eアクセシビリティ試験で${failures.length}件の問題を検出しました。\n${failures.map((item) => `- ${item}`).join("\n")}`);
     }
-    console.log(`E2Eアクセシビリティ試験に成功しました（${reports.length}画面、320x568、主要ナビゲーション、入力エラー、キーボード、AXツリー）。`);
+    console.log(`E2Eアクセシビリティ試験に成功しました（${reports.length}画面、320x568・393x852、主要ナビゲーション、固定表示、入力エラー、キーボード、AXツリー）。`);
   } finally {
     try {
       await client?.send("Browser.close");

@@ -83,6 +83,7 @@ import {
 } from "./infrastructure/repositories/setupRepository";
 import { SaveInitialSetupUseCase } from "./application/setup/SaveInitialSetupUseCase";
 import { calculateStudyStreak } from "./services/streakService";
+import { getEffectiveReservedDates } from "./services/reservedDayService";
 import { selectWeakQuestions } from "./services/weakQuestionService";
 import type { AiPromptTemplate } from "./types/AiPromptTemplate";
 import type { CorrectionSuggestion } from "./types/CorrectionSuggestion";
@@ -348,8 +349,8 @@ export default function App() {
     [availableQuestions, history],
   );
   const studyStreak = useMemo(
-    () => calculateStudyStreak(history, setup.reservedDates),
-    [history, setup.reservedDates],
+    () => calculateStudyStreak(history, getEffectiveReservedDates(setup)),
+    [history, setup],
   );
   const finalReviewPlan = useMemo(
     () =>
@@ -1355,7 +1356,7 @@ export default function App() {
             <FeatureLink
               icon="⚙"
               title="設定"
-              description="試験日、上限、予約日、判定条件"
+              description="試験日、非学習日、Gemini API、判定条件"
               tone="slate"
               onClick={() => setScreen("setup")}
             />
@@ -1369,7 +1370,7 @@ export default function App() {
             <FeatureLink
               icon="AI"
               title="AI質問テンプレート"
-              description="問題コンテキスト付きプロンプトを生成"
+              description="問題コンテキスト付きプロンプトを管理"
               tone="violet"
               onClick={() => setScreen("aiTemplates")}
             />
@@ -1384,7 +1385,7 @@ export default function App() {
               <strong>PWA・オフライン対応</strong>
             </div>
             <p>
-              通常の学習データは端末内に保存します。AI補助機能は質問文を生成するだけで、アプリから外部サービスへ自動送信しません。
+              通常の学習データは端末内に保存します。Geminiを設定した場合だけ、利用者が送信操作を行った質問内容をGemini APIへ送ります。APIキーはバックアップへ含めません。
             </p>
           </section>
         </section>
@@ -1520,5 +1521,3 @@ export default function App() {
     </main>,
   );
 }
-
-

@@ -115,4 +115,3 @@ export const getMasteryLabel = (level: MasteryLevel): string =>
     : level === "LEARNING"
       ? "学習中"
       : "未学習";
-

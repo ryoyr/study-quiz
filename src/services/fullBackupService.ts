@@ -42,14 +42,15 @@ export const BACKUP_ENTRIES: BackupEntryDefinition[] =
 
 const APP_VERSION = "1.2.0";
 const LEGACY_HISTORY_KEY = STORAGE_KEYS.legacyHistory;
-const API_KEY = STORAGE_KEYS.legacyGeminiApiKey;
-const LEGACY_MODEL_KEY = STORAGE_KEYS.legacyGeminiModel;
+const API_KEY = STORAGE_KEYS.geminiApiKey;
+const LEGACY_MODEL_KEY = STORAGE_KEYS.geminiModel;
 const definitionsByKey = new Map(
   BACKUP_ENTRIES.map((item) => [item.key, item]),
 );
 const supportedKeys = new Set([
   ...definitionsByKey.keys(),
   LEGACY_HISTORY_KEY,
+  API_KEY,
   LEGACY_MODEL_KEY,
 ]);
 const isoDate = (value: unknown): value is string =>
@@ -471,8 +472,6 @@ export const restoreFullBackup = (
         value: backup.entries[key] ?? null,
       })),
       { key: LEGACY_HISTORY_KEY, value: null },
-      { key: API_KEY, value: null },
-      { key: LEGACY_MODEL_KEY, value: null },
     ],
     storage,
   );
@@ -486,4 +485,3 @@ export const inspectBackup = (backup: FullBackupFile) =>
   }));
 
 export const backupErrorMessage = errorMessage;
-

@@ -1,6 +1,7 @@
 
 
 import type { Setup } from '../types/Setup';
+import { getEffectiveReservedDates } from './reservedDayService';
 
 const dateOnly = (date: Date): string =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
@@ -14,7 +15,7 @@ const daysUntil = (date: string, now: Date): number => {
 
 const countFutureReservedDates = (setup: Setup, now: Date): number => {
   const today = dateOnly(now);
-  return [...new Set(setup.reservedDates ?? [])]
+  return getEffectiveReservedDates(setup, now)
     .filter((date) => date >= today && date < setup.examDate)
     .length;
 };
@@ -27,4 +28,3 @@ export const calculateRequiredNewCount = (remaining: number, setup: Setup, now =
   const requiredNewCount = Math.min(remaining, setup.dailyNewLimit, buffered);
   return { effectiveDays, requiredNewCount };
 };
-

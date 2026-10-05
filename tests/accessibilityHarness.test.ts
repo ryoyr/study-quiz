@@ -16,10 +16,13 @@ test("E2E試験は主要画面・狭幅・フォーカス・AXツリーを検査
   for (const token of [
     "Emulation.setDeviceMetricsOverride",
     "width: 320",
+    "width: 393",
     "Accessibility.getFullAXTree",
     "Input.dispatchKeyEvent",
     "aria-invalid",
     "scrollWidth",
+    "headerScrolledAway",
+    "bottomFixed",
     '["学習", "学習"]',
     '["記録", "記録・分析"]',
     '["管理", "問題・教材管理"]',

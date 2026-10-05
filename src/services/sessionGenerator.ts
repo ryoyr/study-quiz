@@ -8,6 +8,7 @@ import type {
   StudySessionItem,
 } from "../types/StudySession";
 import { analyzeWeakQuestions } from "./weakQuestionService.ts";
+import { getEffectiveReservedDates } from "./reservedDayService.ts";
 type Candidate = {
   question: Question;
   sourceTypes: Set<SourceType>;
@@ -28,9 +29,10 @@ const daysUntil = (date: string, now: Date) => {
 };
 const countFutureReservedDates = (setup: Setup, now: Date) => {
   const today = dateOnly(now);
-  return new Set(setup.reservedDates ?? []).size === 0
+  const reservedDates = getEffectiveReservedDates(setup, now);
+  return reservedDates.length === 0
     ? 0
-    : [...new Set(setup.reservedDates ?? [])].filter(
+    : reservedDates.filter(
         (date) => date >= today && date < setup.examDate,
       ).length;
 };
@@ -165,4 +167,3 @@ export const generateStudySession = (
     requiredNewCount,
   };
 };
-

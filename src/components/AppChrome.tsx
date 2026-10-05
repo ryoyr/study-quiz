@@ -1,4 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
+import GlobalAiChat from "./GlobalAiChat";
+import NavIcon from "./NavIcon";
 
 export type NavigationSection =
   | "home"
@@ -19,19 +21,18 @@ type NavigationProps = {
   onNavigate: (section: NavigationSection) => void;
 };
 
-type FrameProps = StatusProps &
-  NavigationProps & {
-    children: ReactNode;
-  };
+type FrameProps = StatusProps & NavigationProps & { children: ReactNode };
 
-const NAV_ITEMS: Array<{ id: NavigationSection; icon: string; label: string }> =
-  [
-    { id: "home", icon: "⌂", label: "ホーム" },
-    { id: "learn", icon: "▶", label: "学習" },
-    { id: "records", icon: "▥", label: "記録" },
-    { id: "manage", icon: "▦", label: "管理" },
-    { id: "more", icon: "•••", label: "その他" },
-  ];
+const NAV_ITEMS: Array<{
+  id: NavigationSection;
+  label: string;
+}> = [
+  { id: "home", label: "ホーム" },
+  { id: "learn", label: "学習" },
+  { id: "records", label: "記録" },
+  { id: "manage", label: "管理" },
+  { id: "more", label: "その他" },
+];
 
 function AppStatusBar({
   remainingDays,
@@ -67,13 +68,7 @@ function AppStatusBar({
   return (
     <header className="app-status-bar" aria-label="学習ステータス">
       <div className="app-status-inner">
-        <span
-          className={
-            online
-              ? "connection-status is-online"
-              : "connection-status is-offline"
-          }
-        >
+        <span className={online ? "connection-status is-online" : "connection-status is-offline"}>
           <i aria-hidden="true" />
           {online ? "オンライン" : "オフライン"}
         </span>
@@ -93,16 +88,12 @@ function BottomNavigation({ active, onNavigate }: NavigationProps) {
           <button
             key={item.id}
             type="button"
-            className={
-              active === item.id
-                ? "bottom-nav-item is-active"
-                : "bottom-nav-item"
-            }
+            className={active === item.id ? "bottom-nav-item is-active" : "bottom-nav-item"}
             aria-current={active === item.id ? "page" : undefined}
             onClick={() => onNavigate(item.id)}
           >
             <span className="bottom-nav-icon" aria-hidden="true">
-              {item.icon}
+              <NavIcon name={item.id} />
             </span>
             <span>{item.label}</span>
           </button>
@@ -130,8 +121,8 @@ export default function AppChrome({
         streakDays={streakDays}
       />
       {children}
+      <GlobalAiChat />
       <BottomNavigation active={active} onNavigate={onNavigate} />
     </div>
   );
 }
-

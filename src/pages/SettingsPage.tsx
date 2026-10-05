@@ -1,4 +1,7 @@
 import { useState } from "react";
+import GeminiSettingsSection from "../components/GeminiSettingsSection";
+import NonStudyDayPicker from "../components/NonStudyDayPicker";
+import { normalizeReservedDates, normalizeReservedWeekdays } from "../services/reservedDayService";
 import { validateSetup, type SetupErrors } from "../services/setupValidation";
 import type { Setup } from "../types/Setup";
 
@@ -15,20 +18,12 @@ type NumberKey =
   | "instantThresholdSeconds"
   | "dailyMinimumQuestions";
 
-const parseReservedDates = (value: string): string[] =>
-  value
-    .split(/[\s,、]+/)
-    .map((item) => item.trim())
-    .filter(Boolean);
-
 export default function SettingsPage({ setup, onSave, onCancel }: Props) {
   const [draft, setDraft] = useState<Setup>({
     ...setup,
     reservedDates: setup.reservedDates ?? [],
+    reservedWeekdays: setup.reservedWeekdays ?? [],
   });
-  const [reservedDatesText, setReservedDatesText] = useState(
-    (setup.reservedDates ?? []).join(", "),
-  );
   const [errors, setErrors] = useState<SetupErrors>({});
   const [saveError, setSaveError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -45,7 +40,8 @@ export default function SettingsPage({ setup, onSave, onCancel }: Props) {
     const next: Setup = {
       ...draft,
       name: draft.name.trim(),
-      reservedDates: parseReservedDates(reservedDatesText),
+      reservedDates: normalizeReservedDates(draft.reservedDates),
+      reservedWeekdays: normalizeReservedWeekdays(draft.reservedWeekdays),
       updatedAt: new Date().toISOString(),
     };
     const validationErrors = validateSetup(next);
@@ -83,161 +79,77 @@ export default function SettingsPage({ setup, onSave, onCancel }: Props) {
       <section className="home-card settings-card">
         <h1>学習設定</h1>
         <p className="planning-note">
-          バックアップと復元は「その他」→「完全バックアップ」で管理できます。
+          試験計画、学習しない日、Gemini連携をまとめて設定できます。
         </p>
-        <div className="form-grid">
+        <div className="form-grid settings-form-grid">
           <label className="form-item">
             <span>試験名</span>
             <input
               {...errorProps("name")}
               maxLength={120}
               value={draft.name}
-              onChange={(event) =>
-                setDraft({ ...draft, name: event.target.value })
-              }
+              onChange={(event) => setDraft({ ...draft, name: event.target.value })}
             />
             {fieldError("name")}
           </label>
-          <label className="form-item">
+          <label className="form-item date-form-item">
             <span>試験日</span>
             <input
               {...errorProps("examDate")}
               type="date"
               value={draft.examDate}
-              onChange={(event) =>
-                setDraft({ ...draft, examDate: event.target.value })
-              }
+              onChange={(event) => setDraft({ ...draft, examDate: event.target.value })}
             />
             {fieldError("examDate")}
           </label>
           <label className="form-item">
             <span>1日の新規問題上限</span>
-            <input
-              {...errorProps("dailyNewLimit")}
-              inputMode="numeric"
-              type="number"
-              min="1"
-              max="500"
-              value={
-                Number.isNaN(draft.dailyNewLimit) ? "" : draft.dailyNewLimit
-              }
-              onChange={(event) =>
-                updateNumber("dailyNewLimit", event.target.value)
-              }
-            />
+            <input {...errorProps("dailyNewLimit")} inputMode="numeric" type="number" min="1" max="500" value={Number.isNaN(draft.dailyNewLimit) ? "" : draft.dailyNewLimit} onChange={(event) => updateNumber("dailyNewLimit", event.target.value)} />
             {fieldError("dailyNewLimit")}
           </label>
           <label className="form-item">
             <span>1日の総問題数上限</span>
-            <input
-              {...errorProps("dailyQuestionLimit")}
-              inputMode="numeric"
-              type="number"
-              min="1"
-              max="1000"
-              value={
-                Number.isNaN(draft.dailyQuestionLimit)
-                  ? ""
-                  : draft.dailyQuestionLimit
-              }
-              onChange={(event) =>
-                updateNumber("dailyQuestionLimit", event.target.value)
-              }
-            />
+            <input {...errorProps("dailyQuestionLimit")} inputMode="numeric" type="number" min="1" max="1000" value={Number.isNaN(draft.dailyQuestionLimit) ? "" : draft.dailyQuestionLimit} onChange={(event) => updateNumber("dailyQuestionLimit", event.target.value)} />
             {fieldError("dailyQuestionLimit")}
           </label>
           <label className="form-item">
             <span>バッファ率（%）</span>
-            <input
-              {...errorProps("bufferRate")}
-              inputMode="decimal"
-              type="number"
-              min="0"
-              max="100"
-              step="0.1"
-              value={Number.isNaN(draft.bufferRate) ? "" : draft.bufferRate}
-              onChange={(event) =>
-                updateNumber("bufferRate", event.target.value)
-              }
-            />
+            <input {...errorProps("bufferRate")} inputMode="decimal" type="number" min="0" max="100" step="0.1" value={Number.isNaN(draft.bufferRate) ? "" : draft.bufferRate} onChange={(event) => updateNumber("bufferRate", event.target.value)} />
             {fieldError("bufferRate")}
           </label>
           <label className="form-item">
             <span>即答判定秒数</span>
-            <input
-              {...errorProps("instantThresholdSeconds")}
-              inputMode="numeric"
-              type="number"
-              min="1"
-              max="3600"
-              value={
-                Number.isNaN(draft.instantThresholdSeconds)
-                  ? ""
-                  : draft.instantThresholdSeconds
-              }
-              onChange={(event) =>
-                updateNumber("instantThresholdSeconds", event.target.value)
-              }
-            />
+            <input {...errorProps("instantThresholdSeconds")} inputMode="numeric" type="number" min="1" max="3600" value={Number.isNaN(draft.instantThresholdSeconds) ? "" : draft.instantThresholdSeconds} onChange={(event) => updateNumber("instantThresholdSeconds", event.target.value)} />
             {fieldError("instantThresholdSeconds")}
           </label>
           <label className="form-item">
             <span>今日の最低ライン（問）</span>
-            <input
-              {...errorProps("dailyMinimumQuestions")}
-              inputMode="numeric"
-              type="number"
-              min="1"
-              max={draft.dailyQuestionLimit || 1}
-              value={
-                Number.isNaN(draft.dailyMinimumQuestions)
-                  ? ""
-                  : draft.dailyMinimumQuestions
-              }
-              onChange={(event) =>
-                updateNumber("dailyMinimumQuestions", event.target.value)
-              }
-            />
+            <input {...errorProps("dailyMinimumQuestions")} inputMode="numeric" type="number" min="1" max={draft.dailyQuestionLimit || 1} value={Number.isNaN(draft.dailyMinimumQuestions) ? "" : draft.dailyMinimumQuestions} onChange={(event) => updateNumber("dailyMinimumQuestions", event.target.value)} />
             <small>忙しい日に最低限回答する問題数です。</small>
             {fieldError("dailyMinimumQuestions")}
           </label>
-          <label className="form-item">
-            <span>学習しない日</span>
-            <input
-              {...errorProps("reservedDates")}
-              value={reservedDatesText}
-              onChange={(event) => setReservedDatesText(event.target.value)}
-              placeholder="2026-10-10, 2026-10-15"
-            />
-            <small>
-              カンマまたは空白区切り。本日から試験日前日まで指定できます。
-            </small>
-            {fieldError("reservedDates")}
-          </label>
         </div>
-        {saveError && (
-          <div className="error-box" role="alert">
-            {saveError}
-          </div>
-        )}
-        <button
-          className="primary-button"
-          type="button"
-          disabled={saving}
-          onClick={() => void save()}
-        >
-          {saving ? "保存中..." : "設定を保存"}
-        </button>
-        <button
-          className="secondary-button"
-          type="button"
-          disabled={saving}
-          onClick={onCancel}
-        >
-          変更せず戻る
-        </button>
+        <NonStudyDayPicker
+          examDate={draft.examDate}
+          reservedDates={draft.reservedDates}
+          reservedWeekdays={draft.reservedWeekdays ?? []}
+          error={errors.reservedDates}
+          errorId="settings-reservedDates-error"
+          onChange={(reservedDates, reservedWeekdays) =>
+            setDraft((current) => ({ ...current, reservedDates, reservedWeekdays }))
+          }
+        />
+        {saveError && <div className="error-box" role="alert">{saveError}</div>}
+        <div className="settings-save-actions">
+          <button className="primary-button" type="button" disabled={saving} onClick={() => void save()}>
+            {saving ? "保存中..." : "学習設定を保存"}
+          </button>
+          <button className="secondary-button" type="button" disabled={saving} onClick={onCancel}>
+            変更せず戻る
+          </button>
+        </div>
+        <GeminiSettingsSection />
       </section>
     </main>
   );
 }
-

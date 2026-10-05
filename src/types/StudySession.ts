@@ -20,4 +20,3 @@ export interface GeneratedStudySession {
   effectiveDays: number;
   requiredNewCount: number;
 }
-

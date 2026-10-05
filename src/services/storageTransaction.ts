@@ -159,4 +159,3 @@ export const executeStorageTransaction = (
 };
 
 export const STORAGE_TRANSACTION_JOURNAL_KEY = JOURNAL_KEY;
-

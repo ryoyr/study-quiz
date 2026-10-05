@@ -7,6 +7,8 @@ export interface Setup {
   instantThresholdSeconds: number;
   dailyMinimumQuestions: number;
   reservedDates: string[];
+  /** 0=日曜 ... 6=土曜。個別日付とは別に毎週の非学習日を保持する。 */
+  reservedWeekdays?: number[];
   setupCompleted: boolean;
   createdAt: string;
   updatedAt: string;
@@ -24,7 +26,7 @@ export const createDefaultSetup = (): Setup => {
   examDate.setDate(examDate.getDate() + 60);
   const now = new Date().toISOString();
   return {
-    name: "LinuC 101",
+    name: "LPIC-1 101",
     examDate: localDate(examDate),
     dailyNewLimit: 10,
     dailyQuestionLimit: 20,
@@ -32,9 +34,9 @@ export const createDefaultSetup = (): Setup => {
     instantThresholdSeconds: 30,
     dailyMinimumQuestions: 15,
     reservedDates: [],
+    reservedWeekdays: [],
     setupCompleted: false,
     createdAt: now,
     updatedAt: now,
   };
 };
-

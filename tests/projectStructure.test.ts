@@ -10,7 +10,6 @@ const retiredFiles = [
   "src/pages/QuizPage.tsx",
   "src/pages/SetupPage.tsx",
   "src/services/backupService.ts",
-  "src/services/geminiService.ts",
   "src/services/setupFlow.ts",
   "src/services/sessionService.ts",
   "src/types/AppScreen.ts",
@@ -47,16 +46,19 @@ test("統合済みの旧画面・重複サービス・未参照資材が残っ�
   }
 });
 
-test("外部AIへの自動送信実装とHTML直接挿入を含まない", () => {
+test("Gemini連携は利用者操作で送信し、HTML直接挿入を含まない", () => {
   const sources =
     readFileSync("src/App.tsx", "utf8") +
     readFileSync("src/components/AiQuestionPanel.tsx", "utf8") +
+    readFileSync("src/components/GlobalAiChat.tsx", "utf8") +
+    readFileSync("src/components/GeminiSettingsSection.tsx", "utf8") +
     readFileSync("src/pages/AiPromptTemplatesPage.tsx", "utf8") +
     readFileSync("src/pages/SimilarQuestionGeneratorPage.tsx", "utf8");
-  assert.doesNotMatch(
-    sources,
-    /dangerouslySetInnerHTML|generativelanguage\.googleapis\.com/,
-  );
+  const service = readFileSync("src/services/geminiService.ts", "utf8");
+  assert.doesNotMatch(sources, /dangerouslySetInnerHTML/);
+  assert.match(service, /generativelanguage\.googleapis\.com/);
+  assert.match(service, /x-goog-api-key/);
+  assert.match(sources, /Geminiへ送信|AIへ送信/);
 });
 
 test("PWA更新通知と共通エラー境界をアプリルートへ接続している", () => {
@@ -70,4 +72,3 @@ test("類似問題生成を管理画面へ統合している", () => {
   assert.match(app, /SimilarQuestionGeneratorPage/);
   assert.match(app, /setScreen\("similarQuestion"\)/);
 });
-

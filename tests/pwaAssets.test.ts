@@ -40,4 +40,3 @@ test("iOS用アイコンとService Workerのプリキャッシュ対象が存在
   assert.match(worker, /matchAll/);
   assert.match(worker, /js\|css/);
 });
-

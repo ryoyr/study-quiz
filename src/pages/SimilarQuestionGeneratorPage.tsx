@@ -318,7 +318,7 @@ export default function SimilarQuestionGeneratorPage({
                     ...draft,
                     tags: event.target.value
                       .split(",")
-                      .map((tag) => tag.trim())
+                      .map((tag: string) => tag.trim())
                       .filter(Boolean),
                   });
                   setReviewConfirmed(false);
@@ -395,4 +395,3 @@ export default function SimilarQuestionGeneratorPage({
     </main>
   );
 }
-

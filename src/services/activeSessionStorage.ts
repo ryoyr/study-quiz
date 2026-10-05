@@ -78,4 +78,3 @@ export const resolveActiveSessionQuestions = (
     .map((id) => byId.get(id))
     .filter((item): item is Question => Boolean(item));
 };
-

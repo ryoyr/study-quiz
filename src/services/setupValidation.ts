@@ -87,6 +87,14 @@ export const validateSetup = (setup: Setup, now = new Date()): SetupErrors => {
     )
   )
     errors.reservedDates = "学習しない日は本日から試験日前日までです。";
+  const weekdays = setup.reservedWeekdays ?? [];
+  if (
+    !Array.isArray(weekdays) ||
+    new Set(weekdays).size !== weekdays.length ||
+    weekdays.some(
+      (weekday) => !Number.isInteger(weekday) || weekday < 0 || weekday > 6,
+    )
+  )
+    errors.reservedDates = "学習しない曜日の指定が不正です。";
   return errors;
 };
-

@@ -4,7 +4,7 @@ import { STORAGE_KEYS } from "./storageKeyRegistry.ts";
 const STORAGE_KEY = STORAGE_KEYS.setup;
 
 const normalizeSetup = (value: Partial<Setup>): Setup => ({
-  name: value.name ?? "LinuC 101",
+  name: value.name ?? "LPIC-1 101",
   examDate: value.examDate ?? "",
   dailyNewLimit: value.dailyNewLimit ?? 10,
   dailyQuestionLimit: value.dailyQuestionLimit ?? 20,
@@ -12,6 +12,9 @@ const normalizeSetup = (value: Partial<Setup>): Setup => ({
   instantThresholdSeconds: value.instantThresholdSeconds ?? 30,
   dailyMinimumQuestions: value.dailyMinimumQuestions ?? 15,
   reservedDates: Array.isArray(value.reservedDates) ? value.reservedDates : [],
+  reservedWeekdays: Array.isArray(value.reservedWeekdays)
+    ? value.reservedWeekdays
+    : [],
   setupCompleted: value.setupCompleted ?? false,
   createdAt: value.createdAt ?? new Date().toISOString(),
   updatedAt: value.updatedAt ?? new Date().toISOString(),
@@ -39,4 +42,3 @@ export const getRemainingDays = (examDate: string): number => {
   const exam = new Date(`${examDate}T00:00:00`);
   return Math.ceil((exam.getTime() - today.getTime()) / 86400000);
 };
-

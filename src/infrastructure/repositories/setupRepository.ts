@@ -22,6 +22,9 @@ export const findSetup = async (): Promise<Setup | null> => {
     dailyMinimumQuestions:
       exam.dailyMinimumQuestions ?? Math.min(15, exam.dailyQuestionLimit),
     reservedDates: records.reservedDates.map((item) => item.date),
+    reservedWeekdays: Array.isArray(exam.reservedWeekdays)
+      ? exam.reservedWeekdays
+      : [],
     setupCompleted: records.setupCompleted,
     createdAt: exam.createdAt,
     updatedAt: exam.updatedAt,
@@ -39,6 +42,7 @@ export const persistSetup = async (setup: Setup): Promise<void> => {
       bufferRate: setup.bufferRate / 100,
       instantThresholdSeconds: setup.instantThresholdSeconds,
       dailyMinimumQuestions: setup.dailyMinimumQuestions,
+      reservedWeekdays: setup.reservedWeekdays,
       createdAt: setup.createdAt,
       updatedAt: setup.updatedAt,
     },
@@ -51,4 +55,3 @@ export const persistSetup = async (setup: Setup): Promise<void> => {
 };
 
 export const removeSetup = clearInitialSetupRecords;
-

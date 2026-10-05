@@ -99,6 +99,13 @@ export const STORAGE_KEY_REGISTRY = {
     backup: false,
     legacy: false,
   },
+  questionSeedVersion: {
+    key: "study-quiz-question-seed-version",
+    label: "初期問題データ版",
+    format: "number",
+    backup: false,
+    legacy: false,
+  },
   legacyHistory: {
     key: "study-quiz-history-v1",
     label: "旧回答履歴",
@@ -106,19 +113,19 @@ export const STORAGE_KEY_REGISTRY = {
     backup: false,
     legacy: true,
   },
-  legacyGeminiApiKey: {
+  geminiApiKey: {
     key: "study-quiz-gemini-api-key-v1",
-    label: "廃止済みAI APIキー",
+    label: "Gemini APIキー",
     format: "internal",
     backup: false,
-    legacy: true,
+    legacy: false,
   },
-  legacyGeminiModel: {
+  geminiModel: {
     key: "study-quiz-gemini-model-v1",
-    label: "廃止済みAIモデル設定",
+    label: "Geminiモデル設定",
     format: "internal",
     backup: false,
-    legacy: true,
+    legacy: false,
   },
 } as const satisfies Record<string, StorageKeyDefinition>;
 
@@ -135,9 +142,10 @@ export const STORAGE_KEYS = {
   dailyTimeBudget: STORAGE_KEY_REGISTRY.dailyTimeBudget.key,
   activeSession: STORAGE_KEY_REGISTRY.activeSession.key,
   transactionJournal: STORAGE_KEY_REGISTRY.transactionJournal.key,
+  questionSeedVersion: STORAGE_KEY_REGISTRY.questionSeedVersion.key,
   legacyHistory: STORAGE_KEY_REGISTRY.legacyHistory.key,
-  legacyGeminiApiKey: STORAGE_KEY_REGISTRY.legacyGeminiApiKey.key,
-  legacyGeminiModel: STORAGE_KEY_REGISTRY.legacyGeminiModel.key,
+  geminiApiKey: STORAGE_KEY_REGISTRY.geminiApiKey.key,
+  geminiModel: STORAGE_KEY_REGISTRY.geminiModel.key,
 } as const;
 
 const registeredKeys = new Set<string>(
