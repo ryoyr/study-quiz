@@ -1,6 +1,7 @@
 import type { Question } from "../types/Question";
+import { STORAGE_KEYS } from "./storageKeyRegistry.ts";
 
-const STORAGE_KEY = "study-quiz-active-session-v1";
+const STORAGE_KEY = STORAGE_KEYS.activeSession;
 
 export interface ActiveSessionSnapshot {
   questionIds: string[];
@@ -77,3 +78,4 @@ export const resolveActiveSessionQuestions = (
     .map((id) => byId.get(id))
     .filter((item): item is Question => Boolean(item));
 };
+

@@ -2,10 +2,11 @@ import {
   executeStorageTransaction,
   type StorageLike,
 } from "./storageTransaction.ts";
+import { STORAGE_KEYS } from "./storageKeyRegistry.ts";
 
-const LEGACY_HISTORY_KEY = "study-quiz-history-v1";
-const HISTORY_KEY = "study-quiz-answer-history-v1";
-const SCHEMA_KEY = "study-quiz-schema-version";
+const LEGACY_HISTORY_KEY = STORAGE_KEYS.legacyHistory;
+const HISTORY_KEY = STORAGE_KEYS.answerHistory;
+const SCHEMA_KEY = STORAGE_KEYS.schemaVersion;
 export const CURRENT_STORAGE_SCHEMA_VERSION = 5;
 
 const defaultStorage = (): StorageLike => {
@@ -45,3 +46,4 @@ export const migrateLegacyStorage = (
   executeStorageTransaction(mutations, storage);
   return true;
 };
+

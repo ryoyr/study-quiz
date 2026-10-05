@@ -89,3 +89,4 @@ export const validateSetup = (setup: Setup, now = new Date()): SetupErrors => {
     errors.reservedDates = "学習しない日は本日から試験日前日までです。";
   return errors;
 };
+

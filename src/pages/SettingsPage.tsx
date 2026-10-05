@@ -240,3 +240,4 @@ export default function SettingsPage({ setup, onSave, onCancel }: Props) {
     </main>
   );
 }
+

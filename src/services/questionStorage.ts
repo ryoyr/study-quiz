@@ -1,7 +1,8 @@
 import { questions as seedQuestions } from "../data/questions.ts";
 import type { Question } from "../types/Question";
+import { STORAGE_KEYS } from "./storageKeyRegistry.ts";
 
-const STORAGE_KEY = "study-quiz-questions-v1";
+const STORAGE_KEY = STORAGE_KEYS.questions;
 
 const isQuestion = (value: unknown): value is Question => {
   if (!value || typeof value !== "object") return false;
@@ -62,3 +63,4 @@ export const saveQuestions = (items: Question[]): void => {
   }
   localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
 };
+

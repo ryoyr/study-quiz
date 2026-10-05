@@ -34,3 +34,4 @@ test("必要新規数は1日の新規上限を超えない", () => {
   );
   assert.equal(result.requiredNewCount, 10);
 });
+

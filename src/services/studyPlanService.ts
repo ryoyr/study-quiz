@@ -27,3 +27,4 @@ export const calculateRequiredNewCount = (remaining: number, setup: Setup, now =
   const requiredNewCount = Math.min(remaining, setup.dailyNewLimit, buffered);
   return { effectiveDays, requiredNewCount };
 };
+

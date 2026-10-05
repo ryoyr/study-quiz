@@ -12,10 +12,11 @@ import {
   restoreFullBackup,
   type FullBackupFile,
 } from "../services/fullBackupService";
+import { STORAGE_KEYS } from "../services/storageKeyRegistry";
 import type { Setup } from "../types/Setup";
 
 type Props = { onBack: () => void };
-const SETUP_KEY = "study-quiz-setup-v1";
+const SETUP_KEY = STORAGE_KEYS.setup;
 const MAX_BACKUP_BYTES = 25 * 1024 * 1024;
 
 const setupFromBackup = (backup: FullBackupFile): Setup | null => {
@@ -215,3 +216,4 @@ export default function BackupCenterPage({ onBack }: Props) {
     </main>
   );
 }
+

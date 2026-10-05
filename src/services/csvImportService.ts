@@ -234,3 +234,4 @@ export const questionsFromPreview = (result: CsvParseResult): Question[] =>
     .map((row) => row.question as Question);
 export const CSV_TEMPLATE =
   "id,category,subcategory,text,choice1,choice2,choice3,choice4,answer,explanation,source,tags,weight,difficulty\nLINUX-001,Linux,基本コマンド,lsコマンドの用途は？,一覧表示,削除,移動,圧縮,1,ディレクトリの内容を一覧表示します。,公式マニュアル,コマンド|基本,3,2\n";
+

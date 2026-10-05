@@ -1,6 +1,8 @@
 import type { Question } from "../types/Question";
 import type { StudyHistory } from "../types/StudyHistory";
-const KEY = "study-quiz-daily-time-budget-v1";
+import { STORAGE_KEYS } from "./storageKeyRegistry.ts";
+
+const KEY = STORAGE_KEYS.dailyTimeBudget;
 export interface DailyTimeBudget {
   limitMinutes: number;
   usedSeconds: number;
@@ -57,3 +59,4 @@ export const fitQuestionsToTimeBudget = (
           Math.floor(budget.remainingSeconds / estimatedSecondsPerQuestion),
         ),
       );
+

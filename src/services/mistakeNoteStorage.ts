@@ -1,6 +1,7 @@
 import type { MistakeNote } from "../types/MistakeNote";
+import { STORAGE_KEYS } from "./storageKeyRegistry.ts";
 
-const STORAGE_KEY = "study-quiz-mistake-notes-v1";
+const STORAGE_KEY = STORAGE_KEYS.mistakeNotes;
 
 export const loadMistakeNotes = (): MistakeNote[] => {
   try {
@@ -32,3 +33,4 @@ export const upsertMistakeNote = (
   next.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   return next;
 };
+

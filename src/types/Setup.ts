@@ -37,3 +37,4 @@ export const createDefaultSetup = (): Setup => {
     updatedAt: now,
   };
 };
+

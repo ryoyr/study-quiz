@@ -1,5 +1,7 @@
 import type { AiPromptTemplate } from "../types/AiPromptTemplate";
-const KEY = "study-quiz-ai-prompt-templates-v1";
+import { STORAGE_KEYS } from "./storageKeyRegistry.ts";
+
+const KEY = STORAGE_KEYS.aiPromptTemplates;
 const BUILT_INS: AiPromptTemplate[] = [
   {
     id: "builtin-understand",
@@ -73,3 +75,4 @@ export const deleteAiPromptTemplate = (
   const result = items.filter((item) => item.id !== id || item.builtIn);
   return result;
 };
+

@@ -59,3 +59,4 @@ export default function DailyTimeBudgetCard({ budget, onSave }: Props) {
     </section>
   );
 }
+

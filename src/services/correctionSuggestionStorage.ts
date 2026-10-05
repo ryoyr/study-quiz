@@ -2,7 +2,9 @@ import type {
   CorrectionSuggestion,
   CorrectionSuggestionStatus,
 } from "../types/CorrectionSuggestion";
-const STORAGE_KEY = "study-quiz-correction-suggestions-v1";
+import { STORAGE_KEYS } from "./storageKeyRegistry.ts";
+
+const STORAGE_KEY = STORAGE_KEYS.correctionSuggestions;
 export const loadCorrectionSuggestions = (): CorrectionSuggestion[] => {
   try {
     const parsed = JSON.parse(
@@ -61,3 +63,4 @@ export const deleteCorrectionSuggestion = (
   const result = items.filter((item) => item.id !== id);
   return result;
 };
+

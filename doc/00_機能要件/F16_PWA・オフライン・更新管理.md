@@ -30,3 +30,4 @@ PWA・オフライン・更新管理に必要な利用者価値と業務ルー�
 - マニフェスト・アイコン: `public/manifest.webmanifest`、`public/*.png`
 - 自動試験: `tests/pwaAssets.test.ts`、`tests/projectStructure.test.ts`
 - 残受入: iPhone実機のインストール、オフライン起動、更新適用、回答保存。
+

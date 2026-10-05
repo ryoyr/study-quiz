@@ -1,14 +1,15 @@
 import type { QuestionState } from "../types/QuestionState";
 import type { StudyHistory } from "../types/StudyHistory";
 import type { ActiveSessionSnapshot } from "./activeSessionStorage";
+import { STORAGE_KEYS } from "./storageKeyRegistry.ts";
 import {
   executeStorageTransaction,
   type StorageLike,
 } from "./storageTransaction.ts";
 
-const HISTORY_KEY = "study-quiz-answer-history-v1";
-const QUESTION_STATES_KEY = "study-quiz-question-states-v1";
-const ACTIVE_SESSION_KEY = "study-quiz-active-session-v1";
+const HISTORY_KEY = STORAGE_KEYS.answerHistory;
+const QUESTION_STATES_KEY = STORAGE_KEYS.questionStates;
+const ACTIVE_SESSION_KEY = STORAGE_KEYS.activeSession;
 
 export interface LearningProgressSnapshot {
   history: StudyHistory[];
@@ -40,3 +41,4 @@ export const saveLearningProgress = (
     storage,
   );
 };
+

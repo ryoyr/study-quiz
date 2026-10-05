@@ -51,3 +51,4 @@ export const persistSetup = async (setup: Setup): Promise<void> => {
 };
 
 export const removeSetup = clearInitialSetupRecords;
+

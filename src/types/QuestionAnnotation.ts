@@ -4,3 +4,4 @@ export interface QuestionAnnotation {
   memo: string;
   updatedAt: string;
 }
+

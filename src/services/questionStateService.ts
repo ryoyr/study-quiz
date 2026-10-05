@@ -1,6 +1,8 @@
 import type { StudyHistory } from "../types/StudyHistory";
 import type { MasteryLevel, QuestionState } from "../types/QuestionState";
-const KEY = "study-quiz-question-states-v1";
+import { STORAGE_KEYS } from "./storageKeyRegistry.ts";
+
+const KEY = STORAGE_KEYS.questionStates;
 const mastery = (
   correct: number,
   total: number,
@@ -113,3 +115,4 @@ export const getMasteryLabel = (level: MasteryLevel): string =>
     : level === "LEARNING"
       ? "学習中"
       : "未学習";
+

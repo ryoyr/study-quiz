@@ -1,6 +1,7 @@
 import type { Setup } from "../types/Setup";
+import { STORAGE_KEYS } from "./storageKeyRegistry.ts";
 
-const STORAGE_KEY = "study-quiz-setup-v1";
+const STORAGE_KEY = STORAGE_KEYS.setup;
 
 const normalizeSetup = (value: Partial<Setup>): Setup => ({
   name: value.name ?? "LinuC 101",
@@ -38,3 +39,4 @@ export const getRemainingDays = (examDate: string): number => {
   const exam = new Date(`${examDate}T00:00:00`);
   return Math.ceil((exam.getTime() - today.getTime()) / 86400000);
 };
+

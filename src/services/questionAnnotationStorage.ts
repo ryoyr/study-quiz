@@ -1,5 +1,7 @@
 import type { QuestionAnnotation } from "../types/QuestionAnnotation";
-const STORAGE_KEY = "study-quiz-question-annotations-v1";
+import { STORAGE_KEYS } from "./storageKeyRegistry.ts";
+
+const STORAGE_KEY = STORAGE_KEYS.questionAnnotations;
 export const loadQuestionAnnotations = (): QuestionAnnotation[] => {
   try {
     const parsed = JSON.parse(
@@ -37,3 +39,4 @@ export const updateQuestionAnnotation = (
   ];
   return result;
 };
+

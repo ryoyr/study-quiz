@@ -1,6 +1,10 @@
 
 
 import { isActiveSessionSnapshot } from "./activeSessionStorage.ts";
+import {
+  BACKUP_STORAGE_DEFINITIONS,
+  STORAGE_KEYS,
+} from "./storageKeyRegistry.ts";
 import { validateSetup } from "./setupValidation.ts";
 import {
   executeStorageTransaction,
@@ -28,79 +32,18 @@ export interface BackupEntryDefinition {
   storageFormat: BackupStorageFormat;
 }
 
-export const BACKUP_ENTRIES: BackupEntryDefinition[] = [
-  {
-    key: "study-quiz-schema-version",
-    label: "データ形式",
+export const BACKUP_ENTRIES: BackupEntryDefinition[] =
+  BACKUP_STORAGE_DEFINITIONS.map(({ key, label, format }) => ({
+    key,
+    label,
     required: false,
-    storageFormat: "number",
-  },
-  {
-    key: "study-quiz-setup-v1",
-    label: "設定",
-    required: false,
-    storageFormat: "json",
-  },
-  {
-    key: "study-quiz-questions-v1",
-    label: "問題",
-    required: false,
-    storageFormat: "json",
-  },
-  {
-    key: "study-quiz-answer-history-v1",
-    label: "回答履歴",
-    required: false,
-    storageFormat: "json",
-  },
-  {
-    key: "study-quiz-question-states-v1",
-    label: "問題状態・FSRS",
-    required: false,
-    storageFormat: "json",
-  },
-  {
-    key: "study-quiz-mistake-notes-v1",
-    label: "間違いノート",
-    required: false,
-    storageFormat: "json",
-  },
-  {
-    key: "study-quiz-question-annotations-v1",
-    label: "お気に入り・メモ",
-    required: false,
-    storageFormat: "json",
-  },
-  {
-    key: "study-quiz-correction-suggestions-v1",
-    label: "問題修正提案",
-    required: false,
-    storageFormat: "json",
-  },
-  {
-    key: "study-quiz-ai-prompt-templates-v1",
-    label: "AI質問テンプレート",
-    required: false,
-    storageFormat: "json",
-  },
-  {
-    key: "study-quiz-daily-time-budget-v1",
-    label: "1日の学習時間上限",
-    required: false,
-    storageFormat: "number",
-  },
-  {
-    key: "study-quiz-active-session-v1",
-    label: "中断中の学習",
-    required: false,
-    storageFormat: "json",
-  },
-];
+    storageFormat: format,
+  }));
 
-const APP_VERSION = "1.1.1";
-const LEGACY_HISTORY_KEY = "study-quiz-history-v1";
-const API_KEY = "study-quiz-gemini-api-key-v1";
-const LEGACY_MODEL_KEY = "study-quiz-gemini-model-v1";
+const APP_VERSION = "1.2.0";
+const LEGACY_HISTORY_KEY = STORAGE_KEYS.legacyHistory;
+const API_KEY = STORAGE_KEYS.legacyGeminiApiKey;
+const LEGACY_MODEL_KEY = STORAGE_KEYS.legacyGeminiModel;
 const definitionsByKey = new Map(
   BACKUP_ENTRIES.map((item) => [item.key, item]),
 );
@@ -246,10 +189,10 @@ const validateSetupEntry = (value: unknown): void => {
 
 const validateJsonEntry = (key: string, value: unknown): void => {
   switch (key) {
-    case "study-quiz-setup-v1":
+    case STORAGE_KEYS.setup:
       validateSetupEntry(value);
       return;
-    case "study-quiz-questions-v1": {
+    case STORAGE_KEYS.questions: {
       const items = assertArray(value, "問題");
       if (!items.every(isQuestion)) throw new Error("問題データが不正です。");
       assertUnique(
@@ -258,7 +201,7 @@ const validateJsonEntry = (key: string, value: unknown): void => {
       );
       return;
     }
-    case "study-quiz-answer-history-v1": {
+    case STORAGE_KEYS.answerHistory: {
       const items = assertArray(value, "回答履歴");
       if (!items.every(isStudyHistory)) throw new Error("回答履歴が不正です。");
       assertUnique(
@@ -267,7 +210,7 @@ const validateJsonEntry = (key: string, value: unknown): void => {
       );
       return;
     }
-    case "study-quiz-question-states-v1": {
+    case STORAGE_KEYS.questionStates: {
       const items = assertArray(value, "問題状態");
       if (!items.every(isQuestionState))
         throw new Error("問題状態・FSRSが不正です。");
@@ -277,11 +220,11 @@ const validateJsonEntry = (key: string, value: unknown): void => {
       );
       return;
     }
-    case "study-quiz-active-session-v1":
+    case STORAGE_KEYS.activeSession:
       if (!isActiveSessionSnapshot(value))
         throw new Error("中断中の学習データが不正です。");
       return;
-    case "study-quiz-mistake-notes-v1": {
+    case STORAGE_KEYS.mistakeNotes: {
       const items = assertArray(value, "間違いノート");
       if (
         !items.every(
@@ -298,7 +241,7 @@ const validateJsonEntry = (key: string, value: unknown): void => {
       }
       return;
     }
-    case "study-quiz-question-annotations-v1": {
+    case STORAGE_KEYS.questionAnnotations: {
       const items = assertArray(value, "お気に入り・メモ");
       if (
         !items.every(
@@ -314,7 +257,7 @@ const validateJsonEntry = (key: string, value: unknown): void => {
       }
       return;
     }
-    case "study-quiz-correction-suggestions-v1": {
+    case STORAGE_KEYS.correctionSuggestions: {
       const items = assertArray(value, "問題修正提案");
       if (
         !items.every(
@@ -334,7 +277,7 @@ const validateJsonEntry = (key: string, value: unknown): void => {
       }
       return;
     }
-    case "study-quiz-ai-prompt-templates-v1": {
+    case STORAGE_KEYS.aiPromptTemplates: {
       const items = assertArray(value, "AI質問テンプレート");
       if (
         !items.every(
@@ -367,7 +310,7 @@ const validateStoredEntry = (
   if (definition.storageFormat === "number") {
     const value = Number(raw);
     const valid =
-      definition.key === "study-quiz-schema-version"
+      definition.key === STORAGE_KEYS.schemaVersion
         ? Number.isInteger(value) && value >= 1 && value <= 5
         : Number.isFinite(value) && value >= 0 && value <= 480;
     if (!valid) throw new Error(`${definition.label}の値が不正です。`);
@@ -383,7 +326,7 @@ const validateStoredEntry = (
 };
 
 const validateReferences = (entries: Record<string, string>): void => {
-  const rawQuestions = entries["study-quiz-questions-v1"];
+  const rawQuestions = entries[STORAGE_KEYS.questions];
   if (!rawQuestions) return;
   const questionIds = new Set(
     (JSON.parse(rawQuestions) as Question[]).map((item) => item.id),
@@ -400,25 +343,25 @@ const validateReferences = (entries: Record<string, string>): void => {
     );
     if (invalid) throw new Error(`${label}が存在しない問題を参照しています。`);
   };
-  check("study-quiz-answer-history-v1", "回答履歴", (item) => item.questionId);
-  check("study-quiz-question-states-v1", "問題状態", (item) => item.questionId);
+  check(STORAGE_KEYS.answerHistory, "回答履歴", (item) => item.questionId);
+  check(STORAGE_KEYS.questionStates, "問題状態", (item) => item.questionId);
   check(
-    "study-quiz-mistake-notes-v1",
+    STORAGE_KEYS.mistakeNotes,
     "間違いノート",
     (item) => item.questionId,
   );
   check(
-    "study-quiz-question-annotations-v1",
+    STORAGE_KEYS.questionAnnotations,
     "お気に入り・メモ",
     (item) => item.questionId,
   );
   check(
-    "study-quiz-correction-suggestions-v1",
+    STORAGE_KEYS.correctionSuggestions,
     "問題修正提案",
     (item) => item.questionId,
   );
 
-  const active = entries["study-quiz-active-session-v1"];
+  const active = entries[STORAGE_KEYS.activeSession];
   if (active) {
     const snapshot = JSON.parse(active) as { questionIds: string[] };
     if (snapshot.questionIds.some((id) => !questionIds.has(id))) {
@@ -483,8 +426,8 @@ export const parseFullBackup = (text: string): FullBackupFile => {
     throw new Error("対応していないバックアップ形式です。");
 
   const entries = { ...value.entries } as Record<string, string>;
-  if (!entries["study-quiz-answer-history-v1"] && entries[LEGACY_HISTORY_KEY]) {
-    entries["study-quiz-answer-history-v1"] = entries[LEGACY_HISTORY_KEY];
+  if (!entries[STORAGE_KEYS.answerHistory] && entries[LEGACY_HISTORY_KEY]) {
+    entries[STORAGE_KEYS.answerHistory] = entries[LEGACY_HISTORY_KEY];
   }
   delete entries[LEGACY_HISTORY_KEY];
   delete entries[API_KEY];
@@ -543,3 +486,4 @@ export const inspectBackup = (backup: FullBackupFile) =>
   }));
 
 export const backupErrorMessage = errorMessage;
+

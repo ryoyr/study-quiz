@@ -1,3 +1,8 @@
+import {
+  isRegisteredStorageKey,
+  STORAGE_KEYS,
+} from "./storageKeyRegistry.ts";
+
 export interface StorageLike {
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
@@ -15,8 +20,7 @@ interface StorageTransactionJournal {
   before: Record<string, string | null>;
 }
 
-const JOURNAL_KEY = "study-quiz-storage-transaction-v1";
-const APP_KEY_PREFIX = "study-quiz-";
+const JOURNAL_KEY = STORAGE_KEYS.transactionJournal;
 
 const getDefaultStorage = (): StorageLike => {
   if (!("localStorage" in globalThis)) {
@@ -26,7 +30,7 @@ const getDefaultStorage = (): StorageLike => {
 };
 
 const isAppDataKey = (key: string): boolean =>
-  key.startsWith(APP_KEY_PREFIX) && key !== JOURNAL_KEY;
+  isRegisteredStorageKey(key) && key !== JOURNAL_KEY;
 
 const validateMutations = (mutations: StorageMutation[]): StorageMutation[] => {
   if (mutations.length === 0) return [];
@@ -155,3 +159,4 @@ export const executeStorageTransaction = (
 };
 
 export const STORAGE_TRANSACTION_JOURNAL_KEY = JOURNAL_KEY;
+

@@ -31,3 +31,4 @@ test("checkは構成検証・単体試験・ビルドを順に実行する", () 
     "npm run verify:structure && npm run test && npm run build",
   );
 });
+

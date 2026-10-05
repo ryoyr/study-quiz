@@ -9,3 +9,4 @@ export interface CorrectionSuggestion {
   createdAt: string;
   updatedAt: string;
 }
+

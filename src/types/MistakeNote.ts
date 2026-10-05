@@ -5,3 +5,4 @@ export interface MistakeNote {
   caution: string;
   updatedAt: string;
 }
+

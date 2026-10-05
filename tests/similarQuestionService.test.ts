@@ -98,3 +98,4 @@ test("選択肢範囲外のanswerNumberを拒否する", () => {
     /answerNumberは1～3/,
   );
 });
+

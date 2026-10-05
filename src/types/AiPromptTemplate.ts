@@ -7,3 +7,4 @@ export interface AiPromptTemplate {
   createdAt: string;
   updatedAt: string;
 }
+

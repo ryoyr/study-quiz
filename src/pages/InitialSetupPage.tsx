@@ -235,3 +235,4 @@ export default function InitialSetupPage({ setup, onSave }: Props) {
     </main>
   );
 }
+

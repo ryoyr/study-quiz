@@ -36,3 +36,4 @@ export default function ForgettingAlertCard({ candidates, onStart }: Props) {
     </section>
   );
 }
+

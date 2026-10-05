@@ -29,7 +29,6 @@ const readPngSize = (path) => {
 const requiredFiles = [
   "index.html",
   "package.json",
-  "package-lock.json",
   "tsconfig.json",
   "tsconfig.app.json",
   "tsconfig.node.json",
@@ -38,6 +37,8 @@ const requiredFiles = [
   "public/sw.js",
   "src/main.tsx",
   "src/App.tsx",
+  "src/services/storageKeyRegistry.ts",
+  "tests/storageKeyRegistry.test.ts",
 ];
 for (const path of requiredFiles) assert(existsSync(path), `${path} がありません`);
 
@@ -120,3 +121,4 @@ if (failures.length > 0) {
 } else {
   console.log("構成検証に成功しました（TypeScript設定、PWA資材、統合状態）。");
 }
+

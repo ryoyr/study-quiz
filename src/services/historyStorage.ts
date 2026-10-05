@@ -1,6 +1,7 @@
 import type { StudyHistory } from "../types/StudyHistory";
+import { STORAGE_KEYS } from "./storageKeyRegistry.ts";
 
-const STORAGE_KEY = "study-quiz-answer-history-v1";
+const STORAGE_KEY = STORAGE_KEYS.answerHistory;
 const FSRS_RATINGS = new Set<NonNullable<StudyHistory["fsrsRating"]>>([
   "AGAIN",
   "HARD",
@@ -74,3 +75,4 @@ export const saveHistory = (history: StudyHistory[]): void => {
 };
 
 export const clearHistory = (): void => localStorage.removeItem(STORAGE_KEY);
+

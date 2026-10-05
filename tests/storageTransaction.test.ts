@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { saveLearningProgress } from "../src/services/learningProgressStorage.ts";
+import { STORAGE_KEYS } from "../src/services/storageKeyRegistry.ts";
 import {
   executeStorageTransaction,
   recoverStorageTransaction,
@@ -155,11 +156,12 @@ test("アプリ外キーと重複キーはトランザクション対象にし�
     () =>
       executeStorageTransaction(
         [
-          { key: "study-quiz-a", value: "1" },
-          { key: "study-quiz-a", value: "2" },
+          { key: STORAGE_KEYS.answerHistory, value: "1" },
+          { key: STORAGE_KEYS.answerHistory, value: "2" },
         ],
         storage,
       ),
     /重複/,
   );
 });
+
