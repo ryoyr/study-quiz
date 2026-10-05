@@ -1,4 +1,5 @@
 import type { Question } from "../types/Question";
+import { LPIC101_EXAM_SCOPE_ID } from "../types/ExamScope";
 
 export type CsvRowStatus = "valid" | "warning" | "error";
 export interface CsvPreviewRow {
@@ -18,6 +19,7 @@ export interface CsvParseResult {
 
 const REQUIRED = ["id", "category", "text", "choice1", "choice2", "answer"];
 const OPTIONAL = [
+  "examScopeId",
   "subcategory",
   "choice3",
   "choice4",
@@ -205,6 +207,7 @@ export const parseQuestionCsv = (
       ? null
       : {
           id,
+          examScopeId: get("examScopeId") || LPIC101_EXAM_SCOPE_ID,
           category,
           subcategory: get("subcategory") || undefined,
           text: textValue,
@@ -233,4 +236,4 @@ export const questionsFromPreview = (result: CsvParseResult): Question[] =>
     .filter((row) => row.question !== null)
     .map((row) => row.question as Question);
 export const CSV_TEMPLATE =
-  "id,category,subcategory,text,choice1,choice2,choice3,choice4,answer,explanation,source,tags,weight,difficulty\nLINUX-001,Linux,基本コマンド,lsコマンドの用途は？,一覧表示,削除,移動,圧縮,1,ディレクトリの内容を一覧表示します。,公式マニュアル,コマンド|基本,3,2\n";
+  "id,examScopeId,category,subcategory,text,choice1,choice2,choice3,choice4,answer,explanation,source,tags,weight,difficulty\nLPIC101-CSV-001,lpic101,103 GNUとUNIXコマンド,103.1 コマンドライン,lsコマンドの用途は？,一覧表示,削除,移動,圧縮,1,ディレクトリの内容を一覧表示します。,LPI 101-500 Objectives,LPIC-1|101-500|103.1,3,2\n";

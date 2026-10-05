@@ -9,7 +9,13 @@ export type SetupErrors = Partial<
     | "bufferRate"
     | "instantThresholdSeconds"
     | "dailyMinimumQuestions"
-    | "reservedDates",
+    | "reservedDates"
+    | "examScopeId"
+    | "defaultCategory"
+    | "defaultMasteryFilter"
+    | "defaultQuestionMode"
+    | "defaultQuestionIds"
+    | "theme",
     string
   >
 >;
@@ -28,73 +34,44 @@ const isValidDate = (value: string): boolean => {
   const month = Number(match[2]);
   const day = Number(match[3]);
   const parsed = new Date(year, month - 1, day);
-  return (
-    parsed.getFullYear() === year &&
-    parsed.getMonth() === month - 1 &&
-    parsed.getDate() === day
-  );
+  return parsed.getFullYear() === year && parsed.getMonth() === month - 1 && parsed.getDate() === day;
 };
 
 export const validateSetup = (setup: Setup, now = new Date()): SetupErrors => {
   const errors: SetupErrors = {};
   const today = localDate(now);
   if (!setup.name.trim()) errors.name = "試験名は必須です。";
-  else if (setup.name.trim().length > 120)
-    errors.name = "試験名は120文字以内です。";
-  if (!isValidDate(setup.examDate))
-    errors.examDate = "正しい試験日を入力してください。";
+  else if (setup.name.trim().length > 120) errors.name = "試験名は120文字以内です。";
+  if (!isValidDate(setup.examDate)) errors.examDate = "正しい試験日を入力してください。";
   else if (setup.examDate < today) errors.examDate = "試験日は本日以降です。";
-  if (
-    !Number.isInteger(setup.dailyNewLimit) ||
-    setup.dailyNewLimit < 1 ||
-    setup.dailyNewLimit > 500
-  )
+  if (!Number.isInteger(setup.dailyNewLimit) || setup.dailyNewLimit < 1 || setup.dailyNewLimit > 500)
     errors.dailyNewLimit = "1～500の整数で指定してください。";
-  if (
-    !Number.isInteger(setup.dailyQuestionLimit) ||
-    setup.dailyQuestionLimit < setup.dailyNewLimit ||
-    setup.dailyQuestionLimit > 1000
-  )
-    errors.dailyQuestionLimit =
-      "新規問題上限以上、1000以下の整数で指定してください。";
-  if (
-    !Number.isFinite(setup.bufferRate) ||
-    setup.bufferRate < 0 ||
-    setup.bufferRate > 100
-  )
+  if (!Number.isInteger(setup.dailyQuestionLimit) || setup.dailyQuestionLimit < setup.dailyNewLimit || setup.dailyQuestionLimit > 1000)
+    errors.dailyQuestionLimit = "新規問題上限以上、1000以下の整数で指定してください。";
+  if (!Number.isFinite(setup.bufferRate) || setup.bufferRate < 0 || setup.bufferRate > 100)
     errors.bufferRate = "0～100%で指定してください。";
-  if (
-    !Number.isInteger(setup.instantThresholdSeconds) ||
-    setup.instantThresholdSeconds < 1 ||
-    setup.instantThresholdSeconds > 3600
-  )
+  if (!Number.isInteger(setup.instantThresholdSeconds) || setup.instantThresholdSeconds < 1 || setup.instantThresholdSeconds > 3600)
     errors.instantThresholdSeconds = "1～3600秒の整数で指定してください。";
-  if (
-    !Number.isInteger(setup.dailyMinimumQuestions) ||
-    setup.dailyMinimumQuestions < 1 ||
-    setup.dailyMinimumQuestions > setup.dailyQuestionLimit
-  )
-    errors.dailyMinimumQuestions =
-      "1以上、1日の総問題数上限以下で指定してください。";
+  if (!Number.isInteger(setup.dailyMinimumQuestions) || setup.dailyMinimumQuestions < 1 || setup.dailyMinimumQuestions > setup.dailyQuestionLimit)
+    errors.dailyMinimumQuestions = "1以上、1日の総問題数上限以下で指定してください。";
+
   const dates = setup.reservedDates ?? [];
-  if (dates.length > 3660)
-    errors.reservedDates = "学習しない日は3660件以内です。";
-  else if (new Set(dates).size !== dates.length)
-    errors.reservedDates = "学習しない日が重複しています。";
-  else if (
-    dates.some(
-      (date) => !isValidDate(date) || date < today || date >= setup.examDate,
-    )
-  )
+  if (dates.length > 3660) errors.reservedDates = "学習しない日は3660件以内です。";
+  else if (new Set(dates).size !== dates.length) errors.reservedDates = "学習しない日が重複しています。";
+  else if (dates.some((date) => !isValidDate(date) || date < today || date >= setup.examDate))
     errors.reservedDates = "学習しない日は本日から試験日前日までです。";
   const weekdays = setup.reservedWeekdays ?? [];
-  if (
-    !Array.isArray(weekdays) ||
-    new Set(weekdays).size !== weekdays.length ||
-    weekdays.some(
-      (weekday) => !Number.isInteger(weekday) || weekday < 0 || weekday > 6,
-    )
-  )
+  if (!Array.isArray(weekdays) || new Set(weekdays).size !== weekdays.length || weekdays.some((weekday) => !Number.isInteger(weekday) || weekday < 0 || weekday > 6))
     errors.reservedDates = "学習しない曜日の指定が不正です。";
+
+  if (!setup.examScopeId?.trim()) errors.examScopeId = "試験枠を選択してください。";
+  if (!setup.defaultCategory?.trim()) errors.defaultCategory = "学習範囲を選択してください。";
+  if (!["ALL", "UNLEARNED", "LEARNING", "MASTERED"].includes(setup.defaultMasteryFilter))
+    errors.defaultMasteryFilter = "理解度の初期値が不正です。";
+  if (!["ADAPTIVE", "NEW", "REVIEW", "WEAK", "ALL"].includes(setup.defaultQuestionMode))
+    errors.defaultQuestionMode = "出題方法の初期値が不正です。";
+  if (!Array.isArray(setup.defaultQuestionIds) || setup.defaultQuestionIds.some((id) => typeof id !== "string" || !id.trim()) || new Set(setup.defaultQuestionIds).size !== setup.defaultQuestionIds.length)
+    errors.defaultQuestionIds = "個別問題の初期値が不正です。";
+  if (!["system", "light", "dark"].includes(setup.theme)) errors.theme = "テーマの指定が不正です。";
   return errors;
 };

@@ -30,6 +30,7 @@ const installStorage = () => {
 
 const question: Question = {
   id: "Q-1",
+  examScopeId: "lpic101",
   category: "Linux",
   text: "test",
   choices: ["A", "B"],

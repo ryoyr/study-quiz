@@ -64,7 +64,7 @@ test("完全バックアップは中断セッションを含み廃止済みAI設
   storage.setItem("study-quiz-gemini-api-key-v1", "secret");
 
   const backup = createFullBackup();
-  assert.equal(backup.version, 5);
+  assert.equal(backup.version, 6);
   assert.ok(backup.entries["study-quiz-active-session-v1"]);
   assert.equal(backup.entries["study-quiz-gemini-model-v1"], undefined);
   assert.equal(backup.entries["study-quiz-gemini-api-key-v1"], undefined);
@@ -92,7 +92,7 @@ test("復元途中の保存失敗時は元のデータへロールバックす�
   assert.equal(storage.getItem("study-quiz-daily-time-budget-v1"), "15");
 });
 
-test("旧形式をversion 5へ移行し、廃止済み設定を除外する", () => {
+test("旧形式をversion 6へ移行し、廃止済み設定を除外する", () => {
   const parsed = parseFullBackup(
     JSON.stringify({
       format: "study-quiz-full-backup",
@@ -104,7 +104,7 @@ test("旧形式をversion 5へ移行し、廃止済み設定を除外する", ()
       },
     }),
   );
-  assert.equal(parsed.version, 5);
+  assert.equal(parsed.version, 6);
   assert.equal(parsed.entries["study-quiz-answer-history-v1"], "[]");
   assert.equal(parsed.entries["study-quiz-history-v1"], undefined);
   assert.equal(parsed.entries["study-quiz-gemini-model-v1"], undefined);
@@ -120,7 +120,7 @@ test("端末内の旧履歴キーを現行キーへ移行する", () => {
     '[{"id":"legacy"}]',
   );
   assert.equal(storage.getItem("study-quiz-history-v1"), null);
-  assert.equal(storage.getItem("study-quiz-schema-version"), "5");
+  assert.equal(storage.getItem("study-quiz-schema-version"), "6");
   assert.equal(migrateLegacyStorage(storage), false);
 });
 

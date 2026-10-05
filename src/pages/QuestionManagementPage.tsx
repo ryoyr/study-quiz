@@ -2,10 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import type { Question } from "../types/Question";
 import type { QuestionState } from "../types/QuestionState";
 import { getMasteryLabel } from "../services/questionStateService";
+import { LPIC101_EXAM_SCOPE_ID, type ExamScope } from "../types/ExamScope";
 
 type Props = {
   questions: Question[];
   questionStates: QuestionState[];
+  examScopes: ExamScope[];
   initialQuestionId?: string;
   onInitialEditHandled?: () => void;
   onChange: (items: Question[]) => boolean;
@@ -18,6 +20,7 @@ type ArchiveFilter = "ACTIVE" | "ARCHIVED" | "ALL";
 
 const emptyQuestion = (): Question => ({
   id: "",
+  examScopeId: LPIC101_EXAM_SCOPE_ID,
   category: "",
   subcategory: "",
   text: "",
@@ -42,6 +45,7 @@ const parseTags = (value: string): string[] => [
 export default function QuestionManagementPage({
   questions,
   questionStates,
+  examScopes,
   initialQuestionId = "",
   onInitialEditHandled,
   onChange,
@@ -49,6 +53,7 @@ export default function QuestionManagementPage({
   onBack,
 }: Props) {
   const [search, setSearch] = useState("");
+  const [examScope, setExamScope] = useState("ALL");
   const [category, setCategory] = useState("ALL");
   const [tag, setTag] = useState("ALL");
   const [weight, setWeight] = useState<WeightFilter>("ALL");
@@ -59,8 +64,15 @@ export default function QuestionManagementPage({
   const [error, setError] = useState("");
 
   const categories = useMemo(
-    () => ["ALL", ...new Set(questions.map((question) => question.category))],
-    [questions],
+    () => [
+      "ALL",
+      ...new Set(
+        questions
+          .filter((question) => examScope === "ALL" || question.examScopeId === examScope)
+          .map((question) => question.category),
+      ),
+    ],
+    [examScope, questions],
   );
   const tags = useMemo(
     () => [
@@ -92,6 +104,7 @@ export default function QuestionManagementPage({
           ? Boolean(question.archivedAt)
           : !question.archivedAt);
       return (
+        (examScope === "ALL" || question.examScopeId === examScope) &&
         (category === "ALL" || question.category === category) &&
         (tag === "ALL" || question.tags?.includes(tag)) &&
         matchesWeight &&
@@ -99,11 +112,11 @@ export default function QuestionManagementPage({
         (!keyword || searchable.includes(keyword))
       );
     });
-  }, [archive, category, questions, search, tag, weight]);
+  }, [archive, category, examScope, questions, search, tag, weight]);
 
   const startNew = () => {
     setOriginalId("");
-    setEditing(emptyQuestion());
+    setEditing({ ...emptyQuestion(), examScopeId: examScopes.find((item) => item.active)?.id ?? LPIC101_EXAM_SCOPE_ID });
     setTagText("");
     setError("");
   };
@@ -131,8 +144,8 @@ export default function QuestionManagementPage({
     if (!editing) return;
     const id = editing.id.trim();
     const choices = editing.choices.map((choice) => choice.trim());
-    if (!id || !editing.category.trim() || !editing.text.trim()) {
-      setError("問題ID、カテゴリ、問題文は必須です。");
+    if (!id || !editing.examScopeId.trim() || !editing.category.trim() || !editing.text.trim()) {
+      setError("問題ID、試験枠、カテゴリ、問題文は必須です。");
       return;
     }
     if (choices.length < 2 || choices.some((choice) => !choice)) {
@@ -229,6 +242,12 @@ export default function QuestionManagementPage({
                   setEditing({ ...editing, id: event.target.value })
                 }
               />
+            </label>
+            <label className="form-item">
+              <span>試験枠</span>
+              <select value={editing.examScopeId} onChange={(event) => setEditing({ ...editing, examScopeId: event.target.value })}>
+                {examScopes.filter((item) => item.active).map((item) => <option key={item.id} value={item.id}>{item.name} ({item.examCode})</option>)}
+              </select>
             </label>
             <label className="form-item">
               <span>カテゴリ</span>
@@ -405,6 +424,10 @@ export default function QuestionManagementPage({
             value={search}
             onChange={(event) => setSearch(event.target.value)}
           />
+          <select aria-label="試験枠" value={examScope} onChange={(event) => { setExamScope(event.target.value); setCategory("ALL"); }}>
+            <option value="ALL">全試験枠</option>
+            {examScopes.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+          </select>
           <select
             aria-label="カテゴリ"
             value={category}

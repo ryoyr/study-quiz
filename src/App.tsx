@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import "./App.css";
 import { questions } from "./data/questions";
+import { defaultExamScopes } from "./data/examScopes";
 import AppChrome, { type NavigationSection } from "./components/AppChrome";
 import AiQuestionPanel from "./components/AiQuestionPanel";
 import DailyMinimumCard from "./components/DailyMinimumCard";
@@ -13,6 +14,8 @@ import ProgressForecastCard from "./components/ProgressForecastCard";
 import SessionPlanDetails from "./components/SessionPlanDetails";
 import StreakCard from "./components/StreakCard";
 import StudySourceLauncher from "./components/StudySourceLauncher";
+import StudyFilterPanel from "./components/StudyFilterPanel";
+import LearningProgressCharts from "./components/LearningProgressCharts";
 import TimeBasedSessionCard from "./components/TimeBasedSessionCard";
 import AiPromptTemplatesPage from "./pages/AiPromptTemplatesPage";
 import BackupCenterPage from "./pages/BackupCenterPage";
@@ -69,7 +72,12 @@ import {
   loadQuestionStates,
   updateQuestionStates,
 } from "./services/questionStateService";
-import { generateStudySession } from "./services/sessionGenerator";
+import {
+  generateSelectedStudySession,
+  selectionFromSetup,
+  type StudySelection,
+} from "./services/studySelectionService";
+import { applyTheme } from "./services/themeService";
 import {
   loadCorrectionSuggestions,
   saveCorrectionSuggestions,
@@ -81,12 +89,14 @@ import {
   findSetup,
   persistSetup,
 } from "./infrastructure/repositories/setupRepository";
+import { readExamScopes } from "./infrastructure/db/database";
 import { SaveInitialSetupUseCase } from "./application/setup/SaveInitialSetupUseCase";
 import { calculateStudyStreak } from "./services/streakService";
 import { getEffectiveReservedDates } from "./services/reservedDayService";
 import { selectWeakQuestions } from "./services/weakQuestionService";
 import type { AiPromptTemplate } from "./types/AiPromptTemplate";
 import type { CorrectionSuggestion } from "./types/CorrectionSuggestion";
+import type { ExamScope } from "./types/ExamScope";
 import type { MistakeNote } from "./types/MistakeNote";
 import type { Question } from "./types/Question";
 import type { QuestionAnnotation } from "./types/QuestionAnnotation";
@@ -189,7 +199,10 @@ export default function App() {
   const [setup, setSetup] = useState<Setup>(createDefaultSetup());
   const [history, setHistory] = useState<StudyHistory[]>([]);
   const [loaded, setLoaded] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState("ALL");
+  const [examScopes, setExamScopes] = useState<ExamScope[]>(defaultExamScopes);
+  const [studySelection, setStudySelection] = useState<StudySelection>(() =>
+    selectionFromSetup(createDefaultSetup()),
+  );
   const [activeQuestions, setActiveQuestions] = useState<Question[]>(questions);
   const [weakMessage, setWeakMessage] = useState("");
   const [questionShownAt, setQuestionShownAt] = useState<number | null>(null);
@@ -242,6 +255,7 @@ export default function App() {
       if (cancelled) return;
       if (saved) {
         setSetup(saved);
+        setStudySelection(selectionFromSetup(saved));
         try {
           saveSetup(saved);
         } catch (error) {
@@ -264,6 +278,11 @@ export default function App() {
       setDailyTimeLimit(safeLoad(loadDailyTimeLimit, 0));
       setQuestionStates(safeLoad(() => loadQuestionStates(loadedHistory), []));
       setStoredQuestions(safeLoad(loadQuestions, questions));
+      try {
+        setExamScopes(await readExamScopes());
+      } catch {
+        setExamScopes(defaultExamScopes);
+      }
       setResumableSession(safeLoad(loadActiveSession, null));
       setLoaded(true);
     };
@@ -272,6 +291,15 @@ export default function App() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    applyTheme(setup.theme);
+    if (setup.theme !== "system") return;
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    const update = () => applyTheme("system");
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, [setup.theme]);
 
   useEffect(() => {
     if (!loaded || requiresInitialSetup) return;
@@ -293,26 +321,27 @@ export default function App() {
     [availableQuestions],
   );
 
-  const categories = useMemo(
-    () => [
-      "ALL",
-      ...new Set(availableQuestions.map((question) => question.category)),
-    ],
-    [availableQuestions],
-  );
   const filteredQuestions = useMemo(
     () =>
-      selectedCategory === "ALL"
-        ? availableQuestions
-        : availableQuestions.filter(
-            (question) => question.category === selectedCategory,
-          ),
-    [availableQuestions, selectedCategory],
+      availableQuestions.filter((question) => {
+        if (question.examScopeId !== studySelection.examScopeId) return false;
+        if (studySelection.category !== "ALL" && question.category !== studySelection.category) return false;
+        const mastery = questionStates.find((state) => state.questionId === question.id)?.masteryLevel ?? "UNLEARNED";
+        if (studySelection.masteryFilter !== "ALL" && mastery !== studySelection.masteryFilter) return false;
+        return studySelection.questionIds.length === 0 || studySelection.questionIds.includes(question.id);
+      }),
+    [availableQuestions, questionStates, studySelection],
   );
   const sessionPreview = useMemo(
     () =>
-      generateStudySession(filteredQuestions, history, setup, questionStates),
-    [filteredQuestions, history, setup, questionStates],
+      generateSelectedStudySession(
+        availableQuestions,
+        history,
+        setup,
+        questionStates,
+        studySelection,
+      ),
+    [availableQuestions, history, setup, questionStates, studySelection],
   );
   const remainingDays = useMemo(() => {
     const today = new Date();
@@ -324,7 +353,7 @@ export default function App() {
   const progressForecast = useMemo(
     () =>
       calculateProgressForecast(
-        availableQuestions,
+        filteredQuestions,
         history,
         questionStates,
         sessionPreview.remainingNewQuestions,
@@ -332,7 +361,7 @@ export default function App() {
         setup.bufferRate,
       ),
     [
-      availableQuestions,
+      filteredQuestions,
       history,
       questionStates,
       sessionPreview.remainingNewQuestions,
@@ -345,8 +374,8 @@ export default function App() {
     [history, setup.dailyMinimumQuestions],
   );
   const forgettingCandidates = useMemo(
-    () => detectForgettingCandidates(availableQuestions, history),
-    [availableQuestions, history],
+    () => detectForgettingCandidates(filteredQuestions, history),
+    [filteredQuestions, history],
   );
   const studyStreak = useMemo(
     () => calculateStudyStreak(history, getEffectiveReservedDates(setup)),
@@ -355,14 +384,14 @@ export default function App() {
   const finalReviewPlan = useMemo(
     () =>
       createFinalReviewPlan(
-        availableQuestions,
+        filteredQuestions,
         history,
         questionStates,
         remainingDays,
         Math.min(20, setup.dailyQuestionLimit),
       ),
     [
-      availableQuestions,
+      filteredQuestions,
       history,
       questionStates,
       remainingDays,
@@ -397,14 +426,15 @@ export default function App() {
     try {
       saveQuestions(items);
       setStoredQuestions(items);
-      if (
-        !items.some(
-          (question) =>
-            !question.archivedAt && question.category === selectedCategory,
-        )
-      ) {
-        setSelectedCategory("ALL");
-      }
+      setStudySelection((current) => {
+        const validIds = new Set(items.filter((question) => !question.archivedAt).map((question) => question.id));
+        const categoryExists = current.category === "ALL" || items.some((question) => !question.archivedAt && question.examScopeId === current.examScopeId && question.category === current.category);
+        return {
+          ...current,
+          category: categoryExists ? current.category : "ALL",
+          questionIds: current.questionIds.filter((id) => validIds.has(id)),
+        };
+      });
       setStorageError("");
       return true;
     } catch (error) {
@@ -514,7 +544,7 @@ export default function App() {
   };
   const beginWeakQuiz = () => {
     const targets = selectWeakQuestions(
-      availableQuestions,
+      filteredQuestions,
       history,
       setup.dailyQuestionLimit,
     );
@@ -681,10 +711,13 @@ export default function App() {
     return (
       <InitialSetupPage
         setup={setup}
+        examScopes={examScopes}
+        questions={availableQuestions}
         onSave={async (next) => {
           const completed = await new SaveInitialSetupUseCase().execute(next);
           saveSetup(completed);
           setSetup(completed);
+          setStudySelection(selectionFromSetup(completed));
           setRequiresInitialSetup(false);
           setScreen("home");
         }}
@@ -709,6 +742,7 @@ export default function App() {
       <QuestionManagementPage
         questions={storedQuestions}
         questionStates={questionStates}
+        examScopes={examScopes}
         initialQuestionId={editQuestionId}
         onInitialEditHandled={() => setEditQuestionId("")}
         onChange={commitQuestions}
@@ -863,11 +897,15 @@ export default function App() {
     return withChrome(
       <SettingsPage
         setup={setup}
+        examScopes={examScopes}
+        questions={availableQuestions}
+        questionStates={questionStates}
         onSave={async (next) => {
           const completed = { ...next, setupCompleted: true };
           await persistSetup(completed);
           saveSetup(completed);
           setSetup(completed);
+          setStudySelection(selectionFromSetup(completed));
           setRequiresInitialSetup(false);
           setScreen("more");
         }}
@@ -883,8 +921,8 @@ export default function App() {
           <h1>学習セッション</h1>
           <div className="exam-summary">
             <div className="summary-row">
-              <span>カテゴリ</span>
-              <strong>{selectedCategory}</strong>
+              <span>出題範囲</span>
+              <strong>{studySelection.category === "ALL" ? "全トピック" : studySelection.category}</strong>
             </div>
             <div className="summary-row">
               <span>対象問題数</span>
@@ -895,10 +933,9 @@ export default function App() {
               <strong>{session.estimatedMinutes}分</strong>
             </div>
             <div className="summary-row">
-              <span>新規 / 復習 / 弱点</span>
+              <span>新規 / 復習 / 弱点 / 指定</span>
               <strong>
-                {session.newCount} / {session.reviewCount} / {session.weakCount}
-                問
+                {session.newCount} / {session.reviewCount} / {session.weakCount} / {session.otherCount}問
               </strong>
             </div>
           </div>
@@ -1128,8 +1165,8 @@ export default function App() {
                 <small>問</small>
               </article>
               <article>
-                <span>弱点</span>
-                <strong>{sessionPreview.weakCount}</strong>
+                <span>{sessionPreview.otherCount > 0 ? "指定" : "弱点"}</span>
+                <strong>{sessionPreview.otherCount > 0 ? sessionPreview.otherCount : sessionPreview.weakCount}</strong>
                 <small>問</small>
               </article>
               <article className="is-total">
@@ -1138,19 +1175,13 @@ export default function App() {
                 <small>問</small>
               </article>
             </div>
-            <label className="form-item compact-category-select">
-              <span>学習カテゴリ</span>
-              <select
-                value={selectedCategory}
-                onChange={(event) => setSelectedCategory(event.target.value)}
-              >
-                {categories.map((category) => (
-                  <option key={category} value={category}>
-                    {category}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <StudyFilterPanel
+              value={studySelection}
+              examScopes={examScopes}
+              questions={availableQuestions}
+              questionStates={questionStates}
+              onChange={setStudySelection}
+            />
             <button
               className="primary-button"
               type="button"
@@ -1338,6 +1369,11 @@ export default function App() {
               onClick={() => setScreen("factCheck")}
             />
           </div>
+          <section className="hub-footnote-card" aria-label="教材カバレッジ">
+            <strong>LPIC-1 101 教材カバレッジ</strong>
+            <span>{examScopes.filter((item) => item.active).length}試験枠・{new Set(availableQuestions.map((item) => item.category)).size}トピック・{availableQuestions.length}問</span>
+            <small>既定問題はLPIC-1 Exam 101のみです。不要な問題は削除せずアーカイブし、履歴との整合性を保ちます。</small>
+          </section>
         </section>
       </main>,
     );
@@ -1375,6 +1411,11 @@ export default function App() {
               onClick={() => setScreen("aiTemplates")}
             />
           </div>
+          <section className="hub-footnote-card" aria-label="現在の表示と初期値">
+            <strong>現在の表示・出題初期値</strong>
+            <span>テーマ: {setup.theme === "system" ? "端末設定" : setup.theme === "dark" ? "ダーク" : "ライト"}</span>
+            <small>試験枠・学習範囲・理解度・出題方法は「設定」で変更できます。各画面の「？」から操作説明を確認できます。</small>
+          </section>
           <section className="app-info-panel" aria-label="アプリ情報">
             <div>
               <span>保存先</span>
@@ -1448,7 +1489,8 @@ export default function App() {
               復習 <strong>{sessionPreview.reviewCount}</strong>
             </span>
             <span>
-              弱点 <strong>{sessionPreview.weakCount}</strong>
+              {sessionPreview.otherCount > 0 ? "指定" : "弱点"}{" "}
+              <strong>{sessionPreview.otherCount > 0 ? sessionPreview.otherCount : sessionPreview.weakCount}</strong>
             </span>
           </div>
           <button
@@ -1506,6 +1548,14 @@ export default function App() {
             </small>
           </article>
         </section>
+
+        <section className="home-scope-summary" aria-label="現在の出題設定">
+          <div><span>試験枠</span><strong>{examScopes.find((item) => item.id === studySelection.examScopeId)?.name ?? studySelection.examScopeId}</strong></div>
+          <div><span>範囲</span><strong>{studySelection.category === "ALL" ? "全トピック" : studySelection.category}</strong></div>
+          <div><span>対象</span><strong>{filteredQuestions.length}問</strong></div>
+          <button type="button" onClick={() => setScreen("learn")}>出題条件を変更</button>
+        </section>
+        <LearningProgressCharts history={history} questions={filteredQuestions} days={7} compact />
 
         {forgettingCandidates.length > 0 && (
           <button

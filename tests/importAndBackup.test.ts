@@ -35,7 +35,7 @@ test("旧バックアップの回答履歴キーを現行キーへ移行する",
       entries: { "study-quiz-history-v1": "[]" },
     }),
   );
-  assert.equal(backup.version, 5);
+  assert.equal(backup.version, 6);
   assert.equal(backup.entries["study-quiz-answer-history-v1"], "[]");
   assert.equal(backup.entries["study-quiz-history-v1"], undefined);
 });
@@ -46,7 +46,7 @@ test("完全バックアップは不正な問題データを復元前に拒否�
       parseFullBackup(
         JSON.stringify({
           format: "study-quiz-full-backup",
-          version: 5,
+          version: 6,
           appVersion: "1.0.0",
           exportedAt: "2026-10-05T00:00:00.000Z",
           entries: {
@@ -67,4 +67,47 @@ test("完全バックアップは不正な問題データを復元前に拒否�
       ),
     /問題データが不正/,
   );
+});
+
+
+test("旧バックアップの問題と設定へLPIC試験枠を補完する", () => {
+  const setup = {
+    name: "LPIC-1 101",
+    examDate: "2099-12-31",
+    dailyNewLimit: 10,
+    dailyQuestionLimit: 20,
+    bufferRate: 20,
+    instantThresholdSeconds: 30,
+    dailyMinimumQuestions: 15,
+    reservedDates: [],
+    setupCompleted: true,
+    createdAt: "2026-10-05T00:00:00.000Z",
+    updatedAt: "2026-10-05T00:00:00.000Z",
+  };
+  const legacyQuestion = {
+    id: "OLD-1",
+    category: "101 システムアーキテクチャ",
+    text: "問題",
+    choices: ["A", "B"],
+    answerIndex: 0,
+    explanation: "解説",
+    weight: 1,
+    difficulty: 1,
+  };
+  const backup = parseFullBackup(JSON.stringify({
+    format: "study-quiz-full-backup",
+    version: 5,
+    appVersion: "2.0.0",
+    exportedAt: "2026-10-05T00:00:00.000Z",
+    entries: {
+      "study-quiz-setup-v1": JSON.stringify(setup),
+      "study-quiz-questions-v1": JSON.stringify([legacyQuestion]),
+    },
+  }));
+  const restoredSetup = JSON.parse(backup.entries["study-quiz-setup-v1"]);
+  const restoredQuestions = JSON.parse(backup.entries["study-quiz-questions-v1"]);
+  assert.equal(backup.version, 6);
+  assert.equal(restoredSetup.examScopeId, "lpic101");
+  assert.equal(restoredSetup.defaultQuestionMode, "ADAPTIVE");
+  assert.equal(restoredQuestions[0].examScopeId, "lpic101");
 });

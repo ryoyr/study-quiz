@@ -1,10 +1,19 @@
 import { questions as seedQuestions } from "../data/questions.ts";
+import { LPIC101_EXAM_SCOPE_ID } from "../types/ExamScope";
 import type { Question } from "../types/Question";
 import { STORAGE_KEYS } from "./storageKeyRegistry.ts";
 
 const STORAGE_KEY = STORAGE_KEYS.questions;
 const SEED_VERSION_KEY = STORAGE_KEYS.questionSeedVersion;
-const CURRENT_SEED_VERSION = "2";
+const CURRENT_SEED_VERSION = "3";
+
+const normalizeQuestion = (value: Partial<Question>): Partial<Question> => ({
+  ...value,
+  examScopeId:
+    typeof value.examScopeId === "string" && value.examScopeId.trim()
+      ? value.examScopeId
+      : LPIC101_EXAM_SCOPE_ID,
+});
 
 const isQuestion = (value: unknown): value is Question => {
   if (!value || typeof value !== "object") return false;
@@ -12,6 +21,8 @@ const isQuestion = (value: unknown): value is Question => {
   return (
     typeof item.id === "string" &&
     item.id.trim().length > 0 &&
+    typeof item.examScopeId === "string" &&
+    item.examScopeId.trim().length > 0 &&
     typeof item.category === "string" &&
     item.category.trim().length > 0 &&
     typeof item.text === "string" &&
@@ -48,7 +59,9 @@ export const loadQuestions = (): Question[] => {
     const parsed: unknown = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [...seedQuestions];
     if (parsed.length === 0) return [];
-    const valid = parsed.filter(isQuestion);
+    const valid = parsed
+      .map((item) => normalizeQuestion(item as Partial<Question>))
+      .filter(isQuestion);
     const unique = [...new Map(valid.map((item) => [item.id, item])).values()];
     if (unique.length === 0) return [...seedQuestions];
 

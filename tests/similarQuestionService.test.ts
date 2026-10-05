@@ -9,6 +9,7 @@ import type { Question } from "../src/types/Question.ts";
 
 const baseQuestion: Question = {
   id: "Q-1",
+  examScopeId: "lpic101",
   category: "Linux",
   subcategory: "権限",
   text: "chmod 755の説明として正しいものはどれか。",

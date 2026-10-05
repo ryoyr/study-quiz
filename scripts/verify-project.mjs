@@ -73,6 +73,7 @@ const retiredPaths = [
   "src/services/backupService.ts",
   "src/services/setupFlow.ts",
   "src/services/sessionService.ts",
+  "src/services/studyPlanService.ts",
   "src/types/AppScreen.ts",
   "src/types/Session.ts",
   "src/major",
@@ -81,6 +82,7 @@ const retiredPaths = [
   "src/ui-enhancement.css",
   "public/favicon.svg",
   "public/icons.svg",
+  "eslint.config.js",
 ];
 for (const path of retiredPaths) assert(!existsSync(path), `${path} は削除対象です`);
 const manifest = readJson("public/manifest.webmanifest");

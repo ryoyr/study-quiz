@@ -1,4 +1,6 @@
+import { LPIC101_EXAM_SCOPE_ID } from "../../types/ExamScope";
 import type { Setup } from "../../types/Setup";
+import { normalizeSetup } from "../../services/setupStorage.ts";
 import {
   clearInitialSetupRecords,
   EXAM_ID,
@@ -9,48 +11,54 @@ import {
 export const findSetup = async (): Promise<Setup | null> => {
   const records = await readInitialSetupRecords();
   if (!records) return null;
-
   const { exam } = records;
-  return {
+  return normalizeSetup({
     name: exam.name,
     examDate: exam.examDate,
     dailyNewLimit: exam.dailyNewLimit,
     dailyQuestionLimit: exam.dailyQuestionLimit,
-    // 画面・ドメイン層は百分率、IndexedDBは設計どおり0.0～1.0で保持する。
+    // 画面・ドメイン層は百分率、IndexedDBは0.0～1.0で保持する。
     bufferRate: exam.bufferRate * 100,
     instantThresholdSeconds: exam.instantThresholdSeconds,
-    dailyMinimumQuestions:
-      exam.dailyMinimumQuestions ?? Math.min(15, exam.dailyQuestionLimit),
+    dailyMinimumQuestions: exam.dailyMinimumQuestions ?? Math.min(15, exam.dailyQuestionLimit),
     reservedDates: records.reservedDates.map((item) => item.date),
-    reservedWeekdays: Array.isArray(exam.reservedWeekdays)
-      ? exam.reservedWeekdays
-      : [],
+    reservedWeekdays: Array.isArray(exam.reservedWeekdays) ? exam.reservedWeekdays : [],
+    examScopeId: exam.examScopeId ?? LPIC101_EXAM_SCOPE_ID,
+    defaultCategory: exam.defaultCategory,
+    defaultMasteryFilter: exam.defaultMasteryFilter,
+    defaultQuestionMode: exam.defaultQuestionMode,
+    defaultQuestionIds: exam.defaultQuestionIds,
+    theme: exam.theme,
     setupCompleted: records.setupCompleted,
     createdAt: exam.createdAt,
     updatedAt: exam.updatedAt,
-  };
+  });
 };
 
 export const persistSetup = async (setup: Setup): Promise<void> => {
+  const normalized = normalizeSetup(setup);
   await writeInitialSetupRecords({
     exam: {
       id: EXAM_ID,
-      name: setup.name,
-      examDate: setup.examDate,
-      dailyNewLimit: setup.dailyNewLimit,
-      dailyQuestionLimit: setup.dailyQuestionLimit,
-      bufferRate: setup.bufferRate / 100,
-      instantThresholdSeconds: setup.instantThresholdSeconds,
-      dailyMinimumQuestions: setup.dailyMinimumQuestions,
-      reservedWeekdays: setup.reservedWeekdays,
-      createdAt: setup.createdAt,
-      updatedAt: setup.updatedAt,
+      name: normalized.name,
+      examDate: normalized.examDate,
+      dailyNewLimit: normalized.dailyNewLimit,
+      dailyQuestionLimit: normalized.dailyQuestionLimit,
+      bufferRate: normalized.bufferRate / 100,
+      instantThresholdSeconds: normalized.instantThresholdSeconds,
+      dailyMinimumQuestions: normalized.dailyMinimumQuestions,
+      reservedWeekdays: normalized.reservedWeekdays,
+      examScopeId: normalized.examScopeId,
+      defaultCategory: normalized.defaultCategory,
+      defaultMasteryFilter: normalized.defaultMasteryFilter,
+      defaultQuestionMode: normalized.defaultQuestionMode,
+      defaultQuestionIds: normalized.defaultQuestionIds,
+      theme: normalized.theme,
+      createdAt: normalized.createdAt,
+      updatedAt: normalized.updatedAt,
     },
-    reservedDates: setup.reservedDates.map((date) => ({
-      examId: EXAM_ID,
-      date,
-    })),
-    setupCompleted: setup.setupCompleted,
+    reservedDates: normalized.reservedDates.map((date) => ({ examId: EXAM_ID, date })),
+    setupCompleted: normalized.setupCompleted,
   });
 };
 

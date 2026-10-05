@@ -5,6 +5,7 @@ const SOURCE_LABEL = {
   REVIEW: "FSRS復習期限",
   WEAK: "弱点問題",
   NEW: "新規問題",
+  CUSTOM: "指定条件",
 } as const;
 const reason = (item: StudySessionItem): string => {
   const labels = item.sourceTypes.map((source) => SOURCE_LABEL[source]);

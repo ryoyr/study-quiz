@@ -142,6 +142,7 @@ export const validateSimilarQuestion = (
 
   return {
     id,
+    examScopeId: baseQuestion.examScopeId,
     category,
     ...(subcategory ? { subcategory } : {}),
     text,
@@ -185,6 +186,7 @@ export const parseSimilarQuestionDraft = (
   return validateSimilarQuestion(
     {
       id: createUniqueId(baseQuestion.id, existingQuestions),
+      examScopeId: baseQuestion.examScopeId,
       category: requiredText(value.category, "カテゴリ", 200),
       subcategory: optionalText(
         value.subcategory,

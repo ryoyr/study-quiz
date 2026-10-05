@@ -1,3 +1,9 @@
+import { LPIC101_EXAM_SCOPE_ID } from "./ExamScope";
+
+export type ThemePreference = "system" | "light" | "dark";
+export type MasteryFilter = "ALL" | "UNLEARNED" | "LEARNING" | "MASTERED";
+export type QuestionMode = "ADAPTIVE" | "NEW" | "REVIEW" | "WEAK" | "ALL";
+
 export interface Setup {
   name: string;
   examDate: string;
@@ -9,6 +15,17 @@ export interface Setup {
   reservedDates: string[];
   /** 0=日曜 ... 6=土曜。個別日付とは別に毎週の非学習日を保持する。 */
   reservedWeekdays?: number[];
+  /** 出題対象の上位試験枠。 */
+  examScopeId: string;
+  /** 学習画面を開いたときの初期トピック。ALLは試験枠全体。 */
+  defaultCategory: string;
+  /** 学習画面を開いたときの初期理解度フィルター。 */
+  defaultMasteryFilter: MasteryFilter;
+  /** 学習画面を開いたときの初期出題方法。 */
+  defaultQuestionMode: QuestionMode;
+  /** 個別指定する既定問題。空配列はフィルター一致全体。 */
+  defaultQuestionIds: string[];
+  theme: ThemePreference;
   setupCompleted: boolean;
   createdAt: string;
   updatedAt: string;
@@ -35,6 +52,12 @@ export const createDefaultSetup = (): Setup => {
     dailyMinimumQuestions: 15,
     reservedDates: [],
     reservedWeekdays: [],
+    examScopeId: LPIC101_EXAM_SCOPE_ID,
+    defaultCategory: "ALL",
+    defaultMasteryFilter: "ALL",
+    defaultQuestionMode: "ADAPTIVE",
+    defaultQuestionIds: [],
+    theme: "system",
     setupCompleted: false,
     createdAt: now,
     updatedAt: now,

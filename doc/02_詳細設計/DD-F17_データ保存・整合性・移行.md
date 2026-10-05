@@ -112,3 +112,9 @@ UIは表示とイベント受付に限定し、検証・業務処理はUseCase�
 - 対応状況: **一部対応**。
 - 実装ソースと本設計が異なる場合、最終版ソースを確認して差分管理へ記録する。
 - F13、F17、F18は要件書記載の残課題を維持する。
+
+
+## v3.0詳細追補
+- DB `version=2` のupgrade transactionで `examScopes` を作成し、`examCode`、`active`、`sortOrder` を索引化する。
+- backup version 2〜5の設定は `normalizeSetup`、問題は `examScopeId=lpic101` で補完してから検証する。
+- seed version 3で不足する初期問題だけを既存データへ追加する。

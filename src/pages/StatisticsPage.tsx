@@ -1,4 +1,6 @@
 import { useMemo, useState } from "react";
+import LearningProgressCharts from "../components/LearningProgressCharts";
+import HelpButton from "../components/HelpButton";
 import type { Question } from "../types/Question";
 import type { QuestionState } from "../types/QuestionState";
 import type { StudyHistory } from "../types/StudyHistory";
@@ -52,7 +54,7 @@ export default function StatisticsPage({
     <main className="app-shell">
       <section className="home-card statistics-card">
         <p className="eyebrow">STATISTICS</p>
-        <h1>学習統計</h1>
+        <div className="page-title-with-help"><h1>学習統計</h1><HelpButton title="学習統計">期間タブは集計値とカテゴリ別成績に適用されます。推移グラフは直近14日を固定表示し、日々の変化を比較できます。</HelpButton></div>
         <div
           className="statistics-period-tabs"
           role="group"
@@ -75,6 +77,7 @@ export default function StatisticsPage({
           ))}
         </div>
         <p className="statistics-period-caption">表示期間: {selectedLabel}</p>
+        <LearningProgressCharts history={history} questions={questions} days={14} />
         {stats.totalAnswers === 0 ? (
           <div className="empty-state">選択期間に回答履歴がありません。</div>
         ) : (

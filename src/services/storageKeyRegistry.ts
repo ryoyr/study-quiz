@@ -106,6 +106,13 @@ export const STORAGE_KEY_REGISTRY = {
     backup: false,
     legacy: false,
   },
+  uiGuideSeen: {
+    key: "study-quiz-ui-guide-seen-v1",
+    label: "初回操作ガイド表示済み",
+    format: "internal",
+    backup: false,
+    legacy: false,
+  },
   legacyHistory: {
     key: "study-quiz-history-v1",
     label: "旧回答履歴",
@@ -143,6 +150,7 @@ export const STORAGE_KEYS = {
   activeSession: STORAGE_KEY_REGISTRY.activeSession.key,
   transactionJournal: STORAGE_KEY_REGISTRY.transactionJournal.key,
   questionSeedVersion: STORAGE_KEY_REGISTRY.questionSeedVersion.key,
+  uiGuideSeen: STORAGE_KEY_REGISTRY.uiGuideSeen.key,
   legacyHistory: STORAGE_KEY_REGISTRY.legacyHistory.key,
   geminiApiKey: STORAGE_KEY_REGISTRY.geminiApiKey.key,
   geminiModel: STORAGE_KEY_REGISTRY.geminiModel.key,

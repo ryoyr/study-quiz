@@ -4,9 +4,10 @@ import { questions } from "../src/data/questions.ts";
 import { getEffectiveReservedDates } from "../src/services/reservedDayService.ts";
 import type { Setup } from "../src/types/Setup.ts";
 
-test("LPIC-1 101のオリジナル初期問題を50問収録する", () => {
-  assert.equal(questions.length, 50);
-  assert.equal(new Set(questions.map((item) => item.id)).size, 50);
+test("LPIC-1 101のオリジナル初期問題を100問収録する", () => {
+  assert.equal(questions.length, 100);
+  assert.equal(new Set(questions.map((item) => item.id)).size, 100);
+  assert.equal(questions.every((item) => item.examScopeId === "lpic101"), true);
   assert.equal(questions.every((item) => item.id.startsWith("LPIC101-")), true);
   assert.equal(questions.every((item) => item.choices.length === 4), true);
   assert.equal(questions.every((item) => item.source?.includes("オリジナル問題")), true);
@@ -30,6 +31,12 @@ test("個別日と曜日指定を学習しない日として統合する", () =>
     dailyMinimumQuestions: 15,
     reservedDates: ["2026-10-07"],
     reservedWeekdays: [0, 6],
+    examScopeId: "lpic101",
+    defaultCategory: "ALL",
+    defaultMasteryFilter: "ALL",
+    defaultQuestionMode: "ADAPTIVE",
+    defaultQuestionIds: [],
+    theme: "system",
     setupCompleted: true,
     createdAt: "2026-10-05T00:00:00.000Z",
     updatedAt: "2026-10-05T00:00:00.000Z",

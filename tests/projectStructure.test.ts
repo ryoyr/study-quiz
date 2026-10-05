@@ -12,11 +12,13 @@ const retiredFiles = [
   "src/services/backupService.ts",
   "src/services/setupFlow.ts",
   "src/services/sessionService.ts",
+  "src/services/studyPlanService.ts",
   "src/types/AppScreen.ts",
   "src/types/Session.ts",
   "src/ui-enhancement.css",
   "public/favicon.svg",
   "public/icons.svg",
+  "eslint.config.js",
 ];
 
 const retiredDirectories = ["src/major", "src/enhancements", "src/assets"];

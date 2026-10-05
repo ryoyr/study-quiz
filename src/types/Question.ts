@@ -1,5 +1,7 @@
 export interface Question {
   id: string;
+  /** カテゴリより上位の試験枠ID。 */
+  examScopeId: string;
   category: string;
   subcategory?: string;
   text: string;

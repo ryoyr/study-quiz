@@ -1,0 +1,57 @@
+import { useMemo } from "react";
+import type { Question } from "../types/Question";
+import type { StudyHistory } from "../types/StudyHistory";
+import { buildLearningTrend } from "../services/learningTrendService.ts";
+import HelpButton from "./HelpButton";
+
+type Props = { history: StudyHistory[]; questions: Question[]; days?: number; compact?: boolean };
+type Key = "answers" | "unlearned" | "learning" | "mastered";
+const COLORS: Record<Key, string> = { answers: "#2563eb", unlearned: "#94a3b8", learning: "#f59e0b", mastered: "#16a34a" };
+
+const points = (values: number[], width: number, height: number, max: number) =>
+  values.map((value, index) => `${values.length === 1 ? width / 2 : (index / (values.length - 1)) * width},${height - (value / Math.max(1, max)) * height}`).join(" ");
+
+function LineChart({ data, keys, max, label }: { data: ReturnType<typeof buildLearningTrend>; keys: Key[]; max: number; label: string }) {
+  const width = 600;
+  const height = 190;
+  return (
+    <div className="line-chart-wrap">
+      <svg className="line-chart" viewBox={`0 0 ${width} ${height + 30}`} role="img" aria-label={label}>
+        {[0, 0.5, 1].map((ratio) => <line key={ratio} x1="0" x2={width} y1={height - ratio * height} y2={height - ratio * height} className="chart-grid-line" />)}
+        {keys.map((key) => <polyline key={key} points={points(data.map((item) => item[key]), width, height, max)} fill="none" stroke={COLORS[key]} strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />)}
+        {data.map((item, index) => (index === 0 || index === data.length - 1 || index % Math.ceil(data.length / 4) === 0) ? <text key={item.date} x={(index / Math.max(1, data.length - 1)) * width} y={height + 24} textAnchor={index === 0 ? "start" : index === data.length - 1 ? "end" : "middle"}>{item.label}</text> : null)}
+      </svg>
+    </div>
+  );
+}
+
+export default function LearningProgressCharts({ history, questions, days = 14, compact = false }: Props) {
+  const data = useMemo(() => buildLearningTrend(history, questions, days), [history, questions, days]);
+  const maxAnswers = Math.max(1, ...data.map((item) => item.answers));
+  const maxQuestions = Math.max(1, questions.filter((item) => !item.archivedAt).length);
+  const latest = data[data.length - 1];
+  return (
+    <section className={`learning-charts ${compact ? "is-compact" : ""}`} aria-label="学習量と理解度の推移">
+      <div className="chart-heading">
+        <div><span>LEARNING TREND</span><strong>{compact ? "直近7日の推移" : `直近${days}日の学習推移`}</strong></div>
+        <HelpButton title="グラフの見方">回答数はその日に解いた延べ問題数です。理解度は各日終了時点の問題数で、回答履歴から再計算します。</HelpButton>
+      </div>
+      <div className="chart-legend">
+        <span style={{ color: COLORS.answers }}>● 回答数</span>
+        <span style={{ color: COLORS.unlearned }}>● 未学習</span>
+        <span style={{ color: COLORS.learning }}>● 学習中</span>
+        <span style={{ color: COLORS.mastered }}>● 習得済み</span>
+      </div>
+      <article>
+        <h3>毎日の学習量</h3>
+        <LineChart data={data} keys={["answers"]} max={maxAnswers} label={`日別回答数。最新日は${latest.answers}問`} />
+      </article>
+      {!compact && (
+        <article>
+          <h3>理解度の推移</h3>
+          <LineChart data={data} keys={["unlearned", "learning", "mastered"]} max={maxQuestions} label={`理解度別問題数。最新は未学習${latest.unlearned}問、学習中${latest.learning}問、習得済み${latest.mastered}問`} />
+        </article>
+      )}
+    </section>
+  );
+}

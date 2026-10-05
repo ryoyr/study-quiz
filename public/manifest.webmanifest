@@ -2,7 +2,7 @@
   "id": "./",
   "name": "Study Quiz",
   "short_name": "StudyQuiz",
-  "description": "オフラインで学習できる適応型資格試験学習アプリ",
+  "description": "LPIC-1 101をオフラインで学習できる適応型PWA",
   "lang": "ja",
   "theme_color": "#2563eb",
   "background_color": "#eef3f8",

@@ -30,6 +30,12 @@ const DEFINITIONS: Definition[] = [
     description: "正答率や回答速度から判定した問題",
     className: "source-weak",
   },
+  {
+    source: "CUSTOM",
+    label: "指定問題を学習",
+    description: "条件または個別指定で選んだ問題",
+    className: "source-custom",
+  },
 ];
 export default function StudySourceLauncher({ items, onStart }: Props) {
   const groups = useMemo(

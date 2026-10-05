@@ -55,3 +55,7 @@
 ## 9. 対応状況・残課題
 - 現状: **対応済**
 - 一部対応または未対応の場合は、詳細設計の制約・未決事項を確認する。
+
+
+## v3.0設計追補
+設定モデルに `examScopeId`、`defaultCategory`、`defaultMasteryFilter`、`defaultQuestionMode`、`defaultQuestionIds`、`theme` を持たせる。設定画面と初回設定は共通の `StudyFilterPanel` を使用し、保存後に学習画面の選択状態へ反映する。

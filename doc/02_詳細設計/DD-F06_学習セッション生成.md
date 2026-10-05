@@ -112,3 +112,9 @@ UIは表示とイベント受付に限定し、検証・業務処理はUseCase�
 - 対応状況: **対応済**。
 - 実装ソースと本設計が異なる場合、最終版ソースを確認して差分管理へ記録する。
 - F13、F17、F18は要件書記載の残課題を維持する。
+
+
+## v3.0詳細追補
+- `filterStudyQuestions`: `examScopeId`、`category`、`masteryFilter`、`questionIds` の積集合を返す。
+- `generateSelectedStudySession`: 個別指定、ADAPTIVE、NEW、REVIEW、WEAK、ALLの順に分岐する。
+- CUSTOMソースを追加し、セッション内訳で指定問題を識別する。

@@ -6,6 +6,8 @@ import {
   STORAGE_KEYS,
 } from "./storageKeyRegistry.ts";
 import { validateSetup } from "./setupValidation.ts";
+import { normalizeSetup } from "./setupStorage.ts";
+import { LPIC101_EXAM_SCOPE_ID } from "../types/ExamScope";
 import {
   executeStorageTransaction,
   type StorageLike,
@@ -19,7 +21,7 @@ export type BackupStorageFormat = "json" | "number";
 
 export interface FullBackupFile {
   format: "study-quiz-full-backup";
-  version: 2 | 3 | 4 | 5;
+  version: 2 | 3 | 4 | 5 | 6;
   appVersion: string;
   exportedAt: string;
   entries: Record<string, string>;
@@ -40,7 +42,7 @@ export const BACKUP_ENTRIES: BackupEntryDefinition[] =
     storageFormat: format,
   }));
 
-const APP_VERSION = "1.2.0";
+const APP_VERSION = "3.0.0";
 const LEGACY_HISTORY_KEY = STORAGE_KEYS.legacyHistory;
 const API_KEY = STORAGE_KEYS.geminiApiKey;
 const LEGACY_MODEL_KEY = STORAGE_KEYS.geminiModel;
@@ -81,6 +83,7 @@ const assertUnique = (values: string[], label: string): void => {
 const isQuestion = (value: unknown): value is Question => {
   if (!isObject(value)) return false;
   if (!isString(value.id, 200) || !value.id.trim()) return false;
+  if (!isString(value.examScopeId, 200) || !value.examScopeId.trim()) return false;
   if (!isString(value.category, 200) || !value.category.trim()) return false;
   if (!isString(value.text) || !value.text.trim()) return false;
   if (
@@ -176,7 +179,7 @@ const isQuestionState = (value: unknown): value is QuestionState => {
 
 const validateSetupEntry = (value: unknown): void => {
   if (!isObject(value)) throw new Error("設定の形式が不正です。");
-  const setup = value as unknown as Setup;
+  const setup = normalizeSetup(value as Partial<Setup>);
   if (Object.keys(validateSetup(setup)).length > 0)
     throw new Error("設定値が不正です。");
   if (
@@ -312,7 +315,7 @@ const validateStoredEntry = (
     const value = Number(raw);
     const valid =
       definition.key === STORAGE_KEYS.schemaVersion
-        ? Number.isInteger(value) && value >= 1 && value <= 5
+        ? Number.isInteger(value) && value >= 1 && value <= 6
         : Number.isFinite(value) && value >= 0 && value <= 480;
     if (!valid) throw new Error(`${definition.label}の値が不正です。`);
     return;
@@ -385,7 +388,7 @@ export const createFullBackup = (): FullBackupFile => {
   });
   return {
     format: "study-quiz-full-backup",
-    version: 5,
+    version: 6,
     appVersion: APP_VERSION,
     exportedAt: new Date().toISOString(),
     entries,
@@ -421,7 +424,7 @@ export const parseFullBackup = (text: string): FullBackupFile => {
 
   if (
     value.format !== "study-quiz-full-backup" ||
-    ![2, 3, 4, 5].includes(value.version ?? 0) ||
+    ![2, 3, 4, 5, 6].includes(value.version ?? 0) ||
     !isObject(value.entries)
   )
     throw new Error("対応していないバックアップ形式です。");
@@ -433,6 +436,20 @@ export const parseFullBackup = (text: string): FullBackupFile => {
   delete entries[LEGACY_HISTORY_KEY];
   delete entries[API_KEY];
   delete entries[LEGACY_MODEL_KEY];
+
+  // v5以前には試験枠・出題初期値がないため、復元前に現行形式へ補完する。
+  if (entries[STORAGE_KEYS.setup]) {
+    entries[STORAGE_KEYS.setup] = JSON.stringify(
+      normalizeSetup(JSON.parse(entries[STORAGE_KEYS.setup]) as Partial<Setup>),
+    );
+  }
+  if (entries[STORAGE_KEYS.questions]) {
+    entries[STORAGE_KEYS.questions] = JSON.stringify(
+      (JSON.parse(entries[STORAGE_KEYS.questions]) as Array<Record<string, unknown>>).map(
+        (item) => ({ ...item, examScopeId: typeof item.examScopeId === "string" && item.examScopeId ? item.examScopeId : LPIC101_EXAM_SCOPE_ID }),
+      ),
+    );
+  }
 
   for (const [key, entry] of Object.entries(entries)) {
     if (!supportedKeys.has(key))
@@ -446,7 +463,7 @@ export const parseFullBackup = (text: string): FullBackupFile => {
 
   return {
     format: "study-quiz-full-backup",
-    version: 5,
+    version: 6,
     appVersion:
       typeof value.appVersion === "string" ? value.appVersion : "legacy",
     exportedAt: normalizeExportedAt(value.exportedAt),

@@ -1,5 +1,5 @@
 import type { Question } from "./Question";
-export type SourceType = "REVIEW" | "WEAK" | "NEW";
+export type SourceType = "REVIEW" | "WEAK" | "NEW" | "CUSTOM";
 export interface StudySessionItem {
   order: number;
   question: Question;
@@ -14,6 +14,7 @@ export interface GeneratedStudySession {
   newCount: number;
   reviewCount: number;
   weakCount: number;
+  otherCount: number;
   totalCount: number;
   estimatedMinutes: number;
   remainingNewQuestions: number;

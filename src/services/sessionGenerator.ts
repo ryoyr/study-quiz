@@ -160,6 +160,7 @@ export const generateStudySession = (
     newCount: items.filter((i) => i.primarySourceType === "NEW").length,
     reviewCount: items.filter((i) => i.primarySourceType === "REVIEW").length,
     weakCount: items.filter((i) => i.primarySourceType === "WEAK").length,
+    otherCount: items.filter((i) => i.primarySourceType === "CUSTOM").length,
     totalCount: items.length,
     estimatedMinutes: Math.max(1, Math.ceil(items.length * 0.75)),
     remainingNewQuestions: newQuestions.length,

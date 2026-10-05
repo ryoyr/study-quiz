@@ -1,3 +1,3 @@
-id,category,text,choice1,choice2,choice3,choice4,answer,explanation,weight,difficulty
-LINUX-001,Linux,lsコマンドの用途は？,一覧表示,削除,移動,圧縮,1,ディレクトリの内容を一覧表示します。,3,2
-LINUX-002,Linux,"カンマを含む問題文, の例です",選択肢A,選択肢B,,,2,"CSVではカンマを含む値をダブルクォートで囲みます。",1,1
+id,examScopeId,category,subcategory,text,choice1,choice2,choice3,choice4,answer,explanation,source,tags,weight,difficulty
+LPIC101-CSV-001,lpic101,103 GNUとUNIXコマンド,103.1 コマンドライン,lsコマンドの用途は？,一覧表示,削除,移動,圧縮,1,ディレクトリの内容を一覧表示します。,LPI 101-500 Objectives,LPIC-1|101-500|103.1,3,2
+LPIC101-CSV-002,lpic101,104 デバイスとファイルシステム,104.5 パーミッション,"chmod 640 file の結果は？",所有者rw・グループr・その他なし,所有者rwx・グループr・その他なし,全員rw,全員rwx,1,8進数の6はrw・4はr・0は権限なしです。,LPI 101-500 Objectives,LPIC-1|101-500|104.5,3,2
