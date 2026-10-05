@@ -21,6 +21,7 @@ export interface ExamRecord {
   reservedWeekdays?: number[];
   examScopeId?: string;
   defaultCategory?: string;
+  defaultCategories?: string[];
   defaultMasteryFilter?: MasteryFilter;
   defaultQuestionMode?: QuestionMode;
   defaultQuestionIds?: string[];

@@ -4,6 +4,7 @@ import NonStudyDayPicker from "../components/NonStudyDayPicker";
 import StudyFilterPanel from "../components/StudyFilterPanel";
 import { normalizeReservedDates, normalizeReservedWeekdays } from "../services/reservedDayService";
 import { selectionFromSetup, type StudySelection } from "../services/studySelectionService.ts";
+import { legacyCategoryFromCategories } from "../services/studyRangeService.ts";
 import { validateSetup, type SetupErrors } from "../services/setupValidation";
 import type { ExamScope } from "../types/ExamScope";
 import type { Question } from "../types/Question";
@@ -11,7 +12,7 @@ import type { Setup } from "../types/Setup";
 
 type Props = { setup: Setup; examScopes: ExamScope[]; questions: Question[]; onSave: (setup: Setup) => Promise<void> };
 type NumberKey = "dailyNewLimit" | "dailyQuestionLimit" | "bufferRate" | "instantThresholdSeconds" | "dailyMinimumQuestions";
-const applySelection = (setup: Setup, selection: StudySelection): Setup => ({ ...setup, examScopeId: selection.examScopeId, defaultCategory: selection.category, defaultMasteryFilter: selection.masteryFilter, defaultQuestionMode: selection.questionMode, defaultQuestionIds: selection.questionIds });
+const applySelection = (setup: Setup, selection: StudySelection): Setup => ({ ...setup, examScopeId: selection.examScopeId, defaultCategory: legacyCategoryFromCategories(selection.categories), defaultCategories: selection.categories, defaultMasteryFilter: selection.masteryFilter, defaultQuestionMode: selection.questionMode, defaultQuestionIds: selection.questionIds });
 
 export default function InitialSetupPage({ setup, examScopes, questions, onSave }: Props) {
   const [draft, setDraft] = useState<Setup>({ ...setup, reservedDates: setup.reservedDates ?? [], reservedWeekdays: setup.reservedWeekdays ?? [] });

@@ -14,6 +14,7 @@ const setup: Setup = {
   reservedDates: ["2026-10-06", "2026-10-07"],
   examScopeId: "lpic101",
   defaultCategory: "ALL",
+  defaultCategories: ["ALL"],
   defaultMasteryFilter: "ALL",
   defaultQuestionMode: "ADAPTIVE",
   defaultQuestionIds: [],

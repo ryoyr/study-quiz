@@ -77,6 +77,7 @@ import {
   selectionFromSetup,
   type StudySelection,
 } from "./services/studySelectionService";
+import { normalizeStudyCategories, studyRangeLabel } from "./services/studyRangeService";
 import { applyTheme } from "./services/themeService";
 import {
   loadCorrectionSuggestions,
@@ -321,17 +322,16 @@ export default function App() {
     [availableQuestions],
   );
 
-  const filteredQuestions = useMemo(
-    () =>
-      availableQuestions.filter((question) => {
+  const filteredQuestions = useMemo(() => {
+    const selectedCategories = new Set(normalizeStudyCategories(studySelection.categories));
+    return availableQuestions.filter((question) => {
         if (question.examScopeId !== studySelection.examScopeId) return false;
-        if (studySelection.category !== "ALL" && question.category !== studySelection.category) return false;
+        if (!selectedCategories.has("ALL") && !selectedCategories.has(question.category)) return false;
         const mastery = questionStates.find((state) => state.questionId === question.id)?.masteryLevel ?? "UNLEARNED";
         if (studySelection.masteryFilter !== "ALL" && mastery !== studySelection.masteryFilter) return false;
         return studySelection.questionIds.length === 0 || studySelection.questionIds.includes(question.id);
-      }),
-    [availableQuestions, questionStates, studySelection],
-  );
+      });
+  }, [availableQuestions, questionStates, studySelection]);
   const sessionPreview = useMemo(
     () =>
       generateSelectedStudySession(
@@ -428,10 +428,14 @@ export default function App() {
       setStoredQuestions(items);
       setStudySelection((current) => {
         const validIds = new Set(items.filter((question) => !question.archivedAt).map((question) => question.id));
-        const categoryExists = current.category === "ALL" || items.some((question) => !question.archivedAt && question.examScopeId === current.examScopeId && question.category === current.category);
+        const availableCategories = new Set(items.filter((question) => !question.archivedAt && question.examScopeId === current.examScopeId).map((question) => question.category));
+        const normalizedCategories = normalizeStudyCategories(current.categories);
+        const validCategories = normalizedCategories.includes("ALL")
+          ? ["ALL"]
+          : normalizedCategories.filter((category) => availableCategories.has(category));
         return {
           ...current,
-          category: categoryExists ? current.category : "ALL",
+          categories: validCategories.length > 0 ? validCategories : ["ALL"],
           questionIds: current.questionIds.filter((id) => validIds.has(id)),
         };
       });
@@ -685,6 +689,7 @@ export default function App() {
       completedToday={dailyMinimumProgress.completed}
       dailyMinimum={dailyMinimumProgress.minimum}
       streakDays={studyStreak.currentDays}
+      showContextHelp={screen !== "setup" && screen !== "statistics"}
     >
       {storageError && (
         <aside className="storage-error-banner" role="alert">
@@ -922,7 +927,7 @@ export default function App() {
           <div className="exam-summary">
             <div className="summary-row">
               <span>出題範囲</span>
-              <strong>{studySelection.category === "ALL" ? "全トピック" : studySelection.category}</strong>
+              <strong>{studyRangeLabel(studySelection.categories)}</strong>
             </div>
             <div className="summary-row">
               <span>対象問題数</span>
@@ -1551,7 +1556,7 @@ export default function App() {
 
         <section className="home-scope-summary" aria-label="現在の出題設定">
           <div><span>試験枠</span><strong>{examScopes.find((item) => item.id === studySelection.examScopeId)?.name ?? studySelection.examScopeId}</strong></div>
-          <div><span>範囲</span><strong>{studySelection.category === "ALL" ? "全トピック" : studySelection.category}</strong></div>
+          <div><span>範囲</span><strong>{studyRangeLabel(studySelection.categories)}</strong></div>
           <div><span>対象</span><strong>{filteredQuestions.length}問</strong></div>
           <button type="button" onClick={() => setScreen("learn")}>出題条件を変更</button>
         </section>

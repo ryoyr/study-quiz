@@ -9,7 +9,7 @@ import type { StudyHistory } from "../src/types/StudyHistory.ts";
 
 const selection: StudySelection = {
   examScopeId: "lpic101",
-  category: "104 デバイスとファイルシステム",
+  categories: ["104 デバイスとファイルシステム"],
   masteryFilter: "UNLEARNED",
   questionMode: "ALL",
   questionIds: [],
@@ -24,16 +24,31 @@ test("試験枠・カテゴリ・理解度で問題を絞り込む", () => {
   };
   const filtered = filterStudyQuestions(questions, [learned], selection);
   assert.equal(filtered.every((item) => item.examScopeId === "lpic101"), true);
-  assert.equal(filtered.every((item) => item.category === selection.category), true);
+  assert.equal(filtered.every((item) => selection.categories.includes(item.category)), true);
   assert.equal(filtered.some((item) => item.id === learned.questionId), false);
 });
 
 test("個別指定した問題だけでセッションを作成する", () => {
   const setup = { ...createDefaultSetup(), dailyQuestionLimit: 20 };
-  const selected = { ...selection, category: "ALL", masteryFilter: "ALL" as const, questionIds: ["LPIC101-001", "LPIC101-100"] };
+  const selected = { ...selection, categories: ["ALL"], masteryFilter: "ALL" as const, questionIds: ["LPIC101-001", "LPIC101-100"] };
   const session = generateSelectedStudySession(questions, [], setup, [], selected, new Date("2026-10-06T00:00:00.000Z"));
   assert.deepEqual(session.items.map((item) => item.question.id).sort(), selected.questionIds);
   assert.equal(session.otherCount, 2);
+});
+
+test("複数の学習範囲をまとめて絞り込む", () => {
+  const categories = [
+    "101 システムアーキテクチャ",
+    "104 デバイスとファイルシステム",
+  ];
+  const filtered = filterStudyQuestions(questions, [], {
+    ...selection,
+    categories,
+    masteryFilter: "ALL",
+  });
+  assert.equal(filtered.length > 0, true);
+  assert.equal(filtered.every((item) => categories.includes(item.category)), true);
+  assert.equal(new Set(filtered.map((item) => item.category)).size, 2);
 });
 
 test("日別回答数と理解度の累積推移を再構成する", () => {

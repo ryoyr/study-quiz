@@ -58,4 +58,4 @@
 
 
 ## v3.0設計追補
-設定モデルに `examScopeId`、`defaultCategory`、`defaultMasteryFilter`、`defaultQuestionMode`、`defaultQuestionIds`、`theme` を持たせる。設定画面と初回設定は共通の `StudyFilterPanel` を使用し、保存後に学習画面の選択状態へ反映する。
+設定モデルに `examScopeId`、`defaultCategories`、互換用の `defaultCategory`、`defaultMasteryFilter`、`defaultQuestionMode`、`defaultQuestionIds`、`theme` を持たせる。設定画面と初回設定は共通の `StudyFilterPanel` を使用し、学習範囲はチェックボックスで複数選択できる。保存後に学習画面の選択状態へ反映する。旧データに `defaultCategories` がない場合は `defaultCategory` から自動移行する。

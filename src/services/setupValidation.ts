@@ -12,6 +12,7 @@ export type SetupErrors = Partial<
     | "reservedDates"
     | "examScopeId"
     | "defaultCategory"
+    | "defaultCategories"
     | "defaultMasteryFilter"
     | "defaultQuestionMode"
     | "defaultQuestionIds"
@@ -66,6 +67,8 @@ export const validateSetup = (setup: Setup, now = new Date()): SetupErrors => {
 
   if (!setup.examScopeId?.trim()) errors.examScopeId = "試験枠を選択してください。";
   if (!setup.defaultCategory?.trim()) errors.defaultCategory = "学習範囲を選択してください。";
+  if (!Array.isArray(setup.defaultCategories) || setup.defaultCategories.length === 0 || setup.defaultCategories.some((category) => typeof category !== "string" || !category.trim()) || new Set(setup.defaultCategories).size !== setup.defaultCategories.length || (setup.defaultCategories.includes("ALL") && setup.defaultCategories.length !== 1))
+    errors.defaultCategories = "学習範囲の初期値が不正です。";
   if (!["ALL", "UNLEARNED", "LEARNING", "MASTERED"].includes(setup.defaultMasteryFilter))
     errors.defaultMasteryFilter = "理解度の初期値が不正です。";
   if (!["ADAPTIVE", "NEW", "REVIEW", "WEAK", "ALL"].includes(setup.defaultQuestionMode))

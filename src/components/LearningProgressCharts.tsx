@@ -2,24 +2,39 @@ import { useMemo } from "react";
 import type { Question } from "../types/Question";
 import type { StudyHistory } from "../types/StudyHistory";
 import { buildLearningTrend } from "../services/learningTrendService.ts";
+import { selectChartTickIndexes } from "../services/chartLayoutService.ts";
 import HelpButton from "./HelpButton";
 
 type Props = { history: StudyHistory[]; questions: Question[]; days?: number; compact?: boolean };
 type Key = "answers" | "unlearned" | "learning" | "mastered";
 const COLORS: Record<Key, string> = { answers: "#2563eb", unlearned: "#94a3b8", learning: "#f59e0b", mastered: "#16a34a" };
 
-const points = (values: number[], width: number, height: number, max: number) =>
-  values.map((value, index) => `${values.length === 1 ? width / 2 : (index / (values.length - 1)) * width},${height - (value / Math.max(1, max)) * height}`).join(" ");
+const points = (
+  values: number[],
+  left: number,
+  right: number,
+  height: number,
+  max: number,
+) =>
+  values
+    .map(
+      (value, index) =>
+        `${values.length === 1 ? (left + right) / 2 : left + (index / (values.length - 1)) * (right - left)},${height - (value / Math.max(1, max)) * height}`,
+    )
+    .join(" ");
 
 function LineChart({ data, keys, max, label }: { data: ReturnType<typeof buildLearningTrend>; keys: Key[]; max: number; label: string }) {
   const width = 600;
   const height = 190;
+  const left = 10;
+  const right = width - 10;
+  const tickIndexes = new Set(selectChartTickIndexes(data.length));
   return (
     <div className="line-chart-wrap">
       <svg className="line-chart" viewBox={`0 0 ${width} ${height + 30}`} role="img" aria-label={label}>
-        {[0, 0.5, 1].map((ratio) => <line key={ratio} x1="0" x2={width} y1={height - ratio * height} y2={height - ratio * height} className="chart-grid-line" />)}
-        {keys.map((key) => <polyline key={key} points={points(data.map((item) => item[key]), width, height, max)} fill="none" stroke={COLORS[key]} strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />)}
-        {data.map((item, index) => (index === 0 || index === data.length - 1 || index % Math.ceil(data.length / 4) === 0) ? <text key={item.date} x={(index / Math.max(1, data.length - 1)) * width} y={height + 24} textAnchor={index === 0 ? "start" : index === data.length - 1 ? "end" : "middle"}>{item.label}</text> : null)}
+        {[0, 0.5, 1].map((ratio) => <line key={ratio} x1={left} x2={right} y1={height - ratio * height} y2={height - ratio * height} className="chart-grid-line" />)}
+        {keys.map((key) => <polyline key={key} points={points(data.map((item) => item[key]), left, right, height, max)} fill="none" stroke={COLORS[key]} strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />)}
+        {data.map((item, index) => tickIndexes.has(index) ? <text key={item.date} x={data.length === 1 ? width / 2 : left + (index / (data.length - 1)) * (right - left)} y={height + 24} textAnchor={index === 0 ? "start" : index === data.length - 1 ? "end" : "middle"}>{item.label}</text> : null)}
       </svg>
     </div>
   );

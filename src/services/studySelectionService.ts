@@ -5,10 +5,12 @@ import type { StudyHistory } from "../types/StudyHistory";
 import type { GeneratedStudySession, SourceType } from "../types/StudySession";
 import { analyzeWeakQuestions } from "./weakQuestionService.ts";
 import { generateStudySession } from "./sessionGenerator.ts";
+import { normalizeStudyCategories } from "./studyRangeService.ts";
 
 export interface StudySelection {
   examScopeId: string;
-  category: string;
+  /** ALLのみ、または選択した複数カテゴリ。 */
+  categories: string[];
   masteryFilter: MasteryFilter;
   questionMode: QuestionMode;
   questionIds: string[];
@@ -16,7 +18,7 @@ export interface StudySelection {
 
 export const selectionFromSetup = (setup: Setup): StudySelection => ({
   examScopeId: setup.examScopeId,
-  category: setup.defaultCategory,
+  categories: normalizeStudyCategories(setup.defaultCategories, setup.defaultCategory),
   masteryFilter: setup.defaultMasteryFilter,
   questionMode: setup.defaultQuestionMode,
   questionIds: [...setup.defaultQuestionIds],
@@ -35,9 +37,10 @@ export const filterStudyQuestions = (
   selection: StudySelection,
 ): Question[] => {
   const selectedIds = new Set(selection.questionIds);
+  const selectedCategories = new Set(normalizeStudyCategories(selection.categories));
   return questions.filter((question) =>
     question.examScopeId === selection.examScopeId &&
-    (selection.category === "ALL" || question.category === selection.category) &&
+    (selectedCategories.has("ALL") || selectedCategories.has(question.category)) &&
     (selection.masteryFilter === "ALL" || masteryForQuestion(question.id, states) === selection.masteryFilter) &&
     (selectedIds.size === 0 || selectedIds.has(question.id)),
   );

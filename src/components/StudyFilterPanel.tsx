@@ -5,6 +5,7 @@ import type { QuestionState } from "../types/QuestionState";
 import type { MasteryFilter, QuestionMode } from "../types/Setup";
 import type { StudySelection } from "../services/studySelectionService.ts";
 import { masteryForQuestion } from "../services/studySelectionService.ts";
+import { normalizeStudyCategories } from "../services/studyRangeService.ts";
 import HelpButton from "./HelpButton";
 
 type Props = {
@@ -33,24 +34,52 @@ const MODE_OPTIONS: Array<{ value: QuestionMode; label: string }> = [
 export default function StudyFilterPanel({ value, examScopes, questions, questionStates, onChange, title = "出題範囲" }: Props) {
   const [open, setOpen] = useState(false);
   const scoped = useMemo(() => questions.filter((question) => !question.archivedAt && question.examScopeId === value.examScopeId), [questions, value.examScopeId]);
-  const categories = useMemo(() => ["ALL", ...new Set(scoped.map((question) => question.category))], [scoped]);
+  const categories = useMemo(() => [...new Set(scoped.map((question) => question.category))].sort((left, right) => left.localeCompare(right, "ja")), [scoped]);
+  const selectedCategories = useMemo(() => new Set(normalizeStudyCategories(value.categories)), [value.categories]);
   const visible = useMemo(() => scoped.filter((question) =>
-    (value.category === "ALL" || question.category === value.category) &&
+    (selectedCategories.has("ALL") || selectedCategories.has(question.category)) &&
     (value.masteryFilter === "ALL" || masteryForQuestion(question.id, questionStates) === value.masteryFilter)),
-  [questionStates, scoped, value.category, value.masteryFilter]);
+  [questionStates, scoped, selectedCategories, value.masteryFilter]);
   const selected = new Set(value.questionIds);
   const patch = (partial: Partial<StudySelection>) => onChange({ ...value, ...partial });
   const toggle = (id: string) => patch({ questionIds: selected.has(id) ? value.questionIds.filter((item) => item !== id) : [...value.questionIds, id] });
+  const toggleCategory = (category: string) => {
+    if (category === "ALL") {
+      patch({ categories: ["ALL"], questionIds: [] });
+      return;
+    }
+    const next = selectedCategories.has("ALL")
+      ? [category]
+      : selectedCategories.has(category)
+        ? value.categories.filter((item) => item !== category)
+        : [...value.categories, category];
+    patch({ categories: next.length > 0 ? next : ["ALL"], questionIds: [] });
+  };
 
   return (
     <section className="study-filter-panel">
       <div className="study-filter-heading">
         <strong>{title}</strong>
-        <HelpButton title="出題範囲と出題方法">試験枠→カテゴリ→理解度の順で対象を絞ります。個別問題を選ぶと、その問題が最優先で出題されます。選択が0件なら条件一致全体が対象です。</HelpButton>
+        <HelpButton title="出題範囲と出題方法">試験枠→複数の学習範囲→理解度の順で対象を絞ります。全トピックを選ぶと範囲指定を解除します。個別問題を選ぶと、その問題が最優先で出題されます。</HelpButton>
       </div>
       <div className="study-filter-grid">
-        <label className="form-item"><span>試験枠</span><select value={value.examScopeId} onChange={(event) => patch({ examScopeId: event.target.value, category: "ALL", questionIds: [] })}>{examScopes.filter((item) => item.active).map((item) => <option key={item.id} value={item.id}>{item.name} ({item.examCode})</option>)}</select></label>
-        <label className="form-item"><span>学習範囲</span><select value={value.category} onChange={(event) => patch({ category: event.target.value, questionIds: [] })}>{categories.map((item) => <option key={item} value={item}>{item === "ALL" ? "全トピック" : item}</option>)}</select></label>
+        <label className="form-item"><span>試験枠</span><select value={value.examScopeId} onChange={(event) => patch({ examScopeId: event.target.value, categories: ["ALL"], questionIds: [] })}>{examScopes.filter((item) => item.active).map((item) => <option key={item.id} value={item.id}>{item.name} ({item.examCode})</option>)}</select></label>
+        <fieldset className="form-item study-range-fieldset">
+          <legend>学習範囲（複数選択可）</legend>
+          <div className="study-range-options">
+            <label className={selectedCategories.has("ALL") ? "is-selected" : ""}>
+              <input type="checkbox" checked={selectedCategories.has("ALL")} onChange={() => toggleCategory("ALL")} />
+              <span>全トピック</span>
+            </label>
+            {categories.map((category) => (
+              <label key={category} className={selectedCategories.has(category) ? "is-selected" : ""}>
+                <input type="checkbox" checked={selectedCategories.has(category)} onChange={() => toggleCategory(category)} />
+                <span>{category}</span>
+              </label>
+            ))}
+          </div>
+          <small>{selectedCategories.has("ALL") ? "全範囲を対象" : `${selectedCategories.size}件の範囲を選択中`}</small>
+        </fieldset>
         <label className="form-item"><span>理解度</span><select value={value.masteryFilter} onChange={(event) => patch({ masteryFilter: event.target.value as MasteryFilter, questionIds: [] })}>{MASTERY_OPTIONS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
         <label className="form-item"><span>出題方法</span><select value={value.questionMode} disabled={value.questionIds.length > 0} onChange={(event) => patch({ questionMode: event.target.value as QuestionMode })}>{MODE_OPTIONS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
       </div>

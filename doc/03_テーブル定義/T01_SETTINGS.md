@@ -19,16 +19,18 @@
 |10|reservedWeekdays|number[]||毎週の非学習曜日|
 |11|examScopeId|string|○|既定の試験枠|
 |12|defaultCategory|string|○|既定トピック。`ALL`可|
-|13|defaultMasteryFilter|enum|○|`ALL` / `UNLEARNED` / `LEARNING` / `MASTERED`|
-|14|defaultQuestionMode|enum|○|`ADAPTIVE` / `NEW` / `REVIEW` / `WEAK` / `ALL`|
-|15|defaultQuestionIds|string[]|○|既定の個別問題。空配列は条件一致全体|
-|16|theme|enum|○|`system` / `light` / `dark`|
-|17|setupCompleted|boolean|○|初回設定完了|
-|18|createdAt|datetime|○|作成日時|
-|19|updatedAt|datetime|○|更新日時|
+|13|defaultCategories|string[]|○|既定トピックの複数選択。全範囲は `["ALL"]`。旧データは `defaultCategory` から移行|
+|14|defaultMasteryFilter|enum|○|`ALL` / `UNLEARNED` / `LEARNING` / `MASTERED`|
+|15|defaultQuestionMode|enum|○|`ADAPTIVE` / `NEW` / `REVIEW` / `WEAK` / `ALL`|
+|16|defaultQuestionIds|string[]|○|既定の個別問題。空配列は条件一致全体|
+|17|theme|enum|○|`system` / `light` / `dark`|
+|18|setupCompleted|boolean|○|初回設定完了|
+|19|createdAt|datetime|○|作成日時|
+|20|updatedAt|datetime|○|更新日時|
 
 ## 3. 制約
 - 試験日は当日以降。
 - 日次総上限は日次新規上限以上。
 - 個別問題IDは重複不可。
+- `defaultCategories` は `["ALL"]` または1件以上の実在トピックを保持し、`ALL` と個別トピックは混在させない。
 - 旧形式の不足値はLPIC-1 101、全範囲、おすすめ、端末連動へ補完する。

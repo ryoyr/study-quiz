@@ -19,6 +19,8 @@ export interface Setup {
   examScopeId: string;
   /** 学習画面を開いたときの初期トピック。ALLは試験枠全体。 */
   defaultCategory: string;
+  /** 複数選択した初期トピック。ALLのみの場合は試験枠全体。 */
+  defaultCategories: string[];
   /** 学習画面を開いたときの初期理解度フィルター。 */
   defaultMasteryFilter: MasteryFilter;
   /** 学習画面を開いたときの初期出題方法。 */
@@ -54,6 +56,7 @@ export const createDefaultSetup = (): Setup => {
     reservedWeekdays: [],
     examScopeId: LPIC101_EXAM_SCOPE_ID,
     defaultCategory: "ALL",
+    defaultCategories: ["ALL"],
     defaultMasteryFilter: "ALL",
     defaultQuestionMode: "ADAPTIVE",
     defaultQuestionIds: [],

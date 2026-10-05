@@ -7,7 +7,10 @@ import NavIcon from "./NavIcon";
 export type NavigationSection = "home" | "learn" | "records" | "manage" | "more";
 type StatusProps = { remainingDays: number; completedToday: number; dailyMinimum: number; streakDays: number };
 type NavigationProps = { active: NavigationSection; onNavigate: (section: NavigationSection) => void };
-type FrameProps = StatusProps & NavigationProps & { children: ReactNode };
+type FrameProps = StatusProps & NavigationProps & {
+  children: ReactNode;
+  showContextHelp?: boolean;
+};
 const NAV_ITEMS: Array<{ id: NavigationSection; label: string }> = [
   { id: "home", label: "ホーム" }, { id: "learn", label: "学習" }, { id: "records", label: "記録" }, { id: "manage", label: "管理" }, { id: "more", label: "その他" },
 ];
@@ -33,13 +36,17 @@ function AppStatusBar({ remainingDays, completedToday, dailyMinimum, streakDays 
 function BottomNavigation({ active, onNavigate }: NavigationProps) {
   return <nav className="bottom-navigation" aria-label="主要機能"><div className="bottom-navigation-inner">{NAV_ITEMS.map((item) => <button key={item.id} type="button" className={active === item.id ? "bottom-nav-item is-active" : "bottom-nav-item"} aria-current={active === item.id ? "page" : undefined} onClick={() => onNavigate(item.id)}><span className="bottom-nav-icon" aria-hidden="true"><NavIcon name={item.id} /></span><span>{item.label}</span></button>)}</div></nav>;
 }
-export default function AppChrome({ children, active, onNavigate, remainingDays, completedToday, dailyMinimum, streakDays }: FrameProps) {
+export default function AppChrome({ children, active, onNavigate, remainingDays, completedToday, dailyMinimum, streakDays, showContextHelp = true }: FrameProps) {
   return (
     <div className="app-frame">
       <AppStatusBar remainingDays={remainingDays} completedToday={completedToday} dailyMinimum={dailyMinimum} streakDays={streakDays} />
       {children}
       <FirstVisitGuide />
-      <HelpButton className="global-help-control" title={HELP[active].title}>{HELP[active].text}</HelpButton>
+      {showContextHelp && (
+        <HelpButton className="context-help-control" title={HELP[active].title}>
+          {HELP[active].text}
+        </HelpButton>
+      )}
       <GlobalAiChat />
       <BottomNavigation active={active} onNavigate={onNavigate} />
     </div>

@@ -33,6 +33,7 @@ test("個別日と曜日指定を学習しない日として統合する", () =>
     reservedWeekdays: [0, 6],
     examScopeId: "lpic101",
     defaultCategory: "ALL",
+    defaultCategories: ["ALL"],
     defaultMasteryFilter: "ALL",
     defaultQuestionMode: "ADAPTIVE",
     defaultQuestionIds: [],
