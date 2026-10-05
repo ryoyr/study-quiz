@@ -23,12 +23,12 @@ test("appとnodeの型検査はstrict・noEmit・Bundler解決を使う", () => 
   assert.equal(readJson("tsconfig.app.json").compilerOptions.jsx, "react-jsx");
 });
 
-test("checkは構成検証・単体試験・ビルドを順に実行する", () => {
+test("checkは構成検証・単体試験・ビルド・E2Eを順に実行する", () => {
   const scripts = readJson("package.json").scripts as Record<string, string>;
   assert.equal(scripts["verify:structure"], "node scripts/verify-project.mjs");
+  assert.equal(scripts["test:e2e"], "node scripts/e2e-accessibility.mjs");
   assert.equal(
     scripts.check,
-    "npm run verify:structure && npm run test && npm run build",
+    "npm run verify:structure && npm run test && npm run build && npm run test:e2e",
   );
 });
-

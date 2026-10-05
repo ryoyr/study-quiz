@@ -1,42 +1,35 @@
 name: Deploy Vite app to GitHub Pages
-
 on:
   push:
     branches:
       - main
-
 permissions:
   contents: read
   pages: write
   id-token: write
-
 concurrency:
   group: pages
   cancel-in-progress: true
-
 jobs:
   deploy:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v5
-
       - uses: actions/setup-node@v5
         with:
           node-version: 24
-
       - run: npm install --no-audit --no-fund
-      - run: npm run build
-
+      - id: setup-chrome
+        uses: browser-actions/setup-chrome@v2
+      - run: npm run check
+        env:
+          CHROME_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
       - uses: actions/configure-pages@v5
-
       - uses: actions/upload-pages-artifact@v4
         with:
           path: ./dist
-
       - id: deployment
         uses: actions/deploy-pages@v4

@@ -1,5 +1,4 @@
 import { existsSync, readFileSync, statSync } from "node:fs";
-
 const failures = [];
 const assert = (condition, message) => {
   if (!condition) failures.push(message);
@@ -25,7 +24,6 @@ const readPngSize = (path) => {
     return { width: 0, height: 0 };
   }
 };
-
 const requiredFiles = [
   "index.html",
   "package.json",
@@ -39,20 +37,21 @@ const requiredFiles = [
   "src/App.tsx",
   "src/services/storageKeyRegistry.ts",
   "tests/storageKeyRegistry.test.ts",
+  "scripts/e2e-accessibility.mjs",
+  "tests/accessibilityHarness.test.ts",
 ];
 for (const path of requiredFiles) assert(existsSync(path), `${path} がありません`);
-
 const packageJson = readJson("package.json");
-for (const script of ["verify:structure", "test", "typecheck", "build", "check"]) {
+for (const script of ["verify:structure", "test", "test:e2e", "typecheck", "build", "check"]) {
   assert(typeof packageJson.scripts?.[script] === "string", `scripts.${script} がありません`);
 }
 assert(
   packageJson.scripts?.check?.includes("verify:structure") &&
     packageJson.scripts?.check?.includes("test") &&
-    packageJson.scripts?.check?.includes("build"),
-  "scripts.check は構成検証・テスト・ビルドを順に実行する必要があります",
+    packageJson.scripts?.check?.includes("build") &&
+    packageJson.scripts?.check?.includes("test:e2e"),
+  "scripts.check は構成検証・テスト・ビルド・E2Eを順に実行する必要があります",
 );
-
 const rootConfig = readJson("tsconfig.json");
 const references = new Set((rootConfig.references ?? []).map((item) => item.path));
 assert(references.has("./tsconfig.app.json"), "tsconfig.app.json への参照がありません");
@@ -65,7 +64,6 @@ for (const path of ["tsconfig.app.json", "tsconfig.node.json"]) {
 }
 const appConfig = readJson("tsconfig.app.json");
 assert(appConfig.compilerOptions?.jsx === "react-jsx", "tsconfig.app.json: jsx=react-jsx が必要です");
-
 const retiredPaths = [
   "src/components/BottomNavigation.tsx",
   "src/pages/GeminiSettingsSection.tsx",
@@ -86,7 +84,6 @@ const retiredPaths = [
   "public/icons.svg",
 ];
 for (const path of retiredPaths) assert(!existsSync(path), `${path} は削除対象です`);
-
 const manifest = readJson("public/manifest.webmanifest");
 assert(manifest.start_url === "./", "manifest.start_url は ./ である必要があります");
 assert(manifest.scope === "./", "manifest.scope は ./ である必要があります");
@@ -101,7 +98,6 @@ for (const icon of manifest.icons ?? []) {
 }
 const appleIcon = readPngSize("public/apple-touch-icon.png");
 assert(appleIcon.width === 180 && appleIcon.height === 180, "apple-touch-icon.png は180x180である必要があります");
-
 for (const [path, tokens] of [
   ["src/main.tsx", ["<ErrorBoundary>", "<PwaUpdatePrompt />"]],
   ["public/sw.js", ["SKIP_WAITING", "matchAll", "pwa-maskable-512x512.png"]],
@@ -113,7 +109,6 @@ for (const [path, tokens] of [
     failures.push(`${path} を検証できません: ${error.message}`);
   }
 }
-
 if (failures.length > 0) {
   console.error(`構成検証で ${failures.length} 件の問題を検出しました。`);
   for (const failure of failures) console.error(`- ${failure}`);
@@ -121,4 +116,3 @@ if (failures.length > 0) {
 } else {
   console.log("構成検証に成功しました（TypeScript設定、PWA資材、統合状態）。");
 }
-
