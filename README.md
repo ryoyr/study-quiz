@@ -1,75 +1,36 @@
-# React + TypeScript + Vite
+# Study Quiz
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+資格試験向けのローカルファースト学習PWAです。試験日・復習期限・弱点・回答速度・利用可能時間を用いて学習セッションを構成します。
 
-Currently, two official plugins are available:
+## 必要環境
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Node.js 20.19以上
+- npm
 
-## React Compiler
+## 開発コマンド
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```bash
+npm ci
+npm run dev
+npm run test
+npm run typecheck
+npm run build
+npm run check
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+## v1.1.0で追加・修正した内容
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+- 欠落していたTypeScriptプロジェクト設定を追加
+- 共通ErrorBoundaryとPWA更新通知・Service Worker登録をアプリルートへ接続
+- PWAアイコンを正しいPNGとして再生成
+- F14類似問題生成をコピー＆レビュー方式で正式実装
+- 未統合の試作、旧画面、重複サービスを削除
+- 類似問題サービスと構成・PWA回帰テストを追加
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## データ保護方針
 
-```
+- 主要データは端末内に保存します。
+- AI支援はプロンプトのコピー方式で、アプリから外部AIへ自動送信しません。
+- 完全バックアップにAPIキーを含めません。
+
+詳細は `doc/` とアップグレード成果物の `UPGRADE_REPORT.md` を参照してください。

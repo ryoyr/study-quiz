@@ -1,8 +1,5 @@
-
-
-
-import type { Question } from '../types/Question';
-import type { StudyHistory } from '../types/StudyHistory';
+import type { Question } from "../types/Question";
+import type { StudyHistory } from "../types/StudyHistory";
 
 export interface WeakQuestionCandidate {
   question: Question;
@@ -14,7 +11,9 @@ export interface WeakQuestionCandidate {
 }
 
 const average = (values: number[]): number =>
-  values.length === 0 ? 0 : values.reduce((sum, value) => sum + value, 0) / values.length;
+  values.length === 0
+    ? 0
+    : values.reduce((sum, value) => sum + value, 0) / values.length;
 
 export const analyzeWeakQuestions = (
   questions: Question[],
@@ -32,7 +31,9 @@ export const analyzeWeakQuestions = (
 
       const correctCount = answers.filter((item) => item.correct).length;
       const accuracyRate = correctCount / answers.length;
-      const averageInstantScore = average(answers.map((item) => item.instantScore));
+      const averageInstantScore = average(
+        answers.map((item) => item.instantScore),
+      );
       const recentIncorrect = !answers[0].correct;
       const accuracyDeficit = 1 - accuracyRate;
       const speedDeficit = 1 - averageInstantScore;

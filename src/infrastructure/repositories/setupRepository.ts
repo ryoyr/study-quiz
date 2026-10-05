@@ -1,12 +1,10 @@
-
-
-import type { Setup } from '../../types/Setup';
+import type { Setup } from "../../types/Setup";
 import {
   clearInitialSetupRecords,
   EXAM_ID,
   readInitialSetupRecords,
   writeInitialSetupRecords,
-} from '../db/database';
+} from "../db/database";
 
 export const findSetup = async (): Promise<Setup | null> => {
   const records = await readInitialSetupRecords();
@@ -21,7 +19,8 @@ export const findSetup = async (): Promise<Setup | null> => {
     // 画面・ドメイン層は百分率、IndexedDBは設計どおり0.0～1.0で保持する。
     bufferRate: exam.bufferRate * 100,
     instantThresholdSeconds: exam.instantThresholdSeconds,
-    dailyMinimumQuestions: exam.dailyMinimumQuestions ?? Math.min(15, exam.dailyQuestionLimit),
+    dailyMinimumQuestions:
+      exam.dailyMinimumQuestions ?? Math.min(15, exam.dailyQuestionLimit),
     reservedDates: records.reservedDates.map((item) => item.date),
     setupCompleted: records.setupCompleted,
     createdAt: exam.createdAt,
@@ -43,7 +42,10 @@ export const persistSetup = async (setup: Setup): Promise<void> => {
       createdAt: setup.createdAt,
       updatedAt: setup.updatedAt,
     },
-    reservedDates: setup.reservedDates.map((date) => ({ examId: EXAM_ID, date })),
+    reservedDates: setup.reservedDates.map((date) => ({
+      examId: EXAM_ID,
+      date,
+    })),
     setupCompleted: setup.setupCompleted,
   });
 };

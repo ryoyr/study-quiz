@@ -15,12 +15,12 @@ interface StorageTransactionJournal {
   before: Record<string, string | null>;
 }
 
-const JOURNAL_KEY = 'study-quiz-storage-transaction-v1';
-const APP_KEY_PREFIX = 'study-quiz-';
+const JOURNAL_KEY = "study-quiz-storage-transaction-v1";
+const APP_KEY_PREFIX = "study-quiz-";
 
 const getDefaultStorage = (): StorageLike => {
-  if (!('localStorage' in globalThis)) {
-    throw new Error('この環境では端末内ストレージを利用できません。');
+  if (!("localStorage" in globalThis)) {
+    throw new Error("この環境では端末内ストレージを利用できません。");
   }
   return globalThis.localStorage;
 };
@@ -38,7 +38,7 @@ const validateMutations = (mutations: StorageMutation[]): StorageMutation[] => {
     if (seen.has(mutation.key)) {
       throw new Error(`保存対象のキーが重複しています: ${mutation.key}`);
     }
-    if (mutation.value !== null && typeof mutation.value !== 'string') {
+    if (mutation.value !== null && typeof mutation.value !== "string") {
       throw new Error(`保存値の形式が不正です: ${mutation.key}`);
     }
     seen.add(mutation.key);
@@ -50,16 +50,21 @@ const parseJournal = (raw: string): StorageTransactionJournal | null => {
   try {
     const value = JSON.parse(raw) as Partial<StorageTransactionJournal>;
     if (
-      value.version !== 1
-      || typeof value.createdAt !== 'string'
-      || !Number.isFinite(Date.parse(value.createdAt))
-      || !value.before
-      || typeof value.before !== 'object'
-      || Array.isArray(value.before)
-    ) return null;
+      value.version !== 1 ||
+      typeof value.createdAt !== "string" ||
+      !Number.isFinite(Date.parse(value.createdAt)) ||
+      !value.before ||
+      typeof value.before !== "object" ||
+      Array.isArray(value.before)
+    )
+      return null;
 
     for (const [key, previous] of Object.entries(value.before)) {
-      if (!isAppDataKey(key) || (previous !== null && typeof previous !== 'string')) return null;
+      if (
+        !isAppDataKey(key) ||
+        (previous !== null && typeof previous !== "string")
+      )
+        return null;
     }
     return value as StorageTransactionJournal;
   } catch {
@@ -67,7 +72,10 @@ const parseJournal = (raw: string): StorageTransactionJournal | null => {
   }
 };
 
-const applyValues = (storage: StorageLike, values: Record<string, string | null>): void => {
+const applyValues = (
+  storage: StorageLike,
+  values: Record<string, string | null>,
+): void => {
   Object.entries(values).forEach(([key, value]) => {
     if (value === null) storage.removeItem(key);
     else storage.setItem(key, value);
@@ -78,7 +86,9 @@ const applyValues = (storage: StorageLike, values: Record<string, string | null>
  * 前回の保存がブラウザ終了などで中断していた場合、変更前の状態へ戻す。
  * 復旧できたときだけtrueを返す。
  */
-export const recoverStorageTransaction = (storage: StorageLike = getDefaultStorage()): boolean => {
+export const recoverStorageTransaction = (
+  storage: StorageLike = getDefaultStorage(),
+): boolean => {
   const raw = storage.getItem(JOURNAL_KEY);
   if (!raw) return false;
 
@@ -107,7 +117,9 @@ export const executeStorageTransaction = (
   // 既存の未完了処理を先に解消し、ジャーナルを上書きしない。
   recoverStorageTransaction(storage);
 
-  const before = Object.fromEntries(targets.map(({ key }) => [key, storage.getItem(key)]));
+  const before = Object.fromEntries(
+    targets.map(({ key }) => [key, storage.getItem(key)]),
+  );
   const journal: StorageTransactionJournal = {
     version: 1,
     createdAt: new Date().toISOString(),
@@ -126,11 +138,18 @@ export const executeStorageTransaction = (
       applyValues(storage, before);
       storage.removeItem(JOURNAL_KEY);
     } catch (rollbackError) {
-      const writeReason = writeError instanceof Error ? writeError.message : String(writeError);
-      const rollbackReason = rollbackError instanceof Error ? rollbackError.message : String(rollbackError);
-      throw new Error(`保存と復旧に失敗しました。保存: ${writeReason} / 復旧: ${rollbackReason}`);
+      const writeReason =
+        writeError instanceof Error ? writeError.message : String(writeError);
+      const rollbackReason =
+        rollbackError instanceof Error
+          ? rollbackError.message
+          : String(rollbackError);
+      throw new Error(
+        `保存と復旧に失敗しました。保存: ${writeReason} / 復旧: ${rollbackReason}`,
+      );
     }
-    const reason = writeError instanceof Error ? writeError.message : String(writeError);
+    const reason =
+      writeError instanceof Error ? writeError.message : String(writeError);
     throw new Error(`保存できなかったため変更前へ戻しました。原因: ${reason}`);
   }
 };

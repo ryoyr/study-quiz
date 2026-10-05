@@ -1,13 +1,10 @@
+import type { Setup } from "../types/Setup";
 
-
-
-import type { Setup } from '../types/Setup';
-
-const STORAGE_KEY = 'study-quiz-setup-v1';
+const STORAGE_KEY = "study-quiz-setup-v1";
 
 const normalizeSetup = (value: Partial<Setup>): Setup => ({
-  name: value.name ?? 'LinuC 101',
-  examDate: value.examDate ?? '',
+  name: value.name ?? "LinuC 101",
+  examDate: value.examDate ?? "",
   dailyNewLimit: value.dailyNewLimit ?? 10,
   dailyQuestionLimit: value.dailyQuestionLimit ?? 20,
   bufferRate: value.bufferRate ?? 20,

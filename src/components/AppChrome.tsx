@@ -1,8 +1,11 @@
+import { useEffect, useState, type ReactNode } from "react";
 
-
-import { useEffect, useState, type ReactNode } from 'react';
-
-export type NavigationSection = 'home' | 'learn' | 'records' | 'manage' | 'more';
+export type NavigationSection =
+  | "home"
+  | "learn"
+  | "records"
+  | "manage"
+  | "more";
 
 type StatusProps = {
   remainingDays: number;
@@ -16,39 +19,63 @@ type NavigationProps = {
   onNavigate: (section: NavigationSection) => void;
 };
 
-type FrameProps = StatusProps & NavigationProps & {
-  children: ReactNode;
-};
+type FrameProps = StatusProps &
+  NavigationProps & {
+    children: ReactNode;
+  };
 
-const NAV_ITEMS: Array<{ id: NavigationSection; icon: string; label: string }> = [
-  { id: 'home', icon: '⌂', label: 'ホーム' },
-  { id: 'learn', icon: '▶', label: '学習' },
-  { id: 'records', icon: '▥', label: '記録' },
-  { id: 'manage', icon: '▦', label: '管理' },
-  { id: 'more', icon: '•••', label: 'その他' },
-];
+const NAV_ITEMS: Array<{ id: NavigationSection; icon: string; label: string }> =
+  [
+    { id: "home", icon: "⌂", label: "ホーム" },
+    { id: "learn", icon: "▶", label: "学習" },
+    { id: "records", icon: "▥", label: "記録" },
+    { id: "manage", icon: "▦", label: "管理" },
+    { id: "more", icon: "•••", label: "その他" },
+  ];
 
-function AppStatusBar({ remainingDays, completedToday, dailyMinimum, streakDays }: StatusProps) {
-  const [online, setOnline] = useState(() => typeof navigator === 'undefined' || navigator.onLine);
+function AppStatusBar({
+  remainingDays,
+  completedToday,
+  dailyMinimum,
+  streakDays,
+}: StatusProps) {
+  const [online, setOnline] = useState(
+    () => typeof navigator === "undefined" || navigator.onLine,
+  );
 
   useEffect(() => {
     const update = () => setOnline(navigator.onLine);
-    window.addEventListener('online', update);
-    window.addEventListener('offline', update);
+    window.addEventListener("online", update);
+    window.addEventListener("offline", update);
     return () => {
-      window.removeEventListener('online', update);
-      window.removeEventListener('offline', update);
+      window.removeEventListener("online", update);
+      window.removeEventListener("offline", update);
     };
   }, []);
 
-  const examLabel = remainingDays > 0 ? `試験まで ${remainingDays}日` : remainingDays === 0 ? '試験当日' : `試験日から ${Math.abs(remainingDays)}日`;
-  const minimumLabel = dailyMinimum > 0 ? `今日 ${completedToday}/${dailyMinimum}問` : `今日 ${completedToday}問`;
+  const examLabel =
+    remainingDays > 0
+      ? `試験まで ${remainingDays}日`
+      : remainingDays === 0
+        ? "試験当日"
+        : `試験日から ${Math.abs(remainingDays)}日`;
+  const minimumLabel =
+    dailyMinimum > 0
+      ? `今日 ${completedToday}/${dailyMinimum}問`
+      : `今日 ${completedToday}問`;
 
   return (
     <header className="app-status-bar" aria-label="学習ステータス">
       <div className="app-status-inner">
-        <span className={online ? 'connection-status is-online' : 'connection-status is-offline'}>
-          <i aria-hidden="true" />{online ? 'オンライン' : 'オフライン'}
+        <span
+          className={
+            online
+              ? "connection-status is-online"
+              : "connection-status is-offline"
+          }
+        >
+          <i aria-hidden="true" />
+          {online ? "オンライン" : "オフライン"}
         </span>
         <span>{examLabel}</span>
         <span>{minimumLabel}</span>
@@ -66,11 +93,17 @@ function BottomNavigation({ active, onNavigate }: NavigationProps) {
           <button
             key={item.id}
             type="button"
-            className={active === item.id ? 'bottom-nav-item is-active' : 'bottom-nav-item'}
-            aria-current={active === item.id ? 'page' : undefined}
+            className={
+              active === item.id
+                ? "bottom-nav-item is-active"
+                : "bottom-nav-item"
+            }
+            aria-current={active === item.id ? "page" : undefined}
             onClick={() => onNavigate(item.id)}
           >
-            <span className="bottom-nav-icon" aria-hidden="true">{item.icon}</span>
+            <span className="bottom-nav-icon" aria-hidden="true">
+              {item.icon}
+            </span>
             <span>{item.label}</span>
           </button>
         ))}
@@ -79,7 +112,15 @@ function BottomNavigation({ active, onNavigate }: NavigationProps) {
   );
 }
 
-export default function AppChrome({ children, active, onNavigate, remainingDays, completedToday, dailyMinimum, streakDays }: FrameProps) {
+export default function AppChrome({
+  children,
+  active,
+  onNavigate,
+  remainingDays,
+  completedToday,
+  dailyMinimum,
+  streakDays,
+}: FrameProps) {
   return (
     <div className="app-frame">
       <AppStatusBar

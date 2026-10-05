@@ -1,6 +1,3 @@
-
-
-
 export interface Setup {
   name: string;
   examDate: string;
@@ -17,8 +14,8 @@ export interface Setup {
 
 const localDate = (date: Date): string => {
   const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 };
 
@@ -27,7 +24,7 @@ export const createDefaultSetup = (): Setup => {
   examDate.setDate(examDate.getDate() + 60);
   const now = new Date().toISOString();
   return {
-    name: 'LinuC 101',
+    name: "LinuC 101",
     examDate: localDate(examDate),
     dailyNewLimit: 10,
     dailyQuestionLimit: 20,

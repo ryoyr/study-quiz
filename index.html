@@ -1,19 +1,27 @@
-
 <!doctype html>
 <html lang="ja">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
     <meta name="theme-color" content="#2563eb" />
-    <meta name="description" content="オフラインで利用できる適応型資格試験学習アプリ" />
+    <meta
+      name="description"
+      content="オフラインで利用できる適応型資格試験学習アプリ"
+    />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="StudyQuiz" />
-    <link rel="manifest" href="/study-quiz/manifest.webmanifest" />
-    <link rel="apple-touch-icon" href="/study-quiz/apple-touch-icon.png" />
+    <link rel="manifest" href="%BASE_URL%manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="%BASE_URL%apple-touch-icon.png" />
     <title>Study Quiz</title>
   </head>
   <body>
+    <noscript
+      >このアプリを利用するにはJavaScriptを有効にしてください。</noscript
+    >
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

@@ -1,9 +1,7 @@
-
-
-const DATABASE_NAME = 'study-quiz';
+const DATABASE_NAME = "study-quiz";
 const DATABASE_VERSION = 1;
 
-export const EXAM_ID = 'linuc101';
+export const EXAM_ID = "linuc101";
 
 export interface ExamRecord {
   id: string;
@@ -39,110 +37,144 @@ let databasePromise: Promise<IDBDatabase> | null = null;
 
 const requestToPromise = <T>(request: IDBRequest<T>): Promise<T> =>
   new Promise((resolve, reject) => {
-    request.addEventListener('success', () => resolve(request.result), { once: true });
+    request.addEventListener("success", () => resolve(request.result), {
+      once: true,
+    });
     request.addEventListener(
-      'error',
-      () => reject(request.error ?? new Error('IndexedDBの操作に失敗しました。')),
+      "error",
+      () =>
+        reject(request.error ?? new Error("IndexedDBの操作に失敗しました。")),
       { once: true },
     );
   });
 
 const transactionToPromise = (transaction: IDBTransaction): Promise<void> =>
   new Promise((resolve, reject) => {
-    transaction.addEventListener('complete', () => resolve(), { once: true });
+    transaction.addEventListener("complete", () => resolve(), { once: true });
     transaction.addEventListener(
-      'abort',
-      () => reject(transaction.error ?? new Error('IndexedDBトランザクションが中断されました。')),
+      "abort",
+      () =>
+        reject(
+          transaction.error ??
+            new Error("IndexedDBトランザクションが中断されました。"),
+        ),
       { once: true },
     );
     transaction.addEventListener(
-      'error',
-      () => reject(transaction.error ?? new Error('IndexedDBトランザクションに失敗しました。')),
+      "error",
+      () =>
+        reject(
+          transaction.error ??
+            new Error("IndexedDBトランザクションに失敗しました。"),
+        ),
       { once: true },
     );
   });
 
 export const openDatabase = (): Promise<IDBDatabase> => {
   if (databasePromise) return databasePromise;
-  if (!('indexedDB' in globalThis)) {
-    return Promise.reject(new Error('このブラウザではIndexedDBを利用できません。'));
+  if (!("indexedDB" in globalThis)) {
+    return Promise.reject(
+      new Error("このブラウザではIndexedDBを利用できません。"),
+    );
   }
 
   databasePromise = new Promise((resolve, reject) => {
     const request = indexedDB.open(DATABASE_NAME, DATABASE_VERSION);
 
-    request.addEventListener('upgradeneeded', () => {
+    request.addEventListener("upgradeneeded", () => {
       const database = request.result;
-      if (!database.objectStoreNames.contains('exams')) {
-        const exams = database.createObjectStore('exams', { keyPath: 'id' });
-        exams.createIndex('name', 'name');
-        exams.createIndex('examDate', 'examDate');
+      if (!database.objectStoreNames.contains("exams")) {
+        const exams = database.createObjectStore("exams", { keyPath: "id" });
+        exams.createIndex("name", "name");
+        exams.createIndex("examDate", "examDate");
       }
-      if (!database.objectStoreNames.contains('days')) {
-        const days = database.createObjectStore('days', { keyPath: ['examId', 'date'] });
-        days.createIndex('date', 'date');
+      if (!database.objectStoreNames.contains("days")) {
+        const days = database.createObjectStore("days", {
+          keyPath: ["examId", "date"],
+        });
+        days.createIndex("date", "date");
       }
-      if (!database.objectStoreNames.contains('settings')) {
-        database.createObjectStore('settings', { keyPath: 'key' });
+      if (!database.objectStoreNames.contains("settings")) {
+        database.createObjectStore("settings", { keyPath: "key" });
       }
     });
 
-    request.addEventListener('success', () => {
+    request.addEventListener("success", () => {
       const database = request.result;
-      database.addEventListener('versionchange', () => database.close());
+      database.addEventListener("versionchange", () => database.close());
       resolve(database);
     });
-    request.addEventListener('blocked', () => {
+    request.addEventListener("blocked", () => {
       databasePromise = null;
-      reject(new Error('別タブで旧バージョンが開かれているため、データベースを更新できません。'));
+      reject(
+        new Error(
+          "別タブで旧バージョンが開かれているため、データベースを更新できません。",
+        ),
+      );
     });
-    request.addEventListener('error', () => {
+    request.addEventListener("error", () => {
       databasePromise = null;
-      reject(request.error ?? new Error('IndexedDBを開けませんでした。'));
+      reject(request.error ?? new Error("IndexedDBを開けませんでした。"));
     });
   });
 
   return databasePromise;
 };
 
-export const readInitialSetupRecords = async (): Promise<InitialSetupRecords | null> => {
-  const database = await openDatabase();
-  const transaction = database.transaction(['exams', 'days', 'settings'], 'readonly');
-  const completion = transactionToPromise(transaction);
-  const examRequest = transaction.objectStore('exams').get(EXAM_ID) as IDBRequest<ExamRecord | undefined>;
-  const daysRequest = transaction.objectStore('days').getAll() as IDBRequest<ReservedDateRecord[]>;
-  const settingRequest = transaction.objectStore('settings').get('setup') as IDBRequest<SettingRecord | undefined>;
+export const readInitialSetupRecords =
+  async (): Promise<InitialSetupRecords | null> => {
+    const database = await openDatabase();
+    const transaction = database.transaction(
+      ["exams", "days", "settings"],
+      "readonly",
+    );
+    const completion = transactionToPromise(transaction);
+    const examRequest = transaction
+      .objectStore("exams")
+      .get(EXAM_ID) as IDBRequest<ExamRecord | undefined>;
+    const daysRequest = transaction.objectStore("days").getAll() as IDBRequest<
+      ReservedDateRecord[]
+    >;
+    const settingRequest = transaction
+      .objectStore("settings")
+      .get("setup") as IDBRequest<SettingRecord | undefined>;
 
-  const [exam, allDays, setupSetting] = await Promise.all([
-    requestToPromise(examRequest),
-    requestToPromise(daysRequest),
-    requestToPromise(settingRequest),
-  ]);
-  await completion;
+    const [exam, allDays, setupSetting] = await Promise.all([
+      requestToPromise(examRequest),
+      requestToPromise(daysRequest),
+      requestToPromise(settingRequest),
+    ]);
+    await completion;
 
-  if (!exam) return null;
-  return {
-    exam,
-    reservedDates: allDays
-      .filter((item) => item.examId === EXAM_ID)
-      .sort((left, right) => left.date.localeCompare(right.date)),
-    setupCompleted: setupSetting?.value === 'true',
+    if (!exam) return null;
+    return {
+      exam,
+      reservedDates: allDays
+        .filter((item) => item.examId === EXAM_ID)
+        .sort((left, right) => left.date.localeCompare(right.date)),
+      setupCompleted: setupSetting?.value === "true",
+    };
   };
-};
 
-export const writeInitialSetupRecords = async (records: InitialSetupRecords): Promise<void> => {
+export const writeInitialSetupRecords = async (
+  records: InitialSetupRecords,
+): Promise<void> => {
   const database = await openDatabase();
-  const transaction = database.transaction(['exams', 'days', 'settings'], 'readwrite');
+  const transaction = database.transaction(
+    ["exams", "days", "settings"],
+    "readwrite",
+  );
   const completion = transactionToPromise(transaction);
 
   try {
-    transaction.objectStore('exams').put(records.exam);
-    const days = transaction.objectStore('days');
+    transaction.objectStore("exams").put(records.exam);
+    const days = transaction.objectStore("days");
     days.clear();
     records.reservedDates.forEach((item) => days.put(item));
-    transaction.objectStore('settings').put({
-      key: 'setup',
-      value: records.setupCompleted ? 'true' : 'false',
+    transaction.objectStore("settings").put({
+      key: "setup",
+      value: records.setupCompleted ? "true" : "false",
     } satisfies SettingRecord);
     await completion;
   } catch (error) {
@@ -157,10 +189,13 @@ export const writeInitialSetupRecords = async (records: InitialSetupRecords): Pr
 
 export const clearInitialSetupRecords = async (): Promise<void> => {
   const database = await openDatabase();
-  const transaction = database.transaction(['exams', 'days', 'settings'], 'readwrite');
+  const transaction = database.transaction(
+    ["exams", "days", "settings"],
+    "readwrite",
+  );
   const completion = transactionToPromise(transaction);
-  transaction.objectStore('exams').delete(EXAM_ID);
-  transaction.objectStore('days').clear();
-  transaction.objectStore('settings').delete('setup');
+  transaction.objectStore("exams").delete(EXAM_ID);
+  transaction.objectStore("days").clear();
+  transaction.objectStore("settings").delete("setup");
   await completion;
 };

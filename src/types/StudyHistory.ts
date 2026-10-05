@@ -1,6 +1,3 @@
-
-
-
 export interface StudyHistory {
   id: string;
   questionId: string;
@@ -10,5 +7,5 @@ export interface StudyHistory {
   answeredAt: string;
   responseTimeSeconds: number;
   instantScore: number;
-  fsrsRating?: 'AGAIN' | 'HARD' | 'GOOD' | 'EASY';
+  fsrsRating?: "AGAIN" | "HARD" | "GOOD" | "EASY";
 }

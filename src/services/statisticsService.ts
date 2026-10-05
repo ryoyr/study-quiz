@@ -1,9 +1,6 @@
+import type { StudyHistory } from "../types/StudyHistory";
 
-
-
-import type { StudyHistory } from '../types/StudyHistory';
-
-export type StatisticsPeriod = 'TODAY' | 'DAYS_7' | 'DAYS_30' | 'ALL';
+export type StatisticsPeriod = "TODAY" | "DAYS_7" | "DAYS_30" | "ALL";
 
 export interface CategoryStatistics {
   category: string;
@@ -25,7 +22,9 @@ export interface StudyStatistics {
 }
 
 const average = (values: number[]): number =>
-  values.length === 0 ? 0 : values.reduce((sum, value) => sum + value, 0) / values.length;
+  values.length === 0
+    ? 0
+    : values.reduce((sum, value) => sum + value, 0) / values.length;
 
 const localDayStart = (date: Date): Date => {
   const result = new Date(date);
@@ -38,10 +37,10 @@ export const filterHistoryByPeriod = (
   period: StatisticsPeriod,
   now = new Date(),
 ): StudyHistory[] => {
-  if (period === 'ALL') return history;
+  if (period === "ALL") return history;
   const start = localDayStart(now);
-  if (period === 'DAYS_7') start.setDate(start.getDate() - 6);
-  if (period === 'DAYS_30') start.setDate(start.getDate() - 29);
+  if (period === "DAYS_7") start.setDate(start.getDate() - 6);
+  if (period === "DAYS_30") start.setDate(start.getDate() - 29);
   const startTime = start.getTime();
   return history.filter((item) => {
     const answeredAt = new Date(item.answeredAt).getTime();
@@ -66,16 +65,20 @@ export const calculateStatistics = (
         answers: items.length,
         correctAnswers: categoryCorrect,
         accuracyRate: items.length ? categoryCorrect / items.length : 0,
-        averageResponseTimeSeconds: average(items.map((item) => item.responseTimeSeconds)),
+        averageResponseTimeSeconds: average(
+          items.map((item) => item.responseTimeSeconds),
+        ),
         averageInstantScore: average(items.map((item) => item.instantScore)),
       };
     })
-    .sort((a, b) => a.category.localeCompare(b.category, 'ja'));
+    .sort((a, b) => a.category.localeCompare(b.category, "ja"));
   return {
     totalAnswers: history.length,
     correctAnswers,
     accuracyRate: history.length ? correctAnswers / history.length : 0,
-    averageResponseTimeSeconds: average(history.map((item) => item.responseTimeSeconds)),
+    averageResponseTimeSeconds: average(
+      history.map((item) => item.responseTimeSeconds),
+    ),
     averageInstantScore: average(history.map((item) => item.instantScore)),
     instantAnswerRate: history.length
       ? history.filter(
@@ -92,4 +95,7 @@ export const calculateStatisticsForPeriod = (
   period: StatisticsPeriod,
   now = new Date(),
 ): StudyStatistics =>
-  calculateStatistics(filterHistoryByPeriod(history, period, now), thresholdSeconds);
+  calculateStatistics(
+    filterHistoryByPeriod(history, period, now),
+    thresholdSeconds,
+  );

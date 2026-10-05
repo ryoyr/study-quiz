@@ -1,7 +1,4 @@
-
-
-
-import type { StudyHistory } from '../types/StudyHistory';
+import type { StudyHistory } from "../types/StudyHistory";
 
 export interface StudyStreak {
   currentDays: number;
@@ -15,13 +12,15 @@ export interface StudyStreak {
 
 const DAY_MS = 86_400_000;
 const localDayNumber = (value: string | Date): number | null => {
-  const date = typeof value === 'string' ? new Date(value) : value;
+  const date = typeof value === "string" ? new Date(value) : value;
   if (Number.isNaN(date.getTime())) return null;
-  return Math.floor(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / DAY_MS);
+  return Math.floor(
+    Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / DAY_MS,
+  );
 };
 const dayNumberToDate = (day: number): string => {
   const date = new Date(day * DAY_MS);
-  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-${String(date.getUTCDate()).padStart(2, "0")}`;
 };
 
 export const calculateStudyStreak = (
@@ -30,17 +29,29 @@ export const calculateStudyStreak = (
   now = new Date(),
 ): StudyStreak => {
   const studyDays = new Set(
-    history.map((item) => localDayNumber(item.answeredAt)).filter((day): day is number => day !== null),
+    history
+      .map((item) => localDayNumber(item.answeredAt))
+      .filter((day): day is number => day !== null),
   );
   const reservedDays = new Set(
-    reservedDates.map((date) => localDayNumber(`${date}T00:00:00`)).filter((day): day is number => day !== null),
+    reservedDates
+      .map((date) => localDayNumber(`${date}T00:00:00`))
+      .filter((day): day is number => day !== null),
   );
   const sortedStudyDays = [...studyDays].sort((a, b) => a - b);
   const today = localDayNumber(now)!;
   const studiedToday = studyDays.has(today);
   const reservedToday = reservedDays.has(today);
   if (sortedStudyDays.length === 0) {
-    return { currentDays: 0, longestDays: 0, studiedToday, reservedToday, totalStudyDays: 0, skippedReservedDays: 0, lastStudyDate: null };
+    return {
+      currentDays: 0,
+      longestDays: 0,
+      studiedToday,
+      reservedToday,
+      totalStudyDays: 0,
+      skippedReservedDays: 0,
+      lastStudyDate: null,
+    };
   }
 
   let currentDays = 0;
@@ -70,7 +81,10 @@ export const calculateStudyStreak = (
     } else {
       let connected = true;
       for (let day = previousStudyDay + 1; day < studyDay; day += 1) {
-        if (!reservedDays.has(day)) { connected = false; break; }
+        if (!reservedDays.has(day)) {
+          connected = false;
+          break;
+        }
       }
       running = connected ? running + 1 : 1;
     }

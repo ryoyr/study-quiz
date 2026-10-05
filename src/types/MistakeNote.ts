@@ -1,6 +1,3 @@
-
-
-
 export interface MistakeNote {
   questionId: string;
   cause: string;

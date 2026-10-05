@@ -1,6 +1,18 @@
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import App from "./App";
+import ErrorBoundary from "./components/ErrorBoundary";
+import PwaUpdatePrompt from "./components/PwaUpdatePrompt";
+import "./index.css";
 
+const root = document.getElementById("root");
+if (!root) throw new Error("アプリケーションの描画先が見つかりません。");
 
-
-import { StrictMode } from 'react'; import { createRoot } from 'react-dom/client'; import './index.css'; import App from './App';
-import PwaUpdatePrompt from './components/PwaUpdatePrompt';
-createRoot(document.getElementById('root')!).render(<StrictMode><App/><PwaUpdatePrompt/></StrictMode>);
+createRoot(root).render(
+  <StrictMode>
+    <ErrorBoundary>
+      <App />
+      <PwaUpdatePrompt />
+    </ErrorBoundary>
+  </StrictMode>,
+);

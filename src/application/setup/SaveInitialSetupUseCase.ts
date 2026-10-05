@@ -1,15 +1,16 @@
-
-
-import { persistSetup } from '../../infrastructure/repositories/setupRepository';
-import type { Setup } from '../../types/Setup';
-import { validateSetup, type SetupErrors } from '../../services/setupValidation';
+import { persistSetup } from "../../infrastructure/repositories/setupRepository";
+import type { Setup } from "../../types/Setup";
+import {
+  validateSetup,
+  type SetupErrors,
+} from "../../services/setupValidation";
 
 export class ValidationError extends Error {
   readonly errors: SetupErrors;
 
   constructor(errors: SetupErrors) {
-    super('入力内容を確認してください。');
-    this.name = 'ValidationError';
+    super("入力内容を確認してください。");
+    this.name = "ValidationError";
     this.errors = errors;
   }
 }

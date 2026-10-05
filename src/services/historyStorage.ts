@@ -1,31 +1,56 @@
-import type { StudyHistory } from '../types/StudyHistory';
+import type { StudyHistory } from "../types/StudyHistory";
 
-const STORAGE_KEY = 'study-quiz-answer-history-v1';
-const FSRS_RATINGS = new Set<NonNullable<StudyHistory['fsrsRating']>>([
-  'AGAIN',
-  'HARD',
-  'GOOD',
-  'EASY',
+const STORAGE_KEY = "study-quiz-answer-history-v1";
+const FSRS_RATINGS = new Set<NonNullable<StudyHistory["fsrsRating"]>>([
+  "AGAIN",
+  "HARD",
+  "GOOD",
+  "EASY",
 ]);
 
-const normalize = (value: Partial<StudyHistory>): StudyHistory => {
-  const fsrsRating = FSRS_RATINGS.has(value.fsrsRating as NonNullable<StudyHistory['fsrsRating']>)
-    ? value.fsrsRating
+const isObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const normalize = (value: Record<string, unknown>): StudyHistory | null => {
+  if (
+    typeof value.id !== "string" ||
+    !value.id ||
+    typeof value.questionId !== "string" ||
+    !value.questionId ||
+    typeof value.category !== "string" ||
+    !Number.isInteger(value.selectedIndex) ||
+    Number(value.selectedIndex) < 0 ||
+    typeof value.correct !== "boolean" ||
+    typeof value.answeredAt !== "string" ||
+    !Number.isFinite(Date.parse(value.answeredAt))
+  )
+    return null;
+
+  const responseTimeSeconds =
+    typeof value.responseTimeSeconds === "number" &&
+    Number.isFinite(value.responseTimeSeconds)
+      ? Math.max(0, value.responseTimeSeconds)
+      : 0;
+  const instantScore =
+    typeof value.instantScore === "number" &&
+    Number.isFinite(value.instantScore)
+      ? Math.min(1, Math.max(0, value.instantScore))
+      : 0;
+  const fsrsRating = FSRS_RATINGS.has(
+    value.fsrsRating as NonNullable<StudyHistory["fsrsRating"]>,
+  )
+    ? (value.fsrsRating as NonNullable<StudyHistory["fsrsRating"]>)
     : undefined;
 
   return {
-    id: value.id ?? crypto.randomUUID(),
-    questionId: value.questionId ?? '',
-    category: value.category ?? '',
-    selectedIndex: value.selectedIndex ?? -1,
-    correct: value.correct ?? false,
-    answeredAt: value.answeredAt ?? new Date().toISOString(),
-    responseTimeSeconds: Number.isFinite(value.responseTimeSeconds)
-      ? Math.max(0, value.responseTimeSeconds ?? 0)
-      : 0,
-    instantScore: Number.isFinite(value.instantScore)
-      ? Math.min(1, Math.max(0, value.instantScore ?? 0))
-      : 0,
+    id: value.id,
+    questionId: value.questionId,
+    category: value.category,
+    selectedIndex: Number(value.selectedIndex),
+    correct: value.correct,
+    answeredAt: value.answeredAt,
+    responseTimeSeconds,
+    instantScore,
     ...(fsrsRating ? { fsrsRating } : {}),
   };
 };
@@ -35,7 +60,10 @@ export const loadHistory = (): StudyHistory[] => {
     const value = localStorage.getItem(STORAGE_KEY);
     if (!value) return [];
     const parsed: unknown = JSON.parse(value);
-    return Array.isArray(parsed) ? parsed.map((item) => normalize(item as Partial<StudyHistory>)) : [];
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .map((item) => (isObject(item) ? normalize(item) : null))
+      .filter((item): item is StudyHistory => item !== null);
   } catch {
     return [];
   }
