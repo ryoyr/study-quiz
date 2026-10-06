@@ -580,7 +580,8 @@ export default function QuestionManagementPage({
                   <button
                     className="delete-button"
                     type="button"
-                    onClick={() => {
+                    onClick={(event) => {
+                      event.currentTarget.focus();
                       setError("");
                       setMessage("");
                       setPendingArchive(question);
@@ -623,5 +624,6 @@ export default function QuestionManagementPage({
     </main>
   );
 }
+
 
 

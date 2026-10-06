@@ -82,3 +82,12 @@ test("共通確認ダイアログはキーボード操作とフォーカス復�
   assert.match(source, /event\.key !== "Tab"/);
 });
 
+test("狭幅画面では固定ヘッダーとバックアップ差分一覧を画面幅内へ収める", () => {
+  const css = readFileSync("src/App.css", "utf8");
+  assert.match(css, /\.app-frame \.app-shell\s*\{[^}]*grid-template-columns: minmax\(0, 1fr\)/s);
+  assert.match(css, /\.app-status-bar\s*\{[^}]*max-width: 100vw[^}]*overflow-x: clip/s);
+  assert.match(css, /\.backup-preview-list\s*\{\s*display: block !important;/s);
+  assert.doesNotMatch(css, /\.backup-preview > div\s*\{/);
+});
+
+

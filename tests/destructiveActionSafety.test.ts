@@ -13,12 +13,22 @@ test("破壊的操作は共通のアクセシブル確認ダイアログを利�
     "aria-describedby",
     'event.key === "Escape"',
     'event.key !== "Tab"',
+    "useLayoutEffect",
     "previousFocusRef.current?.focus()",
     'document.body.style.overflow = "hidden"',
     "createPortal",
   ]) {
     assert.match(dialog, new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }
+});
+
+test("確認ダイアログの終了処理は描画確定時にフォーカスとスクロールを復旧する", () => {
+  const dialog = read("src/components/ConfirmDialog.tsx");
+  assert.match(dialog, /useLayoutEffect\(\(\) => \{/);
+  assert.match(
+    dialog,
+    /document\.body\.style\.overflow = previousOverflow;\s+previousFocusRef\.current\?\.focus\(\);/s,
+  );
 });
 
 test("削除・アーカイブ操作はwindow.confirmへ依存しない", () => {
@@ -56,3 +66,4 @@ test("問題編集はCSV取込と同等の入力上限を適用する", () => {
   assert.match(source, /MAX_LONG_TEXT_LENGTH = 20_000/);
   assert.match(source, /MAX_TAGS = 30/);
 });
+

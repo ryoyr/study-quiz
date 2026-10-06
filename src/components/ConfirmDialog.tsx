@@ -1,6 +1,7 @@
 import {
   useEffect,
   useId,
+  useLayoutEffect,
   useRef,
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
@@ -51,7 +52,7 @@ export default function ConfirmDialog({
     busyRef.current = busy;
   }, [busy, onCancel]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!open) return;
 
     previousFocusRef.current =
@@ -60,9 +61,7 @@ export default function ConfirmDialog({
         : null;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    const frame = window.requestAnimationFrame(() =>
-      cancelButtonRef.current?.focus(),
-    );
+    cancelButtonRef.current?.focus();
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape" && !busyRef.current) {
@@ -93,7 +92,6 @@ export default function ConfirmDialog({
 
     document.addEventListener("keydown", handleKeyDown);
     return () => {
-      window.cancelAnimationFrame(frame);
       document.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = previousOverflow;
       previousFocusRef.current?.focus();
@@ -155,3 +153,4 @@ export default function ConfirmDialog({
     document.body,
   );
 }
+
