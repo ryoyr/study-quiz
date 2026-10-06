@@ -1,18 +1,25 @@
 {
-  "id": "./",
   "name": "Study Quiz - LPIC-1 101",
-  "short_name": "Study Quiz",
-  "description": "LPIC-1 101をオフラインで学習できるローカルファースト学習アプリ",
-  "lang": "ja",
-  "dir": "ltr",
+  "short_name": "StudyQuiz",
+  "description": "LPIC-1 101をオフラインで学習できる適応型PWA",
+  "id": "./",
   "start_url": "./",
   "scope": "./",
+  "lang": "ja",
+  "dir": "ltr",
   "display": "standalone",
-  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
-  "orientation": "portrait-primary",
-  "background_color": "#f8fafc",
+  "display_override": [
+    "window-controls-overlay",
+    "standalone",
+    "minimal-ui"
+  ],
+  "orientation": "any",
+  "background_color": "#f6f8fc",
   "theme_color": "#2563eb",
-  "categories": ["education", "productivity"],
+  "categories": [
+    "education",
+    "productivity"
+  ],
   "icons": [
     {
       "src": "pwa-192x192.png",
@@ -37,23 +44,17 @@
     {
       "name": "学習を始める",
       "short_name": "学習",
-      "description": "保存済み条件で学習画面を開く",
-      "url": "./?screen=learn",
-      "icons": [{ "src": "pwa-192x192.png", "sizes": "192x192", "type": "image/png" }]
+      "url": "./?screen=learn"
     },
     {
-      "name": "学習記録を見る",
+      "name": "記録・分析を見る",
       "short_name": "記録",
-      "description": "学習履歴と分析画面を開く",
-      "url": "./?screen=records",
-      "icons": [{ "src": "pwa-192x192.png", "sizes": "192x192", "type": "image/png" }]
+      "url": "./?screen=records"
     },
     {
-      "name": "バックアップ",
+      "name": "完全バックアップ",
       "short_name": "バックアップ",
-      "description": "データ診断と完全バックアップを開く",
-      "url": "./?screen=backupCenter",
-      "icons": [{ "src": "pwa-192x192.png", "sizes": "192x192", "type": "image/png" }]
+      "url": "./?screen=backupCenter"
     }
   ]
 }

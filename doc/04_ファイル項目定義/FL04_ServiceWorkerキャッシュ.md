@@ -28,3 +28,16 @@
 - コアシェルは一括取得し、アイコンは`Promise.allSettled`で任意取得する。
 - ナビゲーションは5秒タイムアウト付きnetwork-first、同一配下の静的資材はcache-firstとする。
 - Range要求と206 Partial Contentはキャッシュしない。
+
+
+## v4.2追補
+- キャッシュ世代はv17。
+- activate時にNavigation Preloadを有効化する。失敗時は通常fetchへフォールバックする。
+- ナビゲーションはpreload responseを優先し、取得成功時は同一キャッシュへ保存する。
+- キャッシュ対象は同一オリジンかつService Worker scope配下のGETに限定する。
+
+
+## v4.3追補
+- キャッシュ世代はv18。
+- 復元差分確認画面を含む新しいアプリシェルへ確実に切り替えるため旧世代をactivate時に削除する。
+- キャッシュ戦略、Navigation Preload、Range要求除外、同一scope制約はv4.2から変更しない。

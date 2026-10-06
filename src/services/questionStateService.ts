@@ -1,6 +1,7 @@
 import type { StudyHistory } from "../types/StudyHistory";
 import type { MasteryLevel, QuestionState } from "../types/QuestionState";
 import { STORAGE_KEYS } from "./storageKeyRegistry.ts";
+import { writeStorageValue } from "./verifiedStorage.ts";
 
 const KEY = STORAGE_KEYS.questionStates;
 const mastery = (
@@ -96,7 +97,7 @@ export const loadQuestionStates = (
   return rebuilt;
 };
 export const saveQuestionStates = (states: QuestionState[]): void =>
-  localStorage.setItem(KEY, JSON.stringify(states));
+  writeStorageValue(KEY, JSON.stringify(states));
 export const updateQuestionStates = (
   states: QuestionState[],
   item: StudyHistory,

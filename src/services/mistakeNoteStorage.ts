@@ -1,5 +1,6 @@
 import type { MistakeNote } from "../types/MistakeNote";
 import { STORAGE_KEYS } from "./storageKeyRegistry.ts";
+import { writeStorageValue } from "./verifiedStorage.ts";
 
 const STORAGE_KEY = STORAGE_KEYS.mistakeNotes;
 
@@ -21,7 +22,7 @@ export const loadMistakeNotes = (): MistakeNote[] => {
 };
 
 export const saveMistakeNotes = (notes: MistakeNote[]): void => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
+  writeStorageValue(STORAGE_KEY, JSON.stringify(notes));
 };
 
 export const upsertMistakeNote = (

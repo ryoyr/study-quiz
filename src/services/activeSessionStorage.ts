@@ -1,5 +1,6 @@
 import type { Question } from "../types/Question";
 import { STORAGE_KEYS } from "./storageKeyRegistry.ts";
+import { removeStorageValue, writeStorageValue } from "./verifiedStorage.ts";
 
 const STORAGE_KEY = STORAGE_KEYS.activeSession;
 
@@ -51,11 +52,11 @@ export const loadActiveSession = (): ActiveSessionSnapshot | null => {
       localStorage.getItem(STORAGE_KEY) ?? "null",
     );
     if (isActiveSessionSnapshot(parsed)) return parsed;
-    localStorage.removeItem(STORAGE_KEY);
+    removeStorageValue(STORAGE_KEY);
     return null;
   } catch {
     try {
-      localStorage.removeItem(STORAGE_KEY);
+      removeStorageValue(STORAGE_KEY);
     } catch {
       /* 読み書き不可の環境ではメモリ上だけで継続する。 */
     }
@@ -68,12 +69,12 @@ export const saveActiveSession = (
 ): ActiveSessionSnapshot => {
   if (!isActiveSessionSnapshot(snapshot))
     throw new Error("中断セッションの状態が不正です。");
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+  writeStorageValue(STORAGE_KEY, JSON.stringify(snapshot));
   return snapshot;
 };
 
 export const clearActiveSession = (): void =>
-  localStorage.removeItem(STORAGE_KEY);
+  removeStorageValue(STORAGE_KEY);
 
 export const resolveActiveSessionQuestions = (
   snapshot: ActiveSessionSnapshot,

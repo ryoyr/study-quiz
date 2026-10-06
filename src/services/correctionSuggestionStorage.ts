@@ -3,6 +3,7 @@ import type {
   CorrectionSuggestionStatus,
 } from "../types/CorrectionSuggestion";
 import { STORAGE_KEYS } from "./storageKeyRegistry.ts";
+import { writeStorageValue } from "./verifiedStorage.ts";
 
 const STORAGE_KEY = STORAGE_KEYS.correctionSuggestions;
 export const loadCorrectionSuggestions = (): CorrectionSuggestion[] => {
@@ -25,7 +26,7 @@ export const loadCorrectionSuggestions = (): CorrectionSuggestion[] => {
 };
 export const saveCorrectionSuggestions = (
   items: CorrectionSuggestion[],
-): void => localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+): void => writeStorageValue(STORAGE_KEY, JSON.stringify(items));
 export const addCorrectionSuggestion = (
   items: CorrectionSuggestion[],
   input: Pick<

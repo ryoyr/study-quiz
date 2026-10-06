@@ -15,11 +15,16 @@ class MemoryStorage implements StorageLike {
   readonly values = new Map<string, string>();
   private failOnceKey = "";
   private ignoreOnceKey = "";
+  private ignoreRemoveOnceKey = "";
 
   getItem(key: string) {
     return this.values.get(key) ?? null;
   }
   removeItem(key: string) {
+    if (key === this.ignoreRemoveOnceKey) {
+      this.ignoreRemoveOnceKey = "";
+      return;
+    }
     this.values.delete(key);
   }
   setItem(key: string, value: string) {
@@ -38,6 +43,9 @@ class MemoryStorage implements StorageLike {
   }
   ignoreNextSetFor(key: string) {
     this.ignoreOnceKey = key;
+  }
+  ignoreNextRemoveFor(key: string) {
+    this.ignoreRemoveOnceKey = key;
   }
 }
 
@@ -188,5 +196,38 @@ test("アプリ外キーと重複キーはトランザクション対象にし�
       ),
     /重複/,
   );
+});
+
+test("ジャーナルの書込み欠落時はデータ更新を開始しない", () => {
+  const storage = new MemoryStorage();
+  storage.setItem(STORAGE_KEYS.answerHistory, '["old"]');
+  storage.ignoreNextSetFor(STORAGE_TRANSACTION_JOURNAL_KEY);
+
+  assert.throws(
+    () =>
+      executeStorageTransaction(
+        [{ key: STORAGE_KEYS.answerHistory, value: '["new"]' }],
+        storage,
+      ),
+    /トランザクションを開始できません/,
+  );
+  assert.equal(storage.getItem(STORAGE_KEYS.answerHistory), '["old"]');
+});
+
+test("コミット後のジャーナル削除欠落を検出して元へ戻す", () => {
+  const storage = new MemoryStorage();
+  storage.setItem(STORAGE_KEYS.answerHistory, '["old"]');
+  storage.ignoreNextRemoveFor(STORAGE_TRANSACTION_JOURNAL_KEY);
+
+  assert.throws(
+    () =>
+      executeStorageTransaction(
+        [{ key: STORAGE_KEYS.answerHistory, value: '["new"]' }],
+        storage,
+      ),
+    /変更前へ戻しました/,
+  );
+  assert.equal(storage.getItem(STORAGE_KEYS.answerHistory), '["old"]');
+  assert.equal(storage.getItem(STORAGE_TRANSACTION_JOURNAL_KEY), null);
 });
 

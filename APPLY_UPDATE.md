@@ -1,4 +1,4 @@
-# Study Quiz v4.1.0 上書き適用手順
+# Study Quiz v4.3.0 上書き適用手順
 
 ## 適用前
 
@@ -13,7 +13,7 @@
 Windows PowerShell（ZIPとプロジェクトの親ディレクトリで実行）:
 
 ```powershell
-Expand-Archive -LiteralPath '.\study-quiz-v4.1.0-overwrite.zip' -DestinationPath '.\study-quiz' -Force
+Expand-Archive -LiteralPath '.\study-quiz-v4.3.0-overwrite.zip' -DestinationPath '.\study-quiz' -Force
 ```
 
 ## 検証
@@ -25,8 +25,9 @@ npm ci --no-audit --no-fund && npm run check
 ## 互換性
 
 - localStorage schemaは8のままで、既存キーを変更しない。
-- 完全バックアップversion 2〜8を読込み可能。
+- 完全バックアップversion 2〜9を読込み可能。
 - 新規出力はversion 9で、破損検知用チェックサムを持つ。
+- v4.3.0の復元差分表示と復元前安全バックアップは、新しい保存キーやバックアップ項目を追加しない。
 - APIキーと初回ガイド表示済み状態はバックアップしない。
 
 詳細は`UPGRADE_REPORT.md`と`VALIDATION_REPORT.md`を参照する。

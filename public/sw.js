@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "study-quiz-shell-";
-const CACHE_NAME = `${CACHE_PREFIX}v16`;
+const CACHE_NAME = `${CACHE_PREFIX}v18`;
 const BASE_URL = new URL("./", self.registration.scope);
 const CORE_SHELL = ["./", "./index.html", "./manifest.webmanifest"].map(
   (path) => new URL(path, BASE_URL).href,
@@ -52,16 +52,17 @@ self.addEventListener("install", (event) => {
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches
-      .keys()
-      .then((keys) =>
+    Promise.all([
+      caches.keys().then((keys) =>
         Promise.all(
           keys
             .filter((key) => key.startsWith(CACHE_PREFIX) && key !== CACHE_NAME)
             .map((key) => caches.delete(key)),
         ),
-      )
-      .then(() => self.clients.claim()),
+      ),
+      self.registration.navigationPreload?.enable?.().catch(() => undefined) ??
+        Promise.resolve(),
+    ]).then(() => self.clients.claim()),
   );
 });
 
@@ -79,10 +80,10 @@ const fetchWithTimeout = async (request, milliseconds = 5000) => {
   }
 };
 
-const networkFirstNavigation = async (request) => {
+const networkFirstNavigation = async (request, preloadResponse) => {
   const cache = await caches.open(CACHE_NAME);
   try {
-    const response = await fetchWithTimeout(request);
+    const response = (await preloadResponse) ?? (await fetchWithTimeout(request));
     await cacheResponse(cache, request, response);
     return response;
   } catch {
@@ -119,7 +120,7 @@ self.addEventListener("fetch", (event) => {
 
   event.respondWith(
     request.mode === "navigate"
-      ? networkFirstNavigation(request)
+      ? networkFirstNavigation(request, event.preloadResponse)
       : cacheFirstAsset(request),
   );
 });

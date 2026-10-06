@@ -1,4 +1,5 @@
 import { STORAGE_KEYS } from "./storageKeyRegistry";
+import { executeStorageTransaction } from "./storageTransaction";
 
 export interface GeminiSettings {
   apiKey: string;
@@ -41,13 +42,17 @@ export const saveGeminiSettings = (settings: GeminiSettings): void => {
   if (!/^[a-zA-Z0-9._-]+$/.test(model)) {
     throw new Error("モデル名の形式が不正です。");
   }
-  localStorage.setItem(STORAGE_KEYS.geminiApiKey, apiKey);
-  localStorage.setItem(STORAGE_KEYS.geminiModel, model);
+  executeStorageTransaction([
+    { key: STORAGE_KEYS.geminiApiKey, value: apiKey },
+    { key: STORAGE_KEYS.geminiModel, value: model },
+  ]);
 };
 
 export const clearGeminiSettings = (): void => {
-  localStorage.removeItem(STORAGE_KEYS.geminiApiKey);
-  localStorage.removeItem(STORAGE_KEYS.geminiModel);
+  executeStorageTransaction([
+    { key: STORAGE_KEYS.geminiApiKey, value: null },
+    { key: STORAGE_KEYS.geminiModel, value: null },
+  ]);
 };
 
 export const isGeminiConfigured = (): boolean =>

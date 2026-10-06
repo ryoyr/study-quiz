@@ -2,6 +2,7 @@ import {
   isRegisteredStorageKey,
   STORAGE_KEYS,
 } from "./storageKeyRegistry.ts";
+import { assertStorageIsCurrent } from "./storageSynchronization.ts";
 
 export interface StorageLike {
   getItem(key: string): string | null;
@@ -97,6 +98,13 @@ const verifyValues = (
   }
 };
 
+const removeJournal = (storage: StorageLike): void => {
+  storage.removeItem(JOURNAL_KEY);
+  if (storage.getItem(JOURNAL_KEY) !== null) {
+    throw new Error("保存トランザクションの終了状態を記録できませんでした。");
+  }
+};
+
 /**
  * 前回の保存がブラウザ終了などで中断していた場合、変更前の状態へ戻す。
  * 復旧できたときだけtrueを返す。
@@ -109,13 +117,13 @@ export const recoverStorageTransaction = (
 
   const journal = parseJournal(raw);
   if (!journal) {
-    storage.removeItem(JOURNAL_KEY);
+    removeJournal(storage);
     return false;
   }
 
   applyValues(storage, journal.before);
   verifyValues(storage, journal.before);
-  storage.removeItem(JOURNAL_KEY);
+  removeJournal(storage);
   return true;
 };
 
@@ -129,6 +137,7 @@ export const executeStorageTransaction = (
 ): void => {
   const targets = validateMutations(mutations);
   if (targets.length === 0) return;
+  assertStorageIsCurrent();
 
   // 既存の未完了処理を先に解消し、ジャーナルを上書きしない。
   recoverStorageTransaction(storage);
@@ -141,7 +150,11 @@ export const executeStorageTransaction = (
     createdAt: new Date().toISOString(),
     before,
   };
-  storage.setItem(JOURNAL_KEY, JSON.stringify(journal));
+  const serializedJournal = JSON.stringify(journal);
+  storage.setItem(JOURNAL_KEY, serializedJournal);
+  if (storage.getItem(JOURNAL_KEY) !== serializedJournal) {
+    throw new Error("保存トランザクションを開始できませんでした。");
+  }
 
   try {
     targets.forEach(({ key, value }) => {
@@ -149,11 +162,12 @@ export const executeStorageTransaction = (
       else storage.setItem(key, value);
     });
     verifyValues(storage, Object.fromEntries(targets.map(({ key, value }) => [key, value])));
-    storage.removeItem(JOURNAL_KEY);
+    removeJournal(storage);
   } catch (writeError) {
     try {
       applyValues(storage, before);
-      storage.removeItem(JOURNAL_KEY);
+      verifyValues(storage, before);
+      removeJournal(storage);
     } catch (rollbackError) {
       const writeReason =
         writeError instanceof Error ? writeError.message : String(writeError);

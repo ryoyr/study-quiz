@@ -63,9 +63,10 @@ test("Gemini連携は利用者操作で送信し、HTML直接挿入を含まな�
   assert.match(sources, /Geminiへ送信|AIへ送信/);
 });
 
-test("PWA更新通知と共通エラー境界をアプリルートへ接続している", () => {
+test("PWA更新通知・複数タブ競合通知・共通エラー境界をアプリルートへ接続している", () => {
   const main = readFileSync("src/main.tsx", "utf8");
   assert.match(main, /<ErrorBoundary>/);
+  assert.match(main, /<ConcurrentUpdateNotice\s*\/>/);
   assert.match(main, /<PwaUpdatePrompt\s*\/>/);
 });
 

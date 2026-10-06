@@ -2,6 +2,7 @@ import { questions as seedQuestions } from "../data/questions.ts";
 import { LPIC101_EXAM_SCOPE_ID } from "../types/ExamScope";
 import type { Question } from "../types/Question";
 import { STORAGE_KEYS } from "./storageKeyRegistry.ts";
+import { executeStorageTransaction } from "./storageTransaction.ts";
 
 const STORAGE_KEY = STORAGE_KEYS.questions;
 const SEED_VERSION_KEY = STORAGE_KEYS.questionSeedVersion;
@@ -87,7 +88,9 @@ export const saveQuestions = (items: Question[]): void => {
   if (new Set(items.map((item) => item.id)).size !== items.length) {
     throw new Error("問題IDが重複しているため保存できません。");
   }
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-  localStorage.setItem(SEED_VERSION_KEY, CURRENT_SEED_VERSION);
+  executeStorageTransaction([
+    { key: STORAGE_KEY, value: JSON.stringify(items) },
+    { key: SEED_VERSION_KEY, value: CURRENT_SEED_VERSION },
+  ]);
 };
 

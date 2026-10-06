@@ -30,3 +30,10 @@
 - `id`、`lang`、`dir`、`display_override`、`orientation`、`categories`を定義する。
 - `shortcuts`は学習、記録、完全バックアップの3導線とし、`?screen=`の許可リストで初期画面を選択する。
 - ショートカット値が許可リスト外の場合はホームを表示する。
+
+
+## v4.2追補
+- Manifestを配布物へ必須同梱し、`id` / `start_url` / `scope`は相対値`./`で統一する。
+- 通常192px、通常512px、maskable 512pxのPNGを定義する。
+- ショートカットは学習、記録・分析、完全バックアップを定義し、各URLはアプリscope内とする。
+- iOS用180pxアイコンはHTMLから参照し、Service Workerの任意プリキャッシュ対象とする。

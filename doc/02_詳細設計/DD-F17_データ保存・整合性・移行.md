@@ -126,3 +126,12 @@ UIは表示とイベント受付に限定し、検証・業務処理はUseCase�
 - `executeStorageTransaction` は更新後に各キーを再取得し、要求値との完全一致を確認してからジャーナルを削除する。
 - 読戻し不一致時は通常の書込み例外と同じロールバック経路へ遷移する。
 - 完全バックアップのschema version検証上限は`CURRENT_STORAGE_SCHEMA_VERSION`を参照し、定数の二重管理を行わない。
+
+
+## 15. v4.2詳細追補
+1. `ConcurrentUpdateNotice`は`storage`イベントの`storageArea`が自タブのlocalStorage以外なら無視する。
+2. keyがnullの全消去、またはRegistry登録キー（ジャーナル、UIガイドを除く）の変更を競合として記録する。
+3. 競合後は`assertStorageIsCurrent`が例外を返し、`verifiedStorage`と`executeStorageTransaction`の保存開始を拒否する。
+4. 単一キー保存はset/remove直後のget一致を必須とする。
+5. 複数キー保存はジャーナルset→読戻し→対象更新→読戻し→ジャーナルremove→削除確認の順で行う。
+6. ジャーナル削除不一致時は更新前値へロールバックし、再度読戻しとジャーナル削除を確認する。

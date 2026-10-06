@@ -1,6 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
+import ConcurrentUpdateNotice from "./components/ConcurrentUpdateNotice";
 import ErrorBoundary from "./components/ErrorBoundary";
 import PwaUpdatePrompt from "./components/PwaUpdatePrompt";
 import "./index.css";
@@ -12,6 +13,7 @@ createRoot(root).render(
   <StrictMode>
     <ErrorBoundary>
       <App />
+      <ConcurrentUpdateNotice />
       <PwaUpdatePrompt />
     </ErrorBoundary>
   </StrictMode>,

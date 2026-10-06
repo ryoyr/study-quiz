@@ -1,5 +1,6 @@
 import type { AiPromptTemplate } from "../types/AiPromptTemplate";
 import { STORAGE_KEYS } from "./storageKeyRegistry.ts";
+import { writeStorageValue } from "./verifiedStorage.ts";
 
 const KEY = STORAGE_KEYS.aiPromptTemplates;
 const BUILT_INS: AiPromptTemplate[] = [
@@ -48,7 +49,7 @@ export const loadAiPromptTemplates = (): AiPromptTemplate[] => {
   }
 };
 export const saveAiPromptTemplates = (items: AiPromptTemplate[]) =>
-  localStorage.setItem(
+  writeStorageValue(
     KEY,
     JSON.stringify(items.filter((item) => !item.builtIn)),
   );

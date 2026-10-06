@@ -6,6 +6,7 @@ import {
 } from "../src/services/activeSessionStorage.ts";
 import {
   auditStorage,
+  compareFullBackup,
   createFullBackup,
   parseFullBackup,
   restoreFullBackup,
@@ -87,6 +88,44 @@ test("現行ストレージ版8を含むバックアップを出力後に再検�
   assert.equal(parsed.version, 9);
   assert.equal(parsed.sourceVersion, 9);
   assert.equal(parsed.entries["study-quiz-schema-version"], "8");
+});
+
+test("復元前比較は追加・削除・置換・変更なしを保存領域単位で集計する", () => {
+  const current = new MemoryStorage();
+  current.setItem("study-quiz-schema-version", "8");
+  current.setItem("study-quiz-answer-history-v1", "[]");
+  current.setItem("study-quiz-daily-time-budget-v1", "15");
+
+  const incomingStorage = new MemoryStorage();
+  incomingStorage.setItem("study-quiz-schema-version", "8");
+  incomingStorage.setItem("study-quiz-questions-v1", "[]");
+  incomingStorage.setItem("study-quiz-daily-time-budget-v1", "30");
+  const report = compareFullBackup(createFullBackup(incomingStorage), current);
+
+  assert.equal(report.addedCount, 1);
+  assert.equal(report.removedCount, 1);
+  assert.equal(report.changedCount, 1);
+  assert.equal(report.destructiveCount, 2);
+  assert.equal(
+    report.entries.find((item) => item.key === "study-quiz-questions-v1")?.incomingItemCount,
+    0,
+  );
+  assert.equal(
+    report.entries.find((item) => item.key === "study-quiz-schema-version")?.change,
+    "unchanged",
+  );
+});
+
+test("復元前比較は破損した現在データを差分として扱わない", () => {
+  const current = new MemoryStorage();
+  current.setItem("study-quiz-answer-history-v1", "not-json");
+  const incoming = new MemoryStorage();
+  incoming.setItem("study-quiz-schema-version", "8");
+
+  assert.throws(
+    () => compareFullBackup(createFullBackup(incoming), current),
+    /JSON/,
+  );
 });
 
 test("整合性情報付きバックアップの出力後改変を拒否する", () => {
@@ -251,3 +290,18 @@ test("中断セッションの未回答問題がすべて削除済みなら再�
   assert.equal(reconciled, null);
 });
 
+
+
+test("未完了トランザクションが残る間は不整合なバックアップを出力しない", () => {
+  const storage = installStorage();
+  storage.setItem(
+    "study-quiz-storage-transaction-v1",
+    JSON.stringify({
+      version: 1,
+      createdAt: "2026-10-06T00:00:00.000Z",
+      before: { "study-quiz-answer-history-v1": "[]" },
+    }),
+  );
+  assert.throws(() => createFullBackup(storage), /未完了の保存処理/);
+  assert.equal(auditStorage(storage).ok, false);
+});

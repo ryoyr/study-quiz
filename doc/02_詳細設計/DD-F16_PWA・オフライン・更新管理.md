@@ -120,3 +120,17 @@ UIは表示とイベント受付に限定し、検証・業務処理はUseCase�
 - `appinstalled`で案内を閉じ、iOSは共有メニューからの手順を表示する。
 - Manifestショートカットの`screen`値はApp内の許可リストで検証する。
 - Service Worker導入ではコアシェル取得を必須、アイコン取得を任意とし、Range要求をキャッシュしない。
+
+
+## 15. v4.2詳細追補
+- キャッシュ名は`study-quiz-shell-v18`とする。
+- activateで旧世代キャッシュ削除、Navigation Preload有効化、clients claimを完了させる。
+- navigate要求は`event.preloadResponse`、タイムアウト付きfetch、要求URLキャッシュ、`index.html`キャッシュの順に解決する。
+- Navigation Preload有効化の拒否はactivate失敗にしない。
+- Range要求と206応答は引き続きキャッシュしない。
+
+
+## v4.3詳細追補
+- `CACHE_NAME`は`study-quiz-shell-v18`とする。
+- activate時に同接頭辞のv18以外を削除し、クライアントをclaimする。
+- キャッシュ対象、Navigation Preload、タイムアウト、Range要求と206応答の除外はv4.2設計を継続する。

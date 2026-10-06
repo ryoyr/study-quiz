@@ -25,6 +25,7 @@ test("E2E試験は主要画面・狭幅・フォーカス・AXツリーを検査
     "bottomFixed",
     "horizontal-option-scroller",
     "storage-health-badge",
+    "storage-persistence-heading",
     "?screen=backupCenter",
     "複数選択できません",
     '["学習", "学習"]',
@@ -48,3 +49,22 @@ test("デプロイ前にChromeを準備して全チェックを実行する", ()
   assert.match(workflow, /npm run check/);
 });
 
+
+
+test("複数タブ競合通知は読み上げ可能で再読込操作へフォーカス誘導する", () => {
+  const source = readFileSync("src/components/ConcurrentUpdateNotice.tsx", "utf8");
+  assert.match(source, /role="alertdialog"/);
+  assert.match(source, /aria-labelledby="concurrent-update-title"/);
+  assert.match(source, /headingRef\.current\?\.focus/);
+  assert.match(source, /最新データを読み込む/);
+});
+
+test("バックアップ復元は差分確認と明示チェック後にだけ実行できる", () => {
+  const source = readFileSync("src/pages/BackupCenterPage.tsx", "utf8");
+  assert.match(source, /compareFullBackup/);
+  assert.match(source, /現在データとの差分集計/);
+  assert.match(source, /type="checkbox"/);
+  assert.match(source, /!restoreAcknowledged/);
+  assert.match(source, /study-quiz-pre-restore/);
+  assert.doesNotMatch(source, /window\.confirm/);
+});

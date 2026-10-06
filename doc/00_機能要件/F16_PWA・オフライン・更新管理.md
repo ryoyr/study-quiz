@@ -38,3 +38,14 @@ PWA・オフライン・更新管理に必要な利用者価値と業務ルー�
 - FR-F16-07: Manifestショートカットから学習、記録、バックアップへ直接起動できること。
 - FR-F16-08: 任意アイコンの取得失敗だけでService Worker全体のインストールを失敗させないこと。
 - FR-F16-09: Range要求を実行時キャッシュ対象外とし、不完全レスポンスを保存しないこと。
+
+
+## v4.2追補
+- FR-F16-10: 対応ブラウザーではNavigation Preloadを利用し、Service Worker起動待ちによるナビゲーション遅延を抑えること。
+- FR-F16-11: Navigation Preloadの非対応または有効化失敗時も、既存のnetwork-firstとオフラインフォールバックを維持すること。
+- FR-F16-12: Manifest、通常アイコン、maskableアイコン、iOSアイコンを配布ZIP内で自己完結させること。
+
+
+## v4.3追補
+- FR-F16-14: 復元安全性UIを含む新しいアプリシェルへ更新できるよう、Service Workerキャッシュ世代をv18へ更新すること。
+- FR-F16-15: v4.2で導入したNavigation Preload、scope制約、Range要求除外を維持すること。

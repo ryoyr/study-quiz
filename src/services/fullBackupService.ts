@@ -51,6 +51,29 @@ export interface StorageAuditReport {
   entries: StorageAuditEntry[];
 }
 
+export type BackupChangeKind = "added" | "removed" | "changed" | "unchanged";
+
+export interface BackupComparisonEntry {
+  key: string;
+  label: string;
+  change: BackupChangeKind;
+  currentIncluded: boolean;
+  incomingIncluded: boolean;
+  currentBytes: number;
+  incomingBytes: number;
+  currentItemCount: number | null;
+  incomingItemCount: number | null;
+}
+
+export interface BackupComparisonReport {
+  entries: BackupComparisonEntry[];
+  addedCount: number;
+  removedCount: number;
+  changedCount: number;
+  unchangedCount: number;
+  destructiveCount: number;
+}
+
 export interface BackupEntryDefinition {
   key: string;
   label: string;
@@ -74,7 +97,7 @@ export const BACKUP_ENTRIES: BackupEntryDefinition[] =
     storageFormat: toBackupStorageFormat(format),
   }));
 
-const APP_VERSION = "4.1.0";
+const APP_VERSION = "4.3.0";
 const CURRENT_BACKUP_VERSION = 9 as const;
 const SUPPORTED_BACKUP_VERSIONS = [2, 3, 4, 5, 6, 7, 8, 9] as const;
 const LEGACY_HISTORY_KEY = STORAGE_KEYS.legacyHistory;
@@ -466,6 +489,11 @@ const normalizeExportedAt = (value: unknown): string => {
 export const createFullBackup = (
   storage: StorageLike = localStorage,
 ): FullBackupFile => {
+  if (storage.getItem(STORAGE_KEYS.transactionJournal) !== null) {
+    throw new Error(
+      "未完了の保存処理が残っています。画面を再読み込みして復旧後に再実行してください。",
+    );
+  }
   const entries: Record<string, string> = {};
   BACKUP_ENTRIES.forEach(({ key }) => {
     const value = storage.getItem(key);
@@ -484,6 +512,14 @@ export const createFullBackup = (
 
 export const downloadFullBackup = (): void => {
   const backup = createFullBackup();
+  downloadBackupFile(backup, "study-quiz-full-backup");
+};
+
+/** 検証済みバックアップをJSONとしてダウンロードする。復元前の安全退避にも使用する。 */
+export const downloadBackupFile = (
+  backup: FullBackupFile,
+  fileNamePrefix = "study-quiz-full-backup",
+): string => {
   // 自分自身で再読込できることを確認してから、利用者へファイルを渡す。
   parseFullBackup(JSON.stringify(backup));
   const blob = new Blob([JSON.stringify(backup, null, 2)], {
@@ -493,11 +529,12 @@ export const downloadFullBackup = (): void => {
   const anchor = document.createElement("a");
   const stamp = backup.exportedAt.replace(/[:.]/g, "-");
   anchor.href = url;
-  anchor.download = `study-quiz-full-backup-${stamp}.json`;
+  anchor.download = `${fileNamePrefix}-${stamp}.json`;
   document.body.appendChild(anchor);
   anchor.click();
   anchor.remove();
   window.setTimeout(() => URL.revokeObjectURL(url), 0);
+  return anchor.download;
 };
 
 export const parseFullBackup = (text: string): FullBackupFile => {
@@ -618,6 +655,63 @@ export const inspectBackup = (backup: FullBackupFile) =>
     included: Object.hasOwn(backup.entries, item.key),
     bytes: new Blob([backup.entries[item.key] ?? ""]).size,
   }));
+
+const countStoredItems = (raw: string | null): number | null => {
+  if (raw === null) return null;
+  try {
+    const value = JSON.parse(raw) as unknown;
+    if (Array.isArray(value)) return value.length;
+    if (isObject(value)) return 1;
+  } catch {
+    // number形式など、JSON配列・オブジェクト以外は件数を表示しない。
+  }
+  return null;
+};
+
+/** 現在値と復元予定値を保存領域単位で比較し、破壊的変更を事前表示できる形にする。 */
+export const compareFullBackup = (
+  backup: FullBackupFile,
+  storage: StorageLike = localStorage,
+): BackupComparisonReport => {
+  // 比較結果を信頼できるよう、入力と現在値の双方を先に完全検証する。
+  const incoming = parseFullBackup(JSON.stringify(backup));
+  const current = parseFullBackup(JSON.stringify(createFullBackup(storage)));
+  const entries = BACKUP_ENTRIES.map(({ key, label }) => {
+    const currentValue = current.entries[key] ?? null;
+    const incomingValue = incoming.entries[key] ?? null;
+    const change: BackupChangeKind =
+      currentValue === incomingValue
+        ? "unchanged"
+        : currentValue === null
+          ? "added"
+          : incomingValue === null
+            ? "removed"
+            : "changed";
+    return {
+      key,
+      label,
+      change,
+      currentIncluded: currentValue !== null,
+      incomingIncluded: incomingValue !== null,
+      currentBytes: new Blob([currentValue ?? ""]).size,
+      incomingBytes: new Blob([incomingValue ?? ""]).size,
+      currentItemCount: countStoredItems(currentValue),
+      incomingItemCount: countStoredItems(incomingValue),
+    } satisfies BackupComparisonEntry;
+  });
+  const count = (kind: BackupChangeKind) =>
+    entries.filter((entry) => entry.change === kind).length;
+  const removedCount = count("removed");
+  const changedCount = count("changed");
+  return {
+    entries,
+    addedCount: count("added"),
+    removedCount,
+    changedCount,
+    unchangedCount: count("unchanged"),
+    destructiveCount: removedCount + changedCount,
+  };
+};
 
 export const auditStorage = (
   storage: StorageLike = localStorage,

@@ -1,6 +1,7 @@
 import type { Question } from "../types/Question";
 import type { StudyHistory } from "../types/StudyHistory";
 import { STORAGE_KEYS } from "./storageKeyRegistry.ts";
+import { writeStorageValue } from "./verifiedStorage.ts";
 
 const KEY = STORAGE_KEYS.dailyTimeBudget;
 export interface DailyTimeBudget {
@@ -18,7 +19,7 @@ export const loadDailyTimeLimit = (): number => {
 };
 export const saveDailyTimeLimit = (minutes: number): number => {
   const value = Math.max(0, Math.min(480, Math.floor(minutes)));
-  localStorage.setItem(KEY, String(value));
+  writeStorageValue(KEY, String(value));
   return value;
 };
 export const calculateDailyTimeBudget = (

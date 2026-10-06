@@ -362,12 +362,50 @@ const run = async () => {
       `document.querySelector(".storage-health-badge")?.textContent?.trim() === "正常"`,
       "端末内データ健全性チェック",
     );
+    await waitFor(
+      client,
+      `Boolean(document.querySelector("#storage-persistence-heading"))`,
+      "端末データ保持状態の表示",
+    );
     const backupExportEnabled = await evaluate(
       client,
       `[...document.querySelectorAll("button")].some((button) => button.textContent?.includes("完全バックアップを出力") && !button.disabled)`,
     );
     if (!backupExportEnabled)
       failures.push("完全バックアップ: 健全性確認後も出力操作が有効になりません。");
+    await evaluate(client, `(() => {
+      const input = document.querySelector('input[type="file"]');
+      if (!input) return false;
+      const backup = {
+        format: "study-quiz-full-backup",
+        version: 8,
+        appVersion: "e2e",
+        exportedAt: "2026-10-06T00:00:00.000Z",
+        entries: { "study-quiz-schema-version": "8" },
+      };
+      const transfer = new DataTransfer();
+      transfer.items.add(new File([JSON.stringify(backup)], "restore.json", { type: "application/json" }));
+      Object.defineProperty(input, "files", { value: transfer.files, configurable: true });
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+      return true;
+    })()`);
+    await waitFor(
+      client,
+      `Boolean(document.querySelector('[aria-label="現在データとの差分集計"]'))`,
+      "復元候補と現在データの差分表示",
+    );
+    const restoreGuard = await evaluate(
+      client,
+      `(() => {
+        const checkbox = document.querySelector('.backup-restore-confirmation input[type="checkbox"]');
+        const button = [...document.querySelectorAll("button")].find((item) => item.textContent?.includes("確認した内容で復元"));
+        if (!checkbox || !button || !button.disabled) return false;
+        checkbox.click();
+        return !button.disabled && Boolean(document.querySelector('.backup-change-badge'));
+      })()`,
+    );
+    if (!restoreGuard)
+      failures.push("完全バックアップ: 差分表示または明示確認による復元ガードを確認できません。");
     reports.push(await evaluate(client, auditExpression("完全バックアップ")));
     await client.send("Emulation.setDeviceMetricsOverride", {
       width: 393,

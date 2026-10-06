@@ -10,6 +10,7 @@ import {
   normalizeQuestionModes,
 } from "./studyOptionService.ts";
 import { differenceInCalendarDays } from "./localDateService.ts";
+import { removeStorageValue, writeStorageValue } from "./verifiedStorage.ts";
 
 const STORAGE_KEY = STORAGE_KEYS.setup;
 const THEMES: ThemePreference[] = ["system", "light", "dark"];
@@ -82,10 +83,10 @@ export const loadSetup = (): Setup | null => {
 };
 
 export const saveSetup = (setup: Setup): void => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(normalizeSetup(setup)));
+  writeStorageValue(STORAGE_KEY, JSON.stringify(normalizeSetup(setup)));
 };
 
-export const clearSetup = (): void => localStorage.removeItem(STORAGE_KEY);
+export const clearSetup = (): void => removeStorageValue(STORAGE_KEY);
 
 export const getRemainingDays = (
   examDate: string,

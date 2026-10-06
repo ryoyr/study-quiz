@@ -163,6 +163,10 @@ const registeredKeys = new Set<string>(
 export const isRegisteredStorageKey = (key: string): boolean =>
   registeredKeys.has(key);
 
+export const storageLabelForKey = (key: string): string =>
+  Object.values(STORAGE_KEY_REGISTRY).find((definition) => definition.key === key)
+    ?.label ?? "端末内データ";
+
 export const BACKUP_STORAGE_DEFINITIONS = Object.values(
   STORAGE_KEY_REGISTRY,
 ).filter((definition) => definition.backup);

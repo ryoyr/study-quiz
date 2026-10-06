@@ -1,5 +1,6 @@
 import type { QuestionAnnotation } from "../types/QuestionAnnotation";
 import { STORAGE_KEYS } from "./storageKeyRegistry.ts";
+import { writeStorageValue } from "./verifiedStorage.ts";
 
 const STORAGE_KEY = STORAGE_KEYS.questionAnnotations;
 export const loadQuestionAnnotations = (): QuestionAnnotation[] => {
@@ -20,7 +21,7 @@ export const loadQuestionAnnotations = (): QuestionAnnotation[] => {
   }
 };
 export const saveQuestionAnnotations = (items: QuestionAnnotation[]): void =>
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+  writeStorageValue(STORAGE_KEY, JSON.stringify(items));
 export const updateQuestionAnnotation = (
   items: QuestionAnnotation[],
   questionId: string,
