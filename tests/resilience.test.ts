@@ -5,6 +5,7 @@ import {
   reconcileActiveSessionSnapshot,
 } from "../src/services/activeSessionStorage.ts";
 import {
+  auditStorage,
   createFullBackup,
   parseFullBackup,
   restoreFullBackup,
@@ -68,10 +69,49 @@ test("完全バックアップは中断セッションを含み廃止済みAI設
   storage.setItem("study-quiz-gemini-api-key-v1", "secret");
 
   const backup = createFullBackup();
-  assert.equal(backup.version, 8);
+  assert.equal(backup.version, 9);
+  assert.equal(backup.integrity?.algorithm, "FNV-1A-32");
   assert.ok(backup.entries["study-quiz-active-session-v1"]);
   assert.equal(backup.entries["study-quiz-gemini-model-v1"], undefined);
   assert.equal(backup.entries["study-quiz-gemini-api-key-v1"], undefined);
+});
+
+test("現行ストレージ版8を含むバックアップを出力後に再検証できる", () => {
+  const storage = installStorage();
+  storage.setItem("study-quiz-schema-version", "8");
+  storage.setItem("study-quiz-answer-history-v1", "[]");
+
+  const backup = createFullBackup(storage);
+  const parsed = parseFullBackup(JSON.stringify(backup));
+
+  assert.equal(parsed.version, 9);
+  assert.equal(parsed.sourceVersion, 9);
+  assert.equal(parsed.entries["study-quiz-schema-version"], "8");
+});
+
+test("整合性情報付きバックアップの出力後改変を拒否する", () => {
+  const storage = installStorage();
+  storage.setItem("study-quiz-schema-version", "8");
+  const backup = createFullBackup(storage);
+  const tampered = structuredClone(backup);
+  tampered.entries["study-quiz-schema-version"] = "7";
+
+  assert.throws(
+    () => parseFullBackup(JSON.stringify(tampered)),
+    /変更または破損/,
+  );
+});
+
+test("端末内データ診断は正常データと破損JSONを識別する", () => {
+  const storage = installStorage();
+  storage.setItem("study-quiz-schema-version", "8");
+  storage.setItem("study-quiz-answer-history-v1", "[]");
+  assert.equal(auditStorage(storage).ok, true);
+
+  storage.setItem("study-quiz-answer-history-v1", "not-json");
+  const report = auditStorage(storage);
+  assert.equal(report.ok, false);
+  assert.match(report.issues[0], /JSON/);
 });
 
 test("復元途中の保存失敗時は元のデータへロールバックする", () => {
@@ -96,7 +136,7 @@ test("復元途中の保存失敗時は元のデータへロールバックす�
   assert.equal(storage.getItem("study-quiz-daily-time-budget-v1"), "15");
 });
 
-test("旧形式をversion 8へ移行し、廃止済み設定を除外する", () => {
+test("旧形式をversion 9へ移行し、廃止済み設定を除外する", () => {
   const parsed = parseFullBackup(
     JSON.stringify({
       format: "study-quiz-full-backup",
@@ -108,7 +148,8 @@ test("旧形式をversion 8へ移行し、廃止済み設定を除外する", ()
       },
     }),
   );
-  assert.equal(parsed.version, 8);
+  assert.equal(parsed.version, 9);
+  assert.equal(parsed.sourceVersion, 3);
   assert.equal(parsed.entries["study-quiz-answer-history-v1"], "[]");
   assert.equal(parsed.entries["study-quiz-history-v1"], undefined);
   assert.equal(parsed.entries["study-quiz-gemini-model-v1"], undefined);
@@ -209,3 +250,4 @@ test("中断セッションの未回答問題がすべて削除済みなら再�
   );
   assert.equal(reconciled, null);
 });
+

@@ -106,3 +106,4 @@ export const selectForgettingQuestions = (
   detectForgettingCandidates(questions, history)
     .slice(0, Math.max(1, limit))
     .map((item) => item.question);
+

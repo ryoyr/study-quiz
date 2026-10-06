@@ -46,3 +46,4 @@ export const applyTheme = (
     .querySelector('meta[name="theme-color"]')
     ?.setAttribute("content", dark ? themeColor[visualTheme].dark : themeColor[visualTheme].light);
 };
+

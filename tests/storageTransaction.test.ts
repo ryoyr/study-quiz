@@ -14,6 +14,7 @@ import type { StudyHistory } from "../src/types/StudyHistory.ts";
 class MemoryStorage implements StorageLike {
   readonly values = new Map<string, string>();
   private failOnceKey = "";
+  private ignoreOnceKey = "";
 
   getItem(key: string) {
     return this.values.get(key) ?? null;
@@ -26,10 +27,17 @@ class MemoryStorage implements StorageLike {
       this.failOnceKey = "";
       throw new Error("quota exceeded");
     }
+    if (key === this.ignoreOnceKey) {
+      this.ignoreOnceKey = "";
+      return;
+    }
     this.values.set(key, value);
   }
   failNextSetFor(key: string) {
     this.failOnceKey = key;
+  }
+  ignoreNextSetFor(key: string) {
+    this.ignoreOnceKey = key;
   }
 }
 
@@ -121,6 +129,23 @@ test("途中の書込み失敗では関連データをすべて変更前へ戻�
   assert.equal(storage.getItem(STORAGE_TRANSACTION_JOURNAL_KEY), null);
 });
 
+test("書込みが例外なく失われた場合も読戻し検証で検出して戻す", () => {
+  const storage = new MemoryStorage();
+  storage.setItem(STORAGE_KEYS.answerHistory, '["old"]');
+  storage.ignoreNextSetFor(STORAGE_KEYS.answerHistory);
+
+  assert.throws(
+    () =>
+      executeStorageTransaction(
+        [{ key: STORAGE_KEYS.answerHistory, value: '["new"]' }],
+        storage,
+      ),
+    /読戻し検証/,
+  );
+  assert.equal(storage.getItem(STORAGE_KEYS.answerHistory), '["old"]');
+  assert.equal(storage.getItem(STORAGE_TRANSACTION_JOURNAL_KEY), null);
+});
+
 test("前回中断したトランザクションを次回起動時に復旧する", () => {
   const storage = new MemoryStorage();
   storage.setItem("study-quiz-answer-history-v1", '["partial-new"]');
@@ -164,3 +189,4 @@ test("アプリ外キーと重複キーはトランザクション対象にし�
     /重複/,
   );
 });
+

@@ -69,3 +69,4 @@ export const fsrsRatingLabel = (rating: FsrsRating): string =>
   ({ AGAIN: "忘れた", HARD: "難しい", GOOD: "思い出せた", EASY: "簡単" })[
     rating
   ];
+

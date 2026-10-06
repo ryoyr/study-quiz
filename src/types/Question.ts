@@ -15,3 +15,4 @@ export interface Question {
   /** 論理削除日時。設定済みの問題は通常の出題対象から除外する。 */
   archivedAt?: string;
 }
+

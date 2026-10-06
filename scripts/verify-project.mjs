@@ -47,6 +47,7 @@ const requiredFiles = [
 ];
 for (const path of requiredFiles) assert(existsSync(path), `${path} がありません`);
 const packageJson = readJson("package.json");
+assert(packageJson.version === "4.1.0", "package.jsonの版は4.1.0である必要があります");
 for (const script of ["verify:structure", "test", "test:e2e", "typecheck", "build", "check"]) {
   assert(typeof packageJson.scripts?.[script] === "string", `scripts.${script} がありません`);
 }
@@ -91,9 +92,15 @@ const retiredPaths = [
 ];
 for (const path of retiredPaths) assert(!existsSync(path), `${path} は削除対象です`);
 const manifest = readJson("public/manifest.webmanifest");
+assert(manifest.id === "./", "manifest.id は ./ である必要があります");
 assert(manifest.start_url === "./", "manifest.start_url は ./ である必要があります");
 assert(manifest.scope === "./", "manifest.scope は ./ である必要があります");
 assert(Array.isArray(manifest.icons) && manifest.icons.length >= 3, "manifest.icons が不足しています");
+assert(
+  Array.isArray(manifest.shortcuts) &&
+    manifest.shortcuts.some((item) => item.url === "./?screen=backupCenter"),
+  "manifest.shortcuts にバックアップ導線がありません",
+);
 for (const icon of manifest.icons ?? []) {
   const path = `public/${icon.src}`;
   assert(existsSync(path), `${path} がありません`);
@@ -106,7 +113,9 @@ const appleIcon = readPngSize("public/apple-touch-icon.png");
 assert(appleIcon.width === 180 && appleIcon.height === 180, "apple-touch-icon.png は180x180である必要があります");
 for (const [path, tokens] of [
   ["src/main.tsx", ["<ErrorBoundary>", "<PwaUpdatePrompt />"]],
-  ["public/sw.js", ["SKIP_WAITING", "matchAll", "pwa-maskable-512x512.png"]],
+  ["public/sw.js", ["SKIP_WAITING", "matchAll", "Promise.allSettled", "pwa-maskable-512x512.png"]],
+  ["src/services/fullBackupService.ts", ["CURRENT_BACKUP_VERSION = 9", "FNV-1A-32", "auditStorage"]],
+  ["src/pages/BackupCenterPage.tsx", ["storage-health-badge", "整合性チェック済み"]],
   ["src/components/StudyFilterPanel.tsx", ["masteryFilters", "questionModes", "horizontal-option-scroller"]],
   ["src/App.css", ["overflow-x: auto", "scroll-snap-type: x proximity"]],
 ]) {
@@ -124,3 +133,4 @@ if (failures.length > 0) {
 } else {
   console.log("構成検証に成功しました（TypeScript設定、PWA資材、統合状態）。");
 }
+

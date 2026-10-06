@@ -120,3 +120,4 @@ UIは表示とイベント受付に限定し、検証・業務処理はUseCase�
 - `ThemePicker` は5種類の `visualTheme` と3種類の `theme` を別fieldsetで操作し、radioのネイティブ状態を保持する。
 - ヘルプはEscapeキーと外側クリックで閉じ、初回ガイドは前後移動と進捗表示を備える。
 - `prefers-reduced-motion` と `forced-colors` では装飾を抑え、操作対象の識別を維持する。
+

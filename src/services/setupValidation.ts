@@ -157,3 +157,4 @@ export const validateSetup = (setup: Setup, now = new Date()): SetupErrors => {
     errors.visualTheme = "配色テーマの指定が不正です。";
   return errors;
 };
+

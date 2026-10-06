@@ -2,6 +2,11 @@ import { useEffect, useRef, useState } from "react";
 
 type Notice = "install" | "offline" | "update" | "error" | null;
 
+interface InstallPromptEvent extends Event {
+  prompt(): Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
+}
+
 const isIos = (): boolean => /iphone|ipad|ipod/i.test(navigator.userAgent);
 const isStandalone = (): boolean =>
   window.matchMedia("(display-mode: standalone)").matches ||
@@ -11,6 +16,7 @@ const isStandalone = (): boolean =>
 export default function PwaUpdatePrompt() {
   const [notice, setNotice] = useState<Notice>(null);
   const waitingWorker = useRef<ServiceWorker | null>(null);
+  const installPrompt = useRef<InstallPromptEvent | null>(null);
 
   useEffect(() => {
     if (!("serviceWorker" in navigator) || import.meta.env.DEV) return;
@@ -26,11 +32,22 @@ export default function PwaUpdatePrompt() {
     const checkForUpdate = () => {
       if (document.visibilityState === "visible") void registration?.update();
     };
+    const onBeforeInstallPrompt = (event: Event) => {
+      event.preventDefault();
+      installPrompt.current = event as InstallPromptEvent;
+      if (!isStandalone()) setNotice("install");
+    };
+    const onAppInstalled = () => {
+      installPrompt.current = null;
+      setNotice(null);
+    };
 
     navigator.serviceWorker.addEventListener(
       "controllerchange",
       onControllerChange,
     );
+    window.addEventListener("beforeinstallprompt", onBeforeInstallPrompt);
+    window.addEventListener("appinstalled", onAppInstalled);
     document.addEventListener("visibilitychange", checkForUpdate);
 
     navigator.serviceWorker
@@ -39,8 +56,9 @@ export default function PwaUpdatePrompt() {
         registration = result;
         if (!navigator.serviceWorker.controller) {
           void navigator.serviceWorker.ready.then(() => {
-            if (!disposed)
+            if (!disposed) {
               setNotice(isIos() && !isStandalone() ? "install" : "offline");
+            }
           });
         }
         if (result.waiting) {
@@ -70,6 +88,8 @@ export default function PwaUpdatePrompt() {
       disposed = true;
       window.clearInterval(interval);
       document.removeEventListener("visibilitychange", checkForUpdate);
+      window.removeEventListener("beforeinstallprompt", onBeforeInstallPrompt);
+      window.removeEventListener("appinstalled", onAppInstalled);
       navigator.serviceWorker.removeEventListener(
         "controllerchange",
         onControllerChange,
@@ -78,13 +98,23 @@ export default function PwaUpdatePrompt() {
   }, []);
 
   if (!notice) return null;
-  const update = () =>
+
+  const applyUpdate = () =>
     waitingWorker.current?.postMessage({ type: "SKIP_WAITING" });
+  const install = async () => {
+    const prompt = installPrompt.current;
+    if (!prompt) return;
+    await prompt.prompt();
+    await prompt.userChoice;
+    installPrompt.current = null;
+    setNotice(null);
+  };
+  const canPromptInstall = notice === "install" && Boolean(installPrompt.current);
   const title =
     notice === "update"
       ? "新しいバージョンがあります"
       : notice === "install"
-        ? "iPhoneにインストールできます"
+        ? "端末にインストールできます"
         : notice === "error"
           ? "オフライン準備に失敗しました"
           : "オフラインで利用できます";
@@ -92,7 +122,9 @@ export default function PwaUpdatePrompt() {
     notice === "update"
       ? "回答確定後に更新すると、最新の機能と修正が反映されます。"
       : notice === "install"
-        ? "Safariの共有ボタンから「ホーム画面に追加」を選択してください。"
+        ? canPromptInstall
+          ? "インストールすると、ホーム画面からすぐに起動できます。"
+          : "Safariの共有ボタンから「ホーム画面に追加」を選択してください。"
         : notice === "error"
           ? "通信状態を確認し、オンライン時に再読み込みしてください。通常の学習データは端末内に残ります。"
           : "主要画面をネットワーク接続なしで利用できます。";
@@ -101,7 +133,8 @@ export default function PwaUpdatePrompt() {
     <aside
       className="pwa-update-notice"
       role={notice === "error" ? "alert" : "status"}
-      aria-live="polite"
+      aria-live={notice === "error" ? "assertive" : "polite"}
+      aria-label="アプリのインストールと更新"
     >
       <div className="pwa-update-content">
         <strong>{title}</strong>
@@ -109,8 +142,21 @@ export default function PwaUpdatePrompt() {
       </div>
       <div className="pwa-update-actions">
         {notice === "update" && (
-          <button className="pwa-update-button" type="button" onClick={update}>
+          <button
+            className="pwa-update-button"
+            type="button"
+            onClick={applyUpdate}
+          >
             更新して再読み込み
+          </button>
+        )}
+        {canPromptInstall && (
+          <button
+            className="pwa-update-button"
+            type="button"
+            onClick={() => void install()}
+          >
+            インストール
           </button>
         )}
         {notice === "error" && (

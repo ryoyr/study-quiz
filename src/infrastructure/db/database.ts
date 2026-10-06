@@ -164,3 +164,4 @@ export const clearInitialSetupRecords = async (): Promise<void> => {
   transaction.objectStore("settings").delete("setup");
   await completion;
 };
+

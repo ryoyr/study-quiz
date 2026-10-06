@@ -86,6 +86,17 @@ const applyValues = (
   });
 };
 
+const verifyValues = (
+  storage: StorageLike,
+  values: Record<string, string | null>,
+): void => {
+  for (const [key, expected] of Object.entries(values)) {
+    if (storage.getItem(key) !== expected) {
+      throw new Error(`保存後の読戻し検証に失敗しました: ${key}`);
+    }
+  }
+};
+
 /**
  * 前回の保存がブラウザ終了などで中断していた場合、変更前の状態へ戻す。
  * 復旧できたときだけtrueを返す。
@@ -103,6 +114,7 @@ export const recoverStorageTransaction = (
   }
 
   applyValues(storage, journal.before);
+  verifyValues(storage, journal.before);
   storage.removeItem(JOURNAL_KEY);
   return true;
 };
@@ -136,6 +148,7 @@ export const executeStorageTransaction = (
       if (value === null) storage.removeItem(key);
       else storage.setItem(key, value);
     });
+    verifyValues(storage, Object.fromEntries(targets.map(({ key, value }) => [key, value])));
     storage.removeItem(JOURNAL_KEY);
   } catch (writeError) {
     try {
@@ -159,3 +172,4 @@ export const executeStorageTransaction = (
 };
 
 export const STORAGE_TRANSACTION_JOURNAL_KEY = JOURNAL_KEY;
+

@@ -14,3 +14,4 @@ test("データが少ない場合は重複しない全目盛りを返す", () =>
   assert.deepEqual(selectChartTickIndexes(1), [0]);
   assert.deepEqual(selectChartTickIndexes(3), [0, 1, 2]);
 });
+

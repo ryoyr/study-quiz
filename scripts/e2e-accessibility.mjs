@@ -252,8 +252,9 @@ const clickNavigation = async (client, label) => {
 const run = async () => {
   const failures = [];
   const reports = [];
-  const { server, origin } = await startStaticServer();
+  // ブラウザー未導入時にHTTPサーバーだけが残らないよう、先に実行可能性を確認する。
   const browserPath = await findBrowser();
+  const { server, origin } = await startStaticServer();
   const profileDirectory = await mkdtemp(join(tmpdir(), "study-quiz-e2e-"));
   const debugPort = await getFreePort();
   const browser = spawn(browserPath, [
@@ -348,6 +349,26 @@ const run = async () => {
       );
       reports.push(await evaluate(client, auditExpression(heading)));
     }
+    await client.send("Page.navigate", {
+      url: `${origin}${BASE_PATH}?screen=backupCenter`,
+    });
+    await waitFor(
+      client,
+      `document.querySelector("main h1")?.textContent?.trim() === "完全バックアップ"`,
+      "PWAショートカットからのバックアップ画面",
+    );
+    await waitFor(
+      client,
+      `document.querySelector(".storage-health-badge")?.textContent?.trim() === "正常"`,
+      "端末内データ健全性チェック",
+    );
+    const backupExportEnabled = await evaluate(
+      client,
+      `[...document.querySelectorAll("button")].some((button) => button.textContent?.includes("完全バックアップを出力") && !button.disabled)`,
+    );
+    if (!backupExportEnabled)
+      failures.push("完全バックアップ: 健全性確認後も出力操作が有効になりません。");
+    reports.push(await evaluate(client, auditExpression("完全バックアップ")));
     await client.send("Emulation.setDeviceMetricsOverride", {
       width: 393,
       height: 852,
@@ -451,3 +472,4 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
     process.exitCode = 1;
   });
 }
+

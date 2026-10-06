@@ -1,51 +1,42 @@
-# Validation Report — Study Quiz v4.0.0
+# Validation Report — Study Quiz v4.1.0
 
 実施日: 2026-10-06
 
-## 結果
+## 1. 実行結果
 
 |確認|結果|
 |---|---|
-|プロジェクト構成検証 `node scripts/verify-project.mjs`|成功|
-|単体試験 `bun test tests/*.test.ts`|78件成功、失敗0件|
-|TSX / TypeScript / CSSバンドル構文検証|成功、90モジュール|
+|構成検証 `node scripts/verify-project.mjs`|成功|
+|単体試験 `bun test tests/*.test.ts`|82件成功、失敗0件|
+|ローカルTS/TSX/CSSバンドル構文検証|成功、90モジュール|
+|Service Worker構文検査 `node --check public/sw.js`|成功|
 |JSON構文検査|成功|
-|CSS波括弧整合|成功|
-|Chrome E2Eアクセシビリティ試験|成功、8画面|
-|狭幅検査|320x568 / 393x852で成功|
-|主要ナビゲーション|ホーム、学習、記録、管理、その他の遷移・現在地・見出しフォーカスが成功|
-|設定複数選択|3グループの横スクロール、理解度・出題方法の複数選択が成功|
-|UI Chrome|上部ステータス、下部ナビゲーションの固定表示が成功|
-|アクセシビリティ|main/h1、操作名、重複ID、横はみ出し、Tabフォーカス、AXツリーが成功|
-|PWAアイコン形式・寸法|180 / 192 / 512 / maskable 512pxすべて正常|
-|Web Manifest / Service Worker|構成検証成功、キャッシュ世代v15|
+|PWAアイコン形式・寸法|180 / 192 / 512 / maskable 512pxを確認|
+|ソース到達性検査|`src`配下96ファイル中96件到達、未参照0件|
+|禁止・危険パターン簡易検査|`dangerouslySetInnerHTML`、`eval`、`new Function`、`document.write`なし|
+|E2Eスクリプトの異常終了性|Chrome未導入時に即時終了し、HTTPサーバーを残さないことを確認|
 
-## 追加・更新した重点試験
+## 2. 追加した重点回帰試験
 
-- 旧設定に `visualTheme` がない場合、`aurora` を補完する。
-- `aurora / focus / forest / sunset / mono` の5種類を受け付ける。
-- 未定義の配色テーマを拒否する。
-- 配色テーマと明暗モードを別のUI・保存項目として提供する。
-- 上部と下部の共通Chromeがスクロール後も固定される。
-- 共通SVGアイコンを使用し、操作要素にアクセシブルネームを持たせる。
-- 320px幅と393px幅で本文全体の不要な横スクロールを発生させない。
+- 現行ストレージschema version 8を含む完全バックアップをversion 9として自己再読込できる。
+- version 9バックアップのentries変更をチェックサム不一致として拒否する。
+- 端末内データ診断が正常データと破損JSONを識別する。
+- localStorage書込みが例外なく欠落した場合も読戻し検証で検知し、元データへ戻す。
+- Manifestに完全バックアップへのPWAショートカットが存在する。
+- Service Workerが任意資材を`Promise.allSettled`で取得し、Range要求を除外する。
+- E2Eシナリオにバックアップ画面の直接起動、健全性確認、出力ボタン活性確認が含まれる。
 
-## 実画面確認
+## 3. 依存なしで実行したバンドル検証
 
-Chromeで初回設定、ホーム、学習、記録、管理、その他、学習設定を表示し、主要導線とテーマ選択UIを画像確認した。テーマ選択では5種類の配色カード、3種類の明暗選択、選択マーカー、SVGアイコン、下部ナビゲーションが意図どおり表示された。
+公式依存を外部モジュール扱いにし、Bunでアプリ配下90モジュールを走査・変換した。これにより今回変更したTS/TSXを含むローカルimport解決、構文、CSS取り込みを確認した。これは公式依存を用いるVite本番ビルドの代替ではない。
 
-## 環境上の制約
+## 4. 環境上の制約
 
-受領ダンプには `node_modules` が含まれていない。実行環境のパッケージ取得ポリシーにより `npm ci --no-audit --no-fund` は `vite-7.3.6.tgz` 取得時のHTTP 403で停止した。このため、公式依存を利用するVite本番ビルドと `tsc -b` は完走していない。
+`npm ci --no-audit --no-fund`および`bun install --frozen-lockfile`は、実行環境の取得ポリシーによりnpmパッケージtarballへのHTTP 403で失敗した。このため指定版のReact型定義、Vite、ts-fsrsを復元できず、公式依存による`tsc -b`、`vite build`、実ブラウザーE2Eは完走していない。
 
-代替として以下を実施した。
+Chrome/Chromiumも実行環境に存在しない。E2Eスクリプト自体は、従来のように試験用HTTPサーバーを残して待機せず、明確なエラーで終了するよう修正した。
 
-- Bunによる全TS/TSX/CSSモジュールのバンドル構文検証。
-- 依存不要の単体試験78件。
-- 構成、PWA、JSON、CSS整合検証。
-- ブラウザー実行検証用バンドルを用いたChrome E2E。
-
-依存取得可能な環境での最終コマンド:
+依存取得とChrome利用が可能な環境での最終確認コマンド:
 
 ```bash
 npm ci --no-audit --no-fund && npm run check

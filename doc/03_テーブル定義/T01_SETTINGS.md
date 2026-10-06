@@ -38,3 +38,4 @@
 - `defaultCategories` は `["ALL"]` または1件以上の実在トピックを保持し、`ALL` と個別トピックは混在させない。
 - `defaultMasteryFilters` と `defaultQuestionModes` は空配列を禁止し、`ALL` と他項目を混在させない。
 - 旧形式の単一値は対応する複数値配列へ移行し、不足値はLPIC-1 101、全範囲、おすすめ、端末連動、オーロラ配色へ補完する。
+

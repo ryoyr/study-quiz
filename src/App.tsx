@@ -139,6 +139,23 @@ type Screen =
   | "factCheck"
   | "similarQuestion";
 
+const PWA_SHORTCUT_SCREENS = new Set<Screen>([
+  "home",
+  "learn",
+  "records",
+  "manage",
+  "more",
+  "backupCenter",
+]);
+
+const readInitialScreen = (): Screen => {
+  if (typeof window === "undefined") return "home";
+  const requested = new URLSearchParams(window.location.search).get("screen");
+  return requested && PWA_SHORTCUT_SCREENS.has(requested as Screen)
+    ? (requested as Screen)
+    : "home";
+};
+
 const calculateInstantScore = (
   responseTimeSeconds: number,
   thresholdSeconds: number,
@@ -199,7 +216,7 @@ export default function App() {
   >([]);
   const [correctionQuestionId, setCorrectionQuestionId] = useState("");
   const [requiresInitialSetup, setRequiresInitialSetup] = useState(false);
-  const [screen, setScreen] = useState<Screen>("home");
+  const [screen, setScreen] = useState<Screen>(readInitialScreen);
   const [questionIndex, setQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [showAnswer, setShowAnswer] = useState(false);
@@ -233,8 +250,8 @@ export default function App() {
     let cancelled = false;
     const initialize = async () => {
       try {
-        migrateLegacyStorage();
         recoverStorageTransaction();
+        migrateLegacyStorage();
       } catch (error) {
         setStorageError(
           error instanceof Error
@@ -311,6 +328,18 @@ export default function App() {
     media.addEventListener("change", update);
     return () => media.removeEventListener("change", update);
   }, [setup.theme, setup.visualTheme]);
+
+  useEffect(() => {
+    const section = sectionForScreen(screen);
+    const labels: Record<NavigationSection, string> = {
+      home: setup.name || "Study Quiz",
+      learn: "学習",
+      records: "記録・分析",
+      manage: "問題・教材管理",
+      more: "その他",
+    };
+    document.title = `${labels[section]} - Study Quiz`;
+  }, [screen, setup.name]);
 
   useEffect(() => {
     if (!loaded || requiresInitialSetup) return;
@@ -1621,3 +1650,4 @@ export default function App() {
     </main>,
   );
 }
+

@@ -118,3 +118,11 @@ UIは表示とイベント受付に限定し、検証・業務処理はUseCase�
 - DB `version=2` のupgrade transactionで `examScopes` を作成し、`examCode`、`active`、`sortOrder` を索引化する。
 - backup version 2〜5の設定は `normalizeSetup`、問題は `examScopeId=lpic101` で補完してから検証する。
 - seed version 3で不足する初期問題だけを既存データへ追加する。
+
+
+
+## 14. v4.1詳細追補
+- 起動順は未完了ジャーナル復旧、旧キー移行、各領域読込みとする。
+- `executeStorageTransaction` は更新後に各キーを再取得し、要求値との完全一致を確認してからジャーナルを削除する。
+- 読戻し不一致時は通常の書込み例外と同じロールバック経路へ遷移する。
+- 完全バックアップのschema version検証上限は`CURRENT_STORAGE_SCHEMA_VERSION`を参照し、定数の二重管理を行わない。

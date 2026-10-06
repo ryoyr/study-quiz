@@ -37,3 +37,12 @@
 - version 2〜7は、設定の出題初期値・明暗モード・配色テーマ・複数選択配列と問題の `examScopeId` を補完してから検証する。
 - `examScopes` はアプリ同梱マスターから再生成できるため、バックアップentriesへ含めない。
 - 初回操作ガイドの表示済み状態とAPIキーはバックアップしない。
+
+
+
+## v4.1追補
+- 現行versionは9。`sourceVersion`は読込み後の画面表示用で、出力ファイルでは省略する。
+- `integrity.algorithm`は`FNV-1A-32`、`integrity.checksum`は8桁の小文字16進数とする。
+- チェックサム対象は`format`、`version`、`appVersion`、`exportedAt`、物理キー昇順に並べた`entries`である。
+- version 9はチェックサム必須。version 2〜8は互換入力として受け付け、設定・問題を現行形へ正規化する。
+- 本チェックサムは偶発的な破損・編集検知用であり、送信者認証や暗号学的改ざん防止を保証しない。

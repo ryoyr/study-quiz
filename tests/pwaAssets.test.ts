@@ -20,6 +20,12 @@ test("manifestが参照するPWAアイコンが正しい寸法で存在する", 
     const size = readPngSize(`public/${icon.src}`);
     assert.deepEqual(size, { width: expected, height: expected });
   }
+  assert.equal((manifest as { id?: string }).id, "./");
+  assert.ok(
+    (manifest as { shortcuts?: Array<{ url: string }> }).shortcuts?.some(
+      (shortcut) => shortcut.url === "./?screen=backupCenter",
+    ),
+  );
 });
 
 test("iOS用アイコンとService Workerのプリキャッシュ対象が存在する", () => {
@@ -41,8 +47,11 @@ test("iOS用アイコンとService Workerのプリキャッシュ対象が存在
   assert.match(worker, /js\|css/);
 });
 
-test("Service Workerのキャッシュ世代はv4.0.0配布版へ更新されている", () => {
+test("Service Workerのキャッシュ世代はv4.1.0配布版へ更新されている", () => {
   const serviceWorker = readFileSync("public/sw.js", "utf8");
   assert.match(serviceWorker, /study-quiz-shell-/);
-  assert.match(serviceWorker, /CACHE_NAME = `\$\{CACHE_PREFIX\}v15`/);
+  assert.match(serviceWorker, /CACHE_NAME = `\$\{CACHE_PREFIX\}v16`/);
+  assert.match(serviceWorker, /Promise\.allSettled/);
+  assert.match(serviceWorker, /request\.headers\.has\("range"\)/);
 });
+

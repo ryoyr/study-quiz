@@ -1,16 +1,18 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   removeSetup,
   persistSetup,
 } from "../infrastructure/repositories/setupRepository";
 import {
   BACKUP_ENTRIES,
+  auditStorage,
   createFullBackup,
   downloadFullBackup,
   inspectBackup,
   parseFullBackup,
   restoreFullBackup,
   type FullBackupFile,
+  type StorageAuditReport,
 } from "../services/fullBackupService";
 import { STORAGE_KEYS } from "../services/storageKeyRegistry";
 import type { Setup } from "../types/Setup";
@@ -18,6 +20,12 @@ import type { Setup } from "../types/Setup";
 type Props = { onBack: () => void };
 const SETUP_KEY = STORAGE_KEYS.setup;
 const MAX_BACKUP_BYTES = 25 * 1024 * 1024;
+
+const formatBytes = (bytes: number): string => {
+  if (bytes < 1024) return `${bytes.toLocaleString()} bytes`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+};
 
 const setupFromBackup = (backup: FullBackupFile): Setup | null => {
   const json = backup.entries[SETUP_KEY];
@@ -33,21 +41,55 @@ const synchronizeIndexedSetup = async (
 };
 
 export default function BackupCenterPage({ onBack }: Props) {
-  const ref = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const previewHeadingRef = useRef<HTMLHeadingElement>(null);
   const [preview, setPreview] = useState<FullBackupFile | null>(null);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [restoring, setRestoring] = useState(false);
+  const [auditing, setAuditing] = useState(false);
+  const [audit, setAudit] = useState<StorageAuditReport | null>(null);
+  const [storageEstimate, setStorageEstimate] = useState<{
+    usage: number;
+    quota: number;
+  } | null>(null);
+
+  const refreshAudit = async () => {
+    setAuditing(true);
+    await Promise.resolve();
+    const nextAudit = auditStorage();
+    setAudit(nextAudit);
+    try {
+      const estimate = await navigator.storage?.estimate?.();
+      if (
+        typeof estimate?.usage === "number" &&
+        typeof estimate.quota === "number"
+      ) {
+        setStorageEstimate({ usage: estimate.usage, quota: estimate.quota });
+      }
+    } catch {
+      setStorageEstimate(null);
+    } finally {
+      setAuditing(false);
+    }
+  };
+
+  useEffect(() => {
+    void refreshAudit();
+  }, []);
 
   const load = async (file: File) => {
     setError("");
     setMessage("");
     try {
-      if (file.size > MAX_BACKUP_BYTES)
+      if (file.size > MAX_BACKUP_BYTES) {
         throw new Error(
           "バックアップは25MB以下のJSONファイルを指定してください。",
         );
-      setPreview(parseFullBackup(await file.text()));
+      }
+      const parsed = parseFullBackup(await file.text());
+      setPreview(parsed);
+      window.requestAnimationFrame(() => previewHeadingRef.current?.focus());
     } catch (loadError) {
       setPreview(null);
       setError(
@@ -56,7 +98,7 @@ export default function BackupCenterPage({ onBack }: Props) {
           : "バックアップの確認に失敗しました。",
       );
     } finally {
-      if (ref.current) ref.current.value = "";
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
@@ -66,8 +108,9 @@ export default function BackupCenterPage({ onBack }: Props) {
       !window.confirm(
         "現在の対象データを削除し、バックアップ内容で置き換えます。実行しますか？",
       )
-    )
+    ) {
       return;
+    }
 
     setRestoring(true);
     setError("");
@@ -115,75 +158,154 @@ export default function BackupCenterPage({ onBack }: Props) {
     }
   };
 
+  const integrityLabel = preview
+    ? preview.sourceVersion === 9
+      ? "整合性チェック済み"
+      : `旧形式v${preview.sourceVersion ?? preview.version}を現行形式へ変換済み`
+    : "";
+
   return (
     <main className="app-shell">
       <section className="home-card backup-center-card">
+        <p className="eyebrow">DATA SAFETY</p>
         <h1>完全バックアップ</h1>
-        <p className="planning-note">
+        <p className="planning-note" id="backup-description">
           設定、問題、学習履歴、FSRS、ノート、修正提案、中断中の学習を1ファイルへ保存します。
-          秘密情報は出力しません。復元前に形式・値・参照関係を検証します。
+          秘密情報は出力しません。復元前に形式・値・参照関係・整合性を検証します。
         </p>
-        <button
-          className="primary-button"
-          type="button"
-          onClick={() => {
-            try {
-              downloadFullBackup();
-              setError("");
-              setMessage("完全バックアップを出力しました。");
-            } catch (downloadError) {
-              setMessage("");
-              setError(
-                downloadError instanceof Error
-                  ? downloadError.message
-                  : "バックアップを出力できませんでした。",
-              );
-            }
-          }}
+
+        <section
+          className={`storage-health-card ${audit?.ok ? "is-healthy" : audit ? "has-issue" : ""}`}
+          aria-labelledby="storage-health-heading"
+          aria-busy={auditing}
         >
-          完全バックアップを出力
-        </button>
-        <input
-          ref={ref}
-          className="file-input"
-          type="file"
-          aria-label="復元するバックアップJSON"
-          accept="application/json,.json"
-          onChange={(event) => {
-            const file = event.target.files?.[0];
-            if (file) void load(file);
-          }}
-        />
-        <button
-          className="restore-button"
-          type="button"
-          disabled={restoring}
-          onClick={() => ref.current?.click()}
-        >
-          復元ファイルを選択
-        </button>
-        <div className="backup-targets" aria-label="バックアップ対象">
-          {BACKUP_ENTRIES.map((item) => (
-            <span key={item.key}>{item.label}</span>
-          ))}
+          <div className="storage-health-heading">
+            <div>
+              <h2 id="storage-health-heading">端末内データの健全性</h2>
+              <p>
+                {auditing
+                  ? "保存データを検査しています。"
+                  : audit?.ok
+                    ? "形式・参照関係・バックアップ変換を確認できました。"
+                    : audit
+                      ? "修復または退避が必要なデータを検出しました。"
+                      : "未検査です。"}
+              </p>
+            </div>
+            <span className="storage-health-badge" role="status" aria-live="polite">
+              {auditing ? "検査中" : audit?.ok ? "正常" : audit ? "要確認" : "未検査"}
+            </span>
+          </div>
+          {audit && (
+            <div className="storage-health-summary">
+              <span>保存領域 <strong>{audit.includedCount}/{BACKUP_ENTRIES.length}</strong></span>
+              <span>対象データ <strong>{formatBytes(audit.totalBytes)}</strong></span>
+              {storageEstimate && storageEstimate.quota > 0 && (
+                <span>
+                  ブラウザー使用量 <strong>{formatBytes(storageEstimate.usage)}</strong>
+                </span>
+              )}
+            </div>
+          )}
+          {audit && !audit.ok && (
+            <ul className="storage-health-issues">
+              {audit.issues.map((issue) => <li key={issue}>{issue}</li>)}
+            </ul>
+          )}
+          <button
+            className="secondary-button compact-button"
+            type="button"
+            disabled={auditing || restoring}
+            onClick={() => void refreshAudit()}
+          >
+            {auditing ? "検査中..." : "もう一度検査"}
+          </button>
+        </section>
+
+        <div className="backup-primary-actions">
+          <button
+            className="primary-button"
+            type="button"
+            disabled={restoring || auditing || audit?.ok === false}
+            aria-describedby="backup-description"
+            onClick={() => {
+              try {
+                downloadFullBackup();
+                setError("");
+                setMessage("整合性情報付きの完全バックアップを出力しました。");
+              } catch (downloadError) {
+                setMessage("");
+                setError(
+                  downloadError instanceof Error
+                    ? downloadError.message
+                    : "バックアップを出力できませんでした。",
+                );
+              }
+            }}
+          >
+            完全バックアップを出力
+          </button>
+          <input
+            ref={fileInputRef}
+            className="file-input"
+            type="file"
+            aria-label="復元するバックアップJSON"
+            accept="application/json,.json"
+            disabled={restoring}
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (file) void load(file);
+            }}
+          />
+          <button
+            className="restore-button"
+            type="button"
+            disabled={restoring}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            復元ファイルを選択
+          </button>
         </div>
+
+        <div
+          className="backup-drop-zone"
+          onDragOver={(event) => event.preventDefault()}
+          onDrop={(event) => {
+            event.preventDefault();
+            const file = event.dataTransfer.files?.[0];
+            if (file && !restoring) void load(file);
+          }}
+        >
+          JSONファイルはここへドロップすることもできます（最大25MB）。
+        </div>
+
+        <details className="backup-target-details">
+          <summary>バックアップ対象 {BACKUP_ENTRIES.length}領域を確認</summary>
+          <div className="backup-targets" aria-label="バックアップ対象">
+            {BACKUP_ENTRIES.map((item) => (
+              <span key={item.key}>{item.label}</span>
+            ))}
+          </div>
+        </details>
+
         {preview && (
           <section className="backup-preview" aria-label="復元内容の確認">
-            <h2>復元内容の確認</h2>
+            <h2 ref={previewHeadingRef} tabIndex={-1}>復元内容の確認</h2>
             <p>
-              形式: v{preview.version} / アプリ: {preview.appVersion} /
+              元の形式: v{preview.sourceVersion ?? preview.version} / アプリ: {preview.appVersion} /
               出力日時: {new Date(preview.exportedAt).toLocaleString("ja-JP")}
             </p>
-            {inspectBackup(preview).map((item) => (
-              <div key={item.label}>
-                <span>{item.label}</span>
-                <strong>
-                  {item.included
-                    ? `${item.bytes.toLocaleString()} bytes`
-                    : "含まれない"}
-                </strong>
-              </div>
-            ))}
+            <p className="backup-integrity-status">✓ {integrityLabel}</p>
+            <div className="backup-preview-list">
+              {inspectBackup(preview).map((item) => (
+                <div key={item.label}>
+                  <span>{item.label}</span>
+                  <strong>
+                    {item.included ? formatBytes(item.bytes) : "含まれない"}
+                  </strong>
+                </div>
+              ))}
+            </div>
             <button
               className="backup-danger-button"
               type="button"

@@ -7,6 +7,7 @@ import {
 } from "./storageKeyRegistry.ts";
 import { validateSetup } from "./setupValidation.ts";
 import { normalizeSetup } from "./setupStorage.ts";
+import { CURRENT_STORAGE_SCHEMA_VERSION } from "./storageMigration.ts";
 import { LPIC101_EXAM_SCOPE_ID } from "../types/ExamScope";
 import {
   executeStorageTransaction,
@@ -21,10 +22,33 @@ export type BackupStorageFormat = "json" | "number";
 
 export interface FullBackupFile {
   format: "study-quiz-full-backup";
-  version: 2 | 3 | 4 | 5 | 6 | 7 | 8;
+  version: 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
   appVersion: string;
   exportedAt: string;
   entries: Record<string, string>;
+  sourceVersion?: 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
+  integrity?: BackupIntegrity;
+}
+
+export interface BackupIntegrity {
+  algorithm: "FNV-1A-32";
+  checksum: string;
+}
+
+export interface StorageAuditEntry {
+  key: string;
+  label: string;
+  included: boolean;
+  bytes: number;
+}
+
+export interface StorageAuditReport {
+  ok: boolean;
+  checkedAt: string;
+  includedCount: number;
+  totalBytes: number;
+  issues: string[];
+  entries: StorageAuditEntry[];
 }
 
 export interface BackupEntryDefinition {
@@ -50,7 +74,9 @@ export const BACKUP_ENTRIES: BackupEntryDefinition[] =
     storageFormat: toBackupStorageFormat(format),
   }));
 
-const APP_VERSION = "4.0.0";
+const APP_VERSION = "4.1.0";
+const CURRENT_BACKUP_VERSION = 9 as const;
+const SUPPORTED_BACKUP_VERSIONS = [2, 3, 4, 5, 6, 7, 8, 9] as const;
 const LEGACY_HISTORY_KEY = STORAGE_KEYS.legacyHistory;
 const API_KEY = STORAGE_KEYS.geminiApiKey;
 const LEGACY_MODEL_KEY = STORAGE_KEYS.geminiModel;
@@ -75,6 +101,53 @@ const isNonNegativeInteger = (value: unknown): value is number =>
   Number.isInteger(value) && Number(value) >= 0;
 const errorMessage = (error: unknown): string =>
   error instanceof Error ? error.message : String(error);
+
+const canonicalBackupPayload = (backup: Pick<FullBackupFile, "format" | "version" | "appVersion" | "exportedAt" | "entries">): string =>
+  JSON.stringify({
+    format: backup.format,
+    version: backup.version,
+    appVersion: backup.appVersion,
+    exportedAt: backup.exportedAt,
+    entries: Object.fromEntries(
+      Object.entries(backup.entries).sort(([left], [right]) =>
+        left.localeCompare(right),
+      ),
+    ),
+  });
+
+const fnv1a32 = (value: string): string => {
+  let hash = 0x811c9dc5;
+  for (const byte of new TextEncoder().encode(value)) {
+    hash ^= byte;
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  return hash.toString(16).padStart(8, "0");
+};
+
+const createIntegrity = (
+  backup: Pick<FullBackupFile, "format" | "version" | "appVersion" | "exportedAt" | "entries">,
+): BackupIntegrity => ({
+  algorithm: "FNV-1A-32",
+  checksum: fnv1a32(canonicalBackupPayload(backup)),
+});
+
+const verifyIntegrity = (
+  backup: Pick<FullBackupFile, "format" | "version" | "appVersion" | "exportedAt" | "entries">,
+  integrity: unknown,
+): void => {
+  if (
+    !isObject(integrity) ||
+    integrity.algorithm !== "FNV-1A-32" ||
+    typeof integrity.checksum !== "string" ||
+    !/^[0-9a-f]{8}$/u.test(integrity.checksum)
+  ) {
+    throw new Error("バックアップの整合性情報がありません。");
+  }
+  const expected = createIntegrity(backup).checksum;
+  if (integrity.checksum !== expected) {
+    throw new Error("バックアップの内容が出力後に変更または破損しています。");
+  }
+};
 
 const assertArray = (value: unknown, label: string): unknown[] => {
   if (!Array.isArray(value)) throw new Error(`${label}は配列ではありません。`);
@@ -323,7 +396,9 @@ const validateStoredEntry = (
     const value = Number(raw);
     const valid =
       definition.key === STORAGE_KEYS.schemaVersion
-        ? Number.isInteger(value) && value >= 1 && value <= 7
+        ? Number.isInteger(value) &&
+          value >= 1 &&
+          value <= CURRENT_STORAGE_SCHEMA_VERSION
         : Number.isFinite(value) && value >= 0 && value <= 480;
     if (!valid) throw new Error(`${definition.label}の値が不正です。`);
     return;
@@ -388,23 +463,29 @@ const normalizeExportedAt = (value: unknown): string => {
   return value;
 };
 
-export const createFullBackup = (): FullBackupFile => {
+export const createFullBackup = (
+  storage: StorageLike = localStorage,
+): FullBackupFile => {
   const entries: Record<string, string> = {};
   BACKUP_ENTRIES.forEach(({ key }) => {
-    const value = localStorage.getItem(key);
+    const value = storage.getItem(key);
     if (value !== null) entries[key] = value;
   });
-  return {
+  const backup: FullBackupFile = {
     format: "study-quiz-full-backup",
-    version: 8,
+    version: CURRENT_BACKUP_VERSION,
     appVersion: APP_VERSION,
     exportedAt: new Date().toISOString(),
     entries,
   };
+  backup.integrity = createIntegrity(backup);
+  return backup;
 };
 
 export const downloadFullBackup = (): void => {
   const backup = createFullBackup();
+  // 自分自身で再読込できることを確認してから、利用者へファイルを渡す。
+  parseFullBackup(JSON.stringify(backup));
   const blob = new Blob([JSON.stringify(backup, null, 2)], {
     type: "application/json",
   });
@@ -432,12 +513,36 @@ export const parseFullBackup = (text: string): FullBackupFile => {
 
   if (
     value.format !== "study-quiz-full-backup" ||
-    ![2, 3, 4, 5, 6, 7, 8].includes(value.version ?? 0) ||
+    !SUPPORTED_BACKUP_VERSIONS.includes(
+      (value.version ?? 0) as (typeof SUPPORTED_BACKUP_VERSIONS)[number],
+    ) ||
     !isObject(value.entries)
   )
     throw new Error("対応していないバックアップ形式です。");
 
-  const entries = { ...value.entries } as Record<string, string>;
+  const sourceVersion = value.version as FullBackupFile["version"];
+  const appVersion =
+    typeof value.appVersion === "string" ? value.appVersion : "legacy";
+  const exportedAt = normalizeExportedAt(value.exportedAt);
+  const originalEntries = { ...value.entries } as Record<string, string>;
+  for (const [key, entry] of Object.entries(originalEntries)) {
+    if (typeof entry !== "string")
+      throw new Error(`${key} のデータ形式が不正です。`);
+  }
+  if (sourceVersion === CURRENT_BACKUP_VERSION) {
+    verifyIntegrity(
+      {
+        format: "study-quiz-full-backup",
+        version: sourceVersion,
+        appVersion,
+        exportedAt,
+        entries: originalEntries,
+      },
+      value.integrity,
+    );
+  }
+
+  const entries = { ...originalEntries };
   if (!entries[STORAGE_KEYS.answerHistory] && entries[LEGACY_HISTORY_KEY]) {
     entries[STORAGE_KEYS.answerHistory] = entries[LEGACY_HISTORY_KEY];
   }
@@ -469,20 +574,25 @@ export const parseFullBackup = (text: string): FullBackupFile => {
   }
   validateReferences(entries);
 
-  return {
+  const normalized: FullBackupFile = {
     format: "study-quiz-full-backup",
-    version: 8,
-    appVersion:
-      typeof value.appVersion === "string" ? value.appVersion : "legacy",
-    exportedAt: normalizeExportedAt(value.exportedAt),
+    version: CURRENT_BACKUP_VERSION,
+    sourceVersion,
+    appVersion,
+    exportedAt,
     entries,
   };
+  normalized.integrity = createIntegrity(normalized);
+  return normalized;
 };
 
 export const restoreFullBackup = (
   backup: FullBackupFile,
   storage: StorageLike = localStorage,
 ): void => {
+  if (backup.version === CURRENT_BACKUP_VERSION) {
+    verifyIntegrity(backup, backup.integrity);
+  }
   for (const [key, raw] of Object.entries(backup.entries)) {
     const definition = definitionsByKey.get(key);
     if (!definition) throw new Error(`未対応の保存領域です: ${key}`);
@@ -509,4 +619,41 @@ export const inspectBackup = (backup: FullBackupFile) =>
     bytes: new Blob([backup.entries[item.key] ?? ""]).size,
   }));
 
+export const auditStorage = (
+  storage: StorageLike = localStorage,
+): StorageAuditReport => {
+  const checkedAt = new Date().toISOString();
+  try {
+    const backup = createFullBackup(storage);
+    parseFullBackup(JSON.stringify(backup));
+    const entries = BACKUP_ENTRIES.map(({ key, label }) => {
+      const value = backup.entries[key];
+      return {
+        key,
+        label,
+        included: value !== undefined,
+        bytes: value === undefined ? 0 : new Blob([value]).size,
+      };
+    });
+    return {
+      ok: true,
+      checkedAt,
+      includedCount: entries.filter((entry) => entry.included).length,
+      totalBytes: entries.reduce((sum, entry) => sum + entry.bytes, 0),
+      issues: [],
+      entries,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      checkedAt,
+      includedCount: 0,
+      totalBytes: 0,
+      issues: [errorMessage(error)],
+      entries: [],
+    };
+  }
+};
+
 export const backupErrorMessage = errorMessage;
+

@@ -137,3 +137,4 @@ test("未定義の配色テーマを拒否する", () => {
   const invalid = { ...validSetup(), visualTheme: "unknown" as Setup["visualTheme"] };
   assert.equal(validateSetup(invalid, now).visualTheme, "配色テーマの指定が不正です。");
 });
+

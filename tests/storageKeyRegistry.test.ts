@@ -55,3 +55,4 @@ test("物理ストレージキーをRegistry以外の実装へ直書きしない
     assert.equal(source.includes(`"${key}"`), false, `${key} が直書きされています`);
   }
 });
+

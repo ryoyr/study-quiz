@@ -7,3 +7,4 @@ type Props = {
 export default function NavIcon({ name }: Props) {
   return <AppIcon name={name} />;
 }
+
