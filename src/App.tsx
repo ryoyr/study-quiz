@@ -4,6 +4,7 @@ import "./App.css";
 import { questions } from "./data/questions";
 import { defaultExamScopes } from "./data/examScopes";
 import AppChrome, { type NavigationSection } from "./components/AppChrome";
+import AppIcon from "./components/AppIcon";
 import AiQuestionPanel from "./components/AiQuestionPanel";
 import DailyMinimumCard from "./components/DailyMinimumCard";
 import DailyTimeBudgetCard from "./components/DailyTimeBudgetCard";
@@ -83,7 +84,7 @@ import {
   normalizeMasteryFilters,
   questionModesLabel,
 } from "./services/studyOptionService";
-import { applyTheme } from "./services/themeService";
+import { applyTheme, colorModeLabel, visualThemeLabel } from "./services/themeService";
 import {
   loadCorrectionSuggestions,
   saveCorrectionSuggestions,
@@ -303,13 +304,13 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    applyTheme(setup.theme);
+    applyTheme(setup.theme, setup.visualTheme);
     if (setup.theme !== "system") return;
     const media = window.matchMedia("(prefers-color-scheme: dark)");
-    const update = () => applyTheme("system");
+    const update = () => applyTheme("system", setup.visualTheme);
     media.addEventListener("change", update);
     return () => media.removeEventListener("change", update);
-  }, [setup.theme]);
+  }, [setup.theme, setup.visualTheme]);
 
   useEffect(() => {
     if (!loaded || requiresInitialSetup) return;
@@ -1315,14 +1316,14 @@ export default function App() {
           </div>
           <div className="feature-link-list">
             <FeatureLink
-              icon="▥"
+              icon="statistics"
               title="統計"
               description="期間・分野別の成績と定着度"
               badge={`${accuracy}%`}
               onClick={() => setScreen("statistics")}
             />
             <FeatureLink
-              icon="↺"
+              icon="history"
               title="学習履歴"
               description="回答結果、時間、FSRS評価を確認"
               badge={`${history.length}件`}
@@ -1330,14 +1331,14 @@ export default function App() {
               onClick={() => setScreen("history")}
             />
             <FeatureLink
-              icon="◷"
+              icon="timer"
               title="回答速度分析"
               description="速度悪化と即答スコアを分析"
               tone="amber"
               onClick={() => setScreen("speedAnalysis")}
             />
             <FeatureLink
-              icon="!"
+              icon="alert"
               title="間違いノート"
               description="誤答原因と正しい知識を整理"
               badge={`${mistakeNotes.length}件`}
@@ -1367,21 +1368,21 @@ export default function App() {
           </div>
           <div className="feature-link-list">
             <FeatureLink
-              icon="▦"
+              icon="questions"
               title="問題管理"
               description="検索、登録、編集、アーカイブ、CSV取込"
               badge={`${availableQuestions.length}問`}
               onClick={() => setScreen("questions")}
             />
             <FeatureLink
-              icon="◇"
+              icon="sparkles"
               title="類似問題生成"
               description="AI案をコピー方式で作成し、確認後に登録"
               tone="green"
               onClick={() => setScreen("similarQuestion")}
             />
             <FeatureLink
-              icon="★"
+              icon="star"
               title="お気に入り・メモ"
               description="重要な問題と個人メモを管理"
               badge={`${favoriteCount}件`}
@@ -1389,7 +1390,7 @@ export default function App() {
               onClick={() => setScreen("annotations")}
             />
             <FeatureLink
-              icon="✎"
+              icon="edit"
               title="問題修正提案"
               description="問題を直接変更せず修正案を管理"
               badge={
@@ -1404,7 +1405,7 @@ export default function App() {
               }}
             />
             <FeatureLink
-              icon="✓"
+              icon="shield-check"
               title="一括ファクトチェック"
               description="複数問題の確認結果を取り込む"
               tone="green"
@@ -1432,21 +1433,21 @@ export default function App() {
           </div>
           <div className="feature-link-list">
             <FeatureLink
-              icon="⚙"
+              icon="settings"
               title="設定"
               description="試験日、非学習日、Gemini API、判定条件"
               tone="slate"
               onClick={() => setScreen("setup")}
             />
             <FeatureLink
-              icon="⇩"
+              icon="backup"
               title="完全バックアップ"
               description="全データの出力と復元"
               tone="green"
               onClick={() => setScreen("backupCenter")}
             />
             <FeatureLink
-              icon="AI"
+              icon="ai"
               title="AI質問テンプレート"
               description="問題コンテキスト付きプロンプトを管理"
               tone="violet"
@@ -1455,7 +1456,7 @@ export default function App() {
           </div>
           <section className="hub-footnote-card" aria-label="現在の表示と初期値">
             <strong>現在の表示・出題初期値</strong>
-            <span>テーマ: {setup.theme === "system" ? "端末設定" : setup.theme === "dark" ? "ダーク" : "ライト"}</span>
+            <span>配色: {visualThemeLabel(setup.visualTheme)} ・ 明るさ: {colorModeLabel(setup.theme)}</span>
             <small>試験枠・学習範囲・理解度・出題方法は「設定」で変更できます。各画面の「？」から操作説明を確認できます。</small>
           </section>
           <section className="app-info-panel" aria-label="アプリ情報">
@@ -1480,7 +1481,7 @@ export default function App() {
     <main className="app-shell dashboard-shell">
       <section className="home-card dashboard-card">
         <div className="dashboard-heading">
-          <div className="brand-mark compact-brand">Q</div>
+          <div className="brand-mark compact-brand" aria-hidden="true"><AppIcon name="logo" /></div>
           <div>
             <p className="eyebrow">TODAY</p>
             <h1>{setup.name}</h1>
@@ -1599,6 +1600,11 @@ export default function App() {
           <div><span>対象</span><strong>{filteredQuestions.length}問</strong></div>
           <button type="button" onClick={() => setScreen("learn")}>出題条件を変更</button>
         </section>
+        <nav className="home-quick-links" aria-label="クイックアクセス">
+          <button type="button" onClick={() => setScreen("learn")}><AppIcon name="learn" /><span><strong>学習条件</strong><small>範囲・出題方法を変更</small></span></button>
+          <button type="button" onClick={() => setScreen("records")}><AppIcon name="records" /><span><strong>記録を見る</strong><small>成績・弱点を確認</small></span></button>
+          <button type="button" onClick={() => setScreen("setup")}><AppIcon name="palette" /><span><strong>表示を変更</strong><small>テーマ・明るさを選択</small></span></button>
+        </nav>
         <LearningProgressCharts history={history} questions={filteredQuestions} days={7} compact />
 
         {forgettingCandidates.length > 0 && (
@@ -1615,4 +1621,3 @@ export default function App() {
     </main>,
   );
 }
-

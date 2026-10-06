@@ -3,6 +3,7 @@ import GeminiSettingsSection from "../components/GeminiSettingsSection";
 import HelpButton from "../components/HelpButton";
 import NonStudyDayPicker from "../components/NonStudyDayPicker";
 import StudyFilterPanel from "../components/StudyFilterPanel";
+import ThemePicker from "../components/ThemePicker";
 import { normalizeReservedDates, normalizeReservedWeekdays } from "../services/reservedDayService";
 import { selectionFromSetup, type StudySelection } from "../services/studySelectionService.ts";
 import { legacyCategoryFromCategories } from "../services/studyRangeService.ts";
@@ -76,11 +77,22 @@ export default function SettingsPage({ setup, examScopes, questions, questionSta
         </section>
 
         <section className="settings-section">
-          <div className="section-heading-with-help"><h2>試験計画と表示</h2><HelpButton title="試験計画">日次上限と学習しない日から、試験日までに必要な新規問題数を計算します。</HelpButton></div>
+          <div className="section-heading-with-help"><h2>表示と操作感</h2><HelpButton title="表示テーマ">配色テーマと明るさを独立して選択できます。端末連動を選ぶと、OSのライト・ダーク設定へ自動で追従します。</HelpButton></div>
+          <ThemePicker
+            colorMode={draft.theme}
+            visualTheme={draft.visualTheme}
+            onColorModeChange={(theme) => setDraft((current) => ({ ...current, theme }))}
+            onVisualThemeChange={(visualTheme) => setDraft((current) => ({ ...current, visualTheme }))}
+            error={errors.theme ?? errors.visualTheme}
+            errorId="settings-theme-error"
+          />
+        </section>
+
+        <section className="settings-section">
+          <div className="section-heading-with-help"><h2>試験計画</h2><HelpButton title="試験計画">日次上限と学習しない日から、試験日までに必要な新規問題数を計算します。</HelpButton></div>
           <div className="form-grid settings-form-grid">
             <label className="form-item"><span>表示名</span><input {...errorProps("name")} maxLength={120} value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} />{fieldError("name")}</label>
             <label className="form-item date-form-item"><span>試験日</span><input {...errorProps("examDate")} type="date" value={draft.examDate} onChange={(event) => setDraft({ ...draft, examDate: event.target.value })} />{fieldError("examDate")}</label>
-            <label className="form-item"><span>テーマ</span><select value={draft.theme} onChange={(event) => setDraft({ ...draft, theme: event.target.value as Setup["theme"] })}><option value="system">端末設定に合わせる</option><option value="light">ライト</option><option value="dark">ダーク</option></select>{fieldError("theme")}</label>
             <label className="form-item"><span>1日の新規問題上限</span><input {...errorProps("dailyNewLimit")} inputMode="numeric" type="number" min="1" max="500" value={Number.isNaN(draft.dailyNewLimit) ? "" : draft.dailyNewLimit} onChange={(event) => updateNumber("dailyNewLimit", event.target.value)} />{fieldError("dailyNewLimit")}</label>
             <label className="form-item"><span>1日の総問題数上限</span><input {...errorProps("dailyQuestionLimit")} inputMode="numeric" type="number" min="1" max="1000" value={Number.isNaN(draft.dailyQuestionLimit) ? "" : draft.dailyQuestionLimit} onChange={(event) => updateNumber("dailyQuestionLimit", event.target.value)} />{fieldError("dailyQuestionLimit")}</label>
             <label className="form-item"><span>バッファ率（%）</span><input {...errorProps("bufferRate")} inputMode="decimal" type="number" min="0" max="100" step="0.1" value={Number.isNaN(draft.bufferRate) ? "" : draft.bufferRate} onChange={(event) => updateNumber("bufferRate", event.target.value)} />{fieldError("bufferRate")}</label>
@@ -96,4 +108,3 @@ export default function SettingsPage({ setup, examScopes, questions, questionSta
     </main>
   );
 }
-

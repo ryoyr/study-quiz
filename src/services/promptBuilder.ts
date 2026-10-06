@@ -20,4 +20,3 @@ export const buildPrompt = (template: string, question: Question): string =>
   template.includes("{{questionContext}}")
     ? template.replaceAll("{{questionContext}}", buildQuestionContext(question))
     : `${template}\n\n${buildQuestionContext(question)}`;
-

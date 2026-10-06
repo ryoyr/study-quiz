@@ -115,4 +115,3 @@ export const createFinalReviewPlan = (
     strategyDescription: strategy.description,
   };
 };
-

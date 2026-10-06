@@ -132,4 +132,3 @@ export const testGeminiConnection = async (
     { settings },
   );
 };
-

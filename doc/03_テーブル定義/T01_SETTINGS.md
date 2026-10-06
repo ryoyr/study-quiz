@@ -26,9 +26,10 @@
 |17|defaultQuestionModes|enum[]|○|出題方法の複数選択。`ALL` または `ADAPTIVE` / `NEW` / `REVIEW` / `WEAK` の1件以上|
 |18|defaultQuestionIds|string[]|○|既定の個別問題。空配列は条件一致全体|
 |19|theme|enum|○|`system` / `light` / `dark`|
-|20|setupCompleted|boolean|○|初回設定完了|
-|21|createdAt|datetime|○|作成日時|
-|22|updatedAt|datetime|○|更新日時|
+|20|visualTheme|enum|○|`aurora` / `focus` / `forest` / `sunset` / `mono`|
+|21|setupCompleted|boolean|○|初回設定完了|
+|22|createdAt|datetime|○|作成日時|
+|23|updatedAt|datetime|○|更新日時|
 
 ## 3. 制約
 - 試験日は当日以降。
@@ -36,5 +37,4 @@
 - 個別問題IDは重複不可。
 - `defaultCategories` は `["ALL"]` または1件以上の実在トピックを保持し、`ALL` と個別トピックは混在させない。
 - `defaultMasteryFilters` と `defaultQuestionModes` は空配列を禁止し、`ALL` と他項目を混在させない。
-- 旧形式の単一値は対応する複数値配列へ移行し、不足値はLPIC-1 101、全範囲、おすすめ、端末連動へ補完する。
-
+- 旧形式の単一値は対応する複数値配列へ移行し、不足値はLPIC-1 101、全範囲、おすすめ、端末連動、オーロラ配色へ補完する。

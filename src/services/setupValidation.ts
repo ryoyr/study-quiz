@@ -19,7 +19,8 @@ export type SetupErrors = Partial<
     | "defaultQuestionMode"
     | "defaultQuestionModes"
     | "defaultQuestionIds"
-    | "theme",
+    | "theme"
+    | "visualTheme",
     string
   >
 >;
@@ -152,5 +153,7 @@ export const validateSetup = (setup: Setup, now = new Date()): SetupErrors => {
     errors.defaultQuestionIds = "個別問題の初期値が不正です。";
   if (!["system", "light", "dark"].includes(setup.theme))
     errors.theme = "テーマの指定が不正です。";
+  if (!["aurora", "focus", "forest", "sunset", "mono"].includes(setup.visualTheme))
+    errors.visualTheme = "配色テーマの指定が不正です。";
   return errors;
 };

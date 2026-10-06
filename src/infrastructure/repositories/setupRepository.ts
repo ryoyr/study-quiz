@@ -32,6 +32,7 @@ export const findSetup = async (): Promise<Setup | null> => {
     defaultQuestionModes: exam.defaultQuestionModes,
     defaultQuestionIds: exam.defaultQuestionIds,
     theme: exam.theme,
+    visualTheme: exam.visualTheme,
     setupCompleted: records.setupCompleted,
     createdAt: exam.createdAt,
     updatedAt: exam.updatedAt,
@@ -60,6 +61,7 @@ export const persistSetup = async (setup: Setup): Promise<void> => {
       defaultQuestionModes: normalized.defaultQuestionModes,
       defaultQuestionIds: normalized.defaultQuestionIds,
       theme: normalized.theme,
+      visualTheme: normalized.visualTheme,
       createdAt: normalized.createdAt,
       updatedAt: normalized.updatedAt,
     },
@@ -69,4 +71,3 @@ export const persistSetup = async (setup: Setup): Promise<void> => {
 };
 
 export const removeSetup = clearInitialSetupRecords;
-

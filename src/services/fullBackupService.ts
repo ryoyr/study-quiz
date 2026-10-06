@@ -21,7 +21,7 @@ export type BackupStorageFormat = "json" | "number";
 
 export interface FullBackupFile {
   format: "study-quiz-full-backup";
-  version: 2 | 3 | 4 | 5 | 6 | 7;
+  version: 2 | 3 | 4 | 5 | 6 | 7 | 8;
   appVersion: string;
   exportedAt: string;
   entries: Record<string, string>;
@@ -50,7 +50,7 @@ export const BACKUP_ENTRIES: BackupEntryDefinition[] =
     storageFormat: toBackupStorageFormat(format),
   }));
 
-const APP_VERSION = "3.1.0";
+const APP_VERSION = "4.0.0";
 const LEGACY_HISTORY_KEY = STORAGE_KEYS.legacyHistory;
 const API_KEY = STORAGE_KEYS.geminiApiKey;
 const LEGACY_MODEL_KEY = STORAGE_KEYS.geminiModel;
@@ -396,7 +396,7 @@ export const createFullBackup = (): FullBackupFile => {
   });
   return {
     format: "study-quiz-full-backup",
-    version: 7,
+    version: 8,
     appVersion: APP_VERSION,
     exportedAt: new Date().toISOString(),
     entries,
@@ -432,7 +432,7 @@ export const parseFullBackup = (text: string): FullBackupFile => {
 
   if (
     value.format !== "study-quiz-full-backup" ||
-    ![2, 3, 4, 5, 6, 7].includes(value.version ?? 0) ||
+    ![2, 3, 4, 5, 6, 7, 8].includes(value.version ?? 0) ||
     !isObject(value.entries)
   )
     throw new Error("対応していないバックアップ形式です。");
@@ -471,7 +471,7 @@ export const parseFullBackup = (text: string): FullBackupFile => {
 
   return {
     format: "study-quiz-full-backup",
-    version: 7,
+    version: 8,
     appVersion:
       typeof value.appVersion === "string" ? value.appVersion : "legacy",
     exportedAt: normalizeExportedAt(value.exportedAt),
@@ -510,4 +510,3 @@ export const inspectBackup = (backup: FullBackupFile) =>
   }));
 
 export const backupErrorMessage = errorMessage;
-

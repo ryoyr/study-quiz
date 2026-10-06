@@ -70,4 +70,3 @@ export default function LearningProgressCharts({ history, questions, days = 14, 
     </section>
   );
 }
-

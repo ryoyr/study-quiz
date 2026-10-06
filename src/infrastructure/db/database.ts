@@ -1,6 +1,6 @@
 import { defaultExamScopes } from "../../data/examScopes";
 import { LPIC101_EXAM_SCOPE_ID, type ExamScope } from "../../types/ExamScope";
-import type { MasteryFilter, QuestionMode, ThemePreference } from "../../types/Setup";
+import type { MasteryFilter, QuestionMode, ThemePreference, VisualTheme } from "../../types/Setup";
 
 const DATABASE_NAME = "study-quiz";
 const DATABASE_VERSION = 2;
@@ -28,6 +28,7 @@ export interface ExamRecord {
   defaultQuestionModes?: QuestionMode[];
   defaultQuestionIds?: string[];
   theme?: ThemePreference;
+  visualTheme?: VisualTheme;
   createdAt: string;
   updatedAt: string;
 }
@@ -163,4 +164,3 @@ export const clearInitialSetupRecords = async (): Promise<void> => {
   transaction.objectStore("settings").delete("setup");
   await completion;
 };
-

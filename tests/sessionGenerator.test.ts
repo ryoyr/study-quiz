@@ -21,6 +21,7 @@ const setup: Setup = {
   defaultQuestionModes: ["ADAPTIVE"],
   defaultQuestionIds: [],
   theme: "system",
+  visualTheme: "aurora",
   setupCompleted: true,
   createdAt: "2026-10-04T00:00:00.000Z",
   updatedAt: "2026-10-04T00:00:00.000Z",
@@ -43,4 +44,3 @@ test("必要新規数は1日の新規上限を超えない", () => {
   );
   assert.equal(result.requiredNewCount, 10);
 });
-

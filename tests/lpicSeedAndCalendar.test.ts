@@ -40,6 +40,7 @@ test("個別日と曜日指定を学習しない日として統合する", () =>
     defaultQuestionModes: ["ADAPTIVE"],
     defaultQuestionIds: [],
     theme: "system",
+    visualTheme: "aurora",
     setupCompleted: true,
     createdAt: "2026-10-05T00:00:00.000Z",
     updatedAt: "2026-10-05T00:00:00.000Z",
@@ -49,4 +50,3 @@ test("個別日と曜日指定を学習しない日として統合する", () =>
     ["2026-10-07", "2026-10-10", "2026-10-11"],
   );
 });
-

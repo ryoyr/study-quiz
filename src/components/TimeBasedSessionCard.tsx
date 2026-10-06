@@ -52,4 +52,3 @@ export default function TimeBasedSessionCard({ items, onStart }: Props) {
     </section>
   );
 }
-

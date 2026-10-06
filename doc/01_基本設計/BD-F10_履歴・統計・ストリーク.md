@@ -59,4 +59,3 @@
 
 ## v3.0設計追補
 `learningTrendService` は回答履歴を日時順に再生し、各日終了時点の理解度を再構成する。`LearningProgressCharts` は依存ライブラリなしのSVGで、回答数と理解度推移を分離表示する。
-

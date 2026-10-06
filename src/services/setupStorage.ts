@@ -1,5 +1,5 @@
 import { LPIC101_EXAM_SCOPE_ID } from "../types/ExamScope";
-import type { Setup, ThemePreference } from "../types/Setup";
+import type { Setup, ThemePreference, VisualTheme } from "../types/Setup";
 import { STORAGE_KEYS } from "./storageKeyRegistry.ts";
 import {
   legacyCategoryFromCategories,
@@ -13,6 +13,7 @@ import { differenceInCalendarDays } from "./localDateService.ts";
 
 const STORAGE_KEY = STORAGE_KEYS.setup;
 const THEMES: ThemePreference[] = ["system", "light", "dark"];
+const VISUAL_THEMES: VisualTheme[] = ["aurora", "focus", "forest", "sunset", "mono"];
 
 export const normalizeSetup = (value: Partial<Setup>): Setup => {
   const defaultCategories = normalizeStudyCategories(
@@ -61,6 +62,9 @@ export const normalizeSetup = (value: Partial<Setup>): Setup => {
     theme: THEMES.includes(value.theme as ThemePreference)
       ? (value.theme as ThemePreference)
       : "system",
+    visualTheme: VISUAL_THEMES.includes(value.visualTheme as VisualTheme)
+      ? (value.visualTheme as VisualTheme)
+      : "aurora",
     setupCompleted: value.setupCompleted ?? false,
     createdAt: value.createdAt ?? new Date().toISOString(),
     updatedAt: value.updatedAt ?? new Date().toISOString(),

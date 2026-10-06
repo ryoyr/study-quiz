@@ -63,4 +63,3 @@ export const deleteCorrectionSuggestion = (
   const result = items.filter((item) => item.id !== id);
   return result;
 };
-

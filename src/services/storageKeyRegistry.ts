@@ -107,7 +107,7 @@ export const STORAGE_KEY_REGISTRY = {
     legacy: false,
   },
   uiGuideSeen: {
-    key: "study-quiz-ui-guide-seen-v1",
+    key: "study-quiz-ui-guide-seen-v2",
     label: "初回操作ガイド表示済み",
     format: "internal",
     backup: false,
@@ -166,4 +166,3 @@ export const isRegisteredStorageKey = (key: string): boolean =>
 export const BACKUP_STORAGE_DEFINITIONS = Object.values(
   STORAGE_KEY_REGISTRY,
 ).filter((definition) => definition.backup);
-

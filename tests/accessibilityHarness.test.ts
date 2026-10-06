@@ -21,7 +21,7 @@ test("E2E試験は主要画面・狭幅・フォーカス・AXツリーを検査
     "Input.dispatchKeyEvent",
     "aria-invalid",
     "scrollWidth",
-    "headerScrolledAway",
+    "headerFixed",
     "bottomFixed",
     "horizontal-option-scroller",
     "複数選択できません",
@@ -40,4 +40,3 @@ test("デプロイ前にChromeを準備して全チェックを実行する", ()
   assert.match(workflow, /CHROME_PATH:/);
   assert.match(workflow, /npm run check/);
 });
-

@@ -40,6 +40,16 @@ test("CIはロックファイルに基づく再現可能な依存関係を使う
   assert.doesNotMatch(workflow, /npm install --no-audit --no-fund/);
 });
 
+test("配色テーマと明暗モードを独立したUIとして提供する", () => {
+  const setupType = readFileSync("src/types/Setup.ts", "utf8");
+  const themePicker = readFileSync("src/components/ThemePicker.tsx", "utf8");
+  const themeService = readFileSync("src/services/themeService.ts", "utf8");
+  assert.match(setupType, /visualTheme: VisualTheme/);
+  assert.match(themePicker, /配色テーマ/);
+  assert.match(themePicker, /明るさ/);
+  assert.match(themeService, /root\.dataset\.visualTheme/);
+});
+
 test("アプリ版・ロックファイル・バックアップ版の表示が一致する", () => {
   const packageJson = readJson("package.json");
   const packageLock = readJson("package-lock.json");
@@ -54,4 +64,3 @@ test("アプリ版・ロックファイル・バックアップ版の表示が�
     new RegExp(`const APP_VERSION = ["']${packageJson.version}["']`),
   );
 });
-

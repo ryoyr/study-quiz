@@ -1,5 +1,7 @@
+import AppIcon, { type AppIconName } from "./AppIcon";
+
 type Props = {
-  icon: string;
+  icon: AppIconName;
   title: string;
   description: string;
   badge?: string;
@@ -20,9 +22,10 @@ export default function FeatureLink({
       className={`feature-link tone-${tone}`}
       type="button"
       onClick={onClick}
+      aria-label={`${title} — ${description}${badge ? `（${badge}）` : ""}`}
     >
       <span className="feature-link-icon" aria-hidden="true">
-        {icon}
+        <AppIcon name={icon} />
       </span>
       <span className="feature-link-copy">
         <strong>{title}</strong>
@@ -30,9 +33,8 @@ export default function FeatureLink({
       </span>
       {badge && <b>{badge}</b>}
       <span className="feature-link-arrow" aria-hidden="true">
-        ›
+        <AppIcon name="chevron-right" />
       </span>
     </button>
   );
 }
-

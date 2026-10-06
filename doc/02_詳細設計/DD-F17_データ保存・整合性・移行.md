@@ -118,4 +118,3 @@ UIは表示とイベント受付に限定し、検証・業務処理はUseCase�
 - DB `version=2` のupgrade transactionで `examScopes` を作成し、`examCode`、`active`、`sortOrder` を索引化する。
 - backup version 2〜5の設定は `normalizeSetup`、問題は `examScopeId=lpic101` で補完してから検証する。
 - seed version 3で不足する初期問題だけを既存データへ追加する。
-

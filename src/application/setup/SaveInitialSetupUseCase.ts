@@ -35,4 +35,3 @@ export class SaveInitialSetupUseCase {
     return setup;
   }
 }
-

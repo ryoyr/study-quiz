@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 import { createServer } from "node:http";
-import { mkdtemp, readFile, rm, stat } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { extname, join, normalize, resolve } from "node:path";
 import { createServer as createNetServer } from "node:net";
@@ -164,6 +164,17 @@ const waitFor = async (client, expression, label, timeoutMilliseconds = 10000) =
   }
   throw new Error(`${label}の待機がタイムアウトしました。${lastError ? ` ${lastError}` : ""}`);
 };
+const captureScreenshot = async (client, name) => {
+  const directory = process.env.UI_SCREENSHOT_DIR;
+  if (!directory) return;
+  await mkdir(directory, { recursive: true });
+  const result = await client.send("Page.captureScreenshot", {
+    captureBeyondViewport: false,
+    format: "png",
+    fromSurface: true,
+  });
+  await writeFile(join(directory, `${name}.png`), Buffer.from(result.data, "base64"));
+};
 const auditExpression = (screenName) => `(() => {
   const screenName = ${JSON.stringify(screenName)};
   const issues = [];
@@ -281,6 +292,7 @@ const run = async () => {
     });
     await client.send("Page.navigate", { url: `${origin}${BASE_PATH}` });
     await waitFor(client, `document.querySelector("main h1")?.textContent?.trim() === "初回設定"`, "初回設定画面");
+    await captureScreenshot(client, "01-initial-setup-320");
     reports.push(await evaluate(client, auditExpression("初回設定")));
     await evaluate(client, `(() => {
       const input = document.querySelector('input[type="date"]');
@@ -313,6 +325,7 @@ const run = async () => {
     await evaluate(client, `localStorage.setItem("study-quiz-setup-v1", ${JSON.stringify(JSON.stringify(setup))})`);
     await client.send("Page.reload", { ignoreCache: true });
     await waitFor(client, `document.querySelector("main h1")?.textContent?.trim() === "LinuC 101"`, "ホーム画面");
+    await captureScreenshot(client, "02-home-320");
     reports.push(await evaluate(client, auditExpression("ホーム")));
     const navigationCases = [
       ["学習", "学習"],
@@ -345,6 +358,10 @@ const run = async () => {
     await waitFor(client, `document.querySelector("main h1")?.textContent?.trim() === "その他"`, "その他画面");
     await clickButton(client, "設定");
     await waitFor(client, `document.querySelector("main h1")?.textContent?.trim() === "学習設定"`, "iPhone幅の設定画面");
+    await delay(900);
+    await evaluate(client, `(() => { document.querySelector('.guide-close')?.click(); document.querySelector('.theme-picker')?.scrollIntoView({ block: 'start', behavior: 'instant' }); return true; })()`);
+    await delay(120);
+    await captureScreenshot(client, "03-theme-picker-393");
     const multiSelectLayout = await evaluate(
       client,
       `(() => {
@@ -383,9 +400,9 @@ const run = async () => {
     if (!dateInputFits) failures.push("学習設定（393px）: 試験日入力が画面幅からはみ出しています。");
     const chromeBehavior = await evaluate(
       client,
-      `(async () => { window.scrollTo(0, document.documentElement.scrollHeight); await new Promise((resolve) => setTimeout(resolve, 120)); const header = document.querySelector('.app-status-bar'); const bottom = document.querySelector('.bottom-navigation'); return { headerScrolledAway: Boolean(header && header.getBoundingClientRect().bottom <= 1), bottomFixed: Boolean(bottom && getComputedStyle(bottom).position === 'fixed') }; })()`,
+      `(async () => { window.scrollTo(0, document.documentElement.scrollHeight); await new Promise((resolve) => setTimeout(resolve, 120)); const header = document.querySelector('.app-status-bar'); const bottom = document.querySelector('.bottom-navigation'); return { headerFixed: Boolean(header && getComputedStyle(header).position === 'fixed' && header.getBoundingClientRect().top <= 1), bottomFixed: Boolean(bottom && getComputedStyle(bottom).position === 'fixed') }; })()`,
     );
-    if (!chromeBehavior.headerScrolledAway) failures.push("上部ステータスがスクロール後も画面上部に残っています。");
+    if (!chromeBehavior.headerFixed) failures.push("上部ステータスがスクロール後に画面上部へ固定されていません。");
     if (!chromeBehavior.bottomFixed) failures.push("下部ナビゲーションが固定表示ではありません。");
     await evaluate(client, "window.scrollTo(0, 0); true");
     await evaluate(client, "document.activeElement?.blur(); document.body.focus(); true");
@@ -434,4 +451,3 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
     process.exitCode = 1;
   });
 }
-

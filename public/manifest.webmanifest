@@ -1,13 +1,14 @@
 {
   "name": "Study Quiz - LPIC-1 101",
-  "short_name": "StudyQuiz",
-  "description": "LPIC-1 101をオフラインで学習できる適応型PWA",
+  "short_name": "Study Quiz",
+  "description": "LPIC-1 101をオフラインで学習できる適応型学習PWA",
   "lang": "ja",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "orientation": "portrait-primary",
-  "background_color": "#eff6ff",
+  "background_color": "#edf2f9",
   "theme_color": "#2563eb",
   "categories": ["education", "productivity"],
   "icons": [
@@ -28,6 +29,14 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "今日の学習",
+      "short_name": "学習",
+      "description": "今日の学習計画を開く",
+      "url": "./"
     }
   ]
 }

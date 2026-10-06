@@ -1,6 +1,8 @@
 import { LPIC101_EXAM_SCOPE_ID } from "./ExamScope";
 
 export type ThemePreference = "system" | "light" | "dark";
+/** 画面の明暗とは独立して選択する配色・質感テーマ。 */
+export type VisualTheme = "aurora" | "focus" | "forest" | "sunset" | "mono";
 export type MasteryFilter = "ALL" | "UNLEARNED" | "LEARNING" | "MASTERED";
 export type QuestionMode = "ADAPTIVE" | "NEW" | "REVIEW" | "WEAK" | "ALL";
 
@@ -31,7 +33,10 @@ export interface Setup {
   defaultQuestionModes: QuestionMode[];
   /** 個別指定する既定問題。空配列はフィルター一致全体。 */
   defaultQuestionIds: string[];
+  /** OS連動・ライト・ダークの明暗設定。 */
   theme: ThemePreference;
+  /** UI全体の配色と質感。明暗設定とは独立して保持する。 */
+  visualTheme: VisualTheme;
   setupCompleted: boolean;
   createdAt: string;
   updatedAt: string;
@@ -67,6 +72,7 @@ export const createDefaultSetup = (): Setup => {
     defaultQuestionModes: ["ADAPTIVE"],
     defaultQuestionIds: [],
     theme: "system",
+    visualTheme: "aurora",
     setupCompleted: false,
     createdAt: now,
     updatedAt: now,

@@ -23,6 +23,7 @@ const validSetup = (): Setup => ({
   defaultQuestionModes: ["ADAPTIVE"],
   defaultQuestionIds: [],
   theme: "system",
+  visualTheme: "aurora",
   setupCompleted: true,
   createdAt: "2026-10-04T00:00:00.000Z",
   updatedAt: "2026-10-04T00:00:00.000Z",
@@ -123,3 +124,16 @@ test("理解度・出題方法の複数選択を受け付け、ALLとの混在�
   );
 });
 
+test("旧設定には標準配色テーマを補完し、5種類の配色テーマを受け付ける", () => {
+  const legacy = validSetup();
+  delete (legacy as Partial<Setup>).visualTheme;
+  assert.equal(normalizeSetup(legacy).visualTheme, "aurora");
+  for (const visualTheme of ["aurora", "focus", "forest", "sunset", "mono"] as const) {
+    assert.deepEqual(validateSetup({ ...validSetup(), visualTheme }, now), {});
+  }
+});
+
+test("未定義の配色テーマを拒否する", () => {
+  const invalid = { ...validSetup(), visualTheme: "unknown" as Setup["visualTheme"] };
+  assert.equal(validateSetup(invalid, now).visualTheme, "配色テーマの指定が不正です。");
+});

@@ -114,4 +114,3 @@ test("日別回答数と理解度の累積推移を再構成する", () => {
   assert.equal(trend[1].mastered, 1);
   assert.equal(trend[1].unlearned, 1);
 });
-

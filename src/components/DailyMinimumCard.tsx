@@ -36,4 +36,3 @@ export default function DailyMinimumCard({ progress }: Props) {
     </section>
   );
 }
-
