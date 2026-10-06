@@ -235,6 +235,69 @@ const auditExpression = (screenName) => `(() => {
   }
   return { screenName, issues, heading: headings[0]?.textContent?.trim() ?? "" };
 })()`;
+
+const themeContrastExpression = (theme, mode) => `(() => {
+  const theme = ${JSON.stringify(theme)};
+  const mode = ${JSON.stringify(mode)};
+  const root = document.documentElement;
+  root.dataset.visualTheme = theme;
+  root.dataset.theme = mode;
+  const style = getComputedStyle(root);
+  const probe = document.createElement("span");
+  probe.hidden = true;
+  document.body.append(probe);
+  const parseColor = (value) => {
+    probe.style.color = "";
+    probe.style.color = value.trim();
+    const parsed = getComputedStyle(probe).color.match(/[\\d.]+/g)?.map(Number) ?? [];
+    const [red = 0, green = 0, blue = 0, alpha = 1] = parsed;
+    return [red, green, blue, alpha];
+  };
+  const resolve = (name) => parseColor(style.getPropertyValue(name));
+  const composite = (foreground, background) => {
+    const alpha = foreground[3] ?? 1;
+    return foreground.slice(0, 3).map((value, index) => value * alpha + background[index] * (1 - alpha));
+  };
+  const luminance = (color) => {
+    const converted = color.slice(0, 3).map((value) => {
+      const channel = value / 255;
+      return channel <= .04045 ? channel / 12.92 : ((channel + .055) / 1.055) ** 2.4;
+    });
+    return .2126 * converted[0] + .7152 * converted[1] + .0722 * converted[2];
+  };
+  const contrast = (foregroundName, backgroundName) => {
+    const background = resolve(backgroundName);
+    const foreground = composite(resolve(foregroundName), background);
+    const values = [luminance(foreground), luminance(background)].sort((a, b) => b - a);
+    return (values[0] + .05) / (values[1] + .05);
+  };
+  const checks = [
+    ["--text-main", "--surface-solid", 4.5],
+    ["--text-strong", "--surface-solid", 4.5],
+    ["--text-muted", "--surface-solid", 4.5],
+    ["--text-link", "--surface-solid", 4.5],
+    ["--text-on-accent", "--button-primary", 4.5],
+    ["--focus-color", "--surface-solid", 3],
+    ["--line-control", "--surface-solid", 3],
+    ["--success-text", "--success-soft", 4.5],
+    ["--warning-text", "--warning-soft", 4.5],
+    ["--danger-text", "--danger-soft", 4.5],
+    ["--info-text", "--info-soft", 4.5],
+    ["--chart-answers", "--surface-soft", 3],
+    ["--chart-unlearned", "--surface-soft", 3],
+    ["--chart-learning", "--surface-soft", 3],
+    ["--chart-mastered", "--surface-soft", 3],
+  ];
+  const issues = checks.flatMap(([foreground, background, minimum]) => {
+    const ratio = contrast(foreground, background);
+    return ratio + .0001 < minimum
+      ? [foreground + " / " + background + " = " + ratio.toFixed(2) + ":1（必要 " + minimum + ":1）"]
+      : [];
+  });
+  probe.remove();
+  return { theme, mode, issues };
+})()`;
+
 const clickButton = async (client, label) => {
   const clicked = await evaluate(
     client,
@@ -328,6 +391,21 @@ const run = async () => {
     await waitFor(client, `document.querySelector("main h1")?.textContent?.trim() === "LinuC 101"`, "ホーム画面");
     await captureScreenshot(client, "02-home-320");
     reports.push(await evaluate(client, auditExpression("ホーム")));
+
+    const themeReports = [];
+    for (const theme of ["aurora", "focus", "forest", "sunset", "mono"]) {
+      for (const mode of ["light", "dark"]) {
+        const report = await evaluate(client, themeContrastExpression(theme, mode));
+        themeReports.push(report);
+        for (const issue of report.issues) failures.push(`テーマ ${theme}/${mode}: ${issue}`);
+      }
+    }
+    await evaluate(client, `(() => {
+      document.documentElement.dataset.visualTheme = "aurora";
+      document.documentElement.dataset.theme = "light";
+      return true;
+    })()`);
+
     const navigationCases = [
       ["学習", "学習"],
       ["記録", "記録・分析"],
@@ -511,7 +589,7 @@ const run = async () => {
     if (failures.length) {
       throw new Error(`E2Eアクセシビリティ試験で${failures.length}件の問題を検出しました。\n${failures.map((item) => `- ${item}`).join("\n")}`);
     }
-    console.log(`E2Eアクセシビリティ試験に成功しました（${reports.length}画面、320x568・393x852、主要ナビゲーション、確認ダイアログ、横スクロール複数選択、固定表示、入力エラー、キーボード、AXツリー）。`);
+    console.log(`E2Eアクセシビリティ試験に成功しました（${reports.length}画面、${themeReports.length}テーマ組合せ、320x568・393x852、主要ナビゲーション、確認ダイアログ、コントラスト、横スクロール複数選択、固定表示、入力エラー、キーボード、AXツリー）。`);
   } finally {
     try {
       await client?.send("Browser.close");
@@ -540,5 +618,3 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
     process.exitCode = 1;
   });
 }
-
-

@@ -54,8 +54,8 @@ export default function ThemePicker({
                 checked={visualTheme === option.id}
                 onChange={() => onVisualThemeChange(option.id)}
               />
-              <span className="theme-swatches" aria-hidden="true">
-                {option.colors.map((color) => <i key={color} style={{ backgroundColor: color }} />)}
+              <span className={`theme-swatches theme-swatch-${option.id}`} aria-hidden="true">
+                <i /><i /><i />
               </span>
               <span className="visual-theme-copy">
                 <strong>{option.label}</strong>
@@ -89,4 +89,3 @@ export default function ThemePicker({
     </section>
   );
 }
-

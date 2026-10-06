@@ -7,7 +7,13 @@ import HelpButton from "./HelpButton";
 
 type Props = { history: StudyHistory[]; questions: Question[]; days?: number; compact?: boolean };
 type Key = "answers" | "unlearned" | "learning" | "mastered";
-const COLORS: Record<Key, string> = { answers: "#2563eb", unlearned: "#94a3b8", learning: "#f59e0b", mastered: "#16a34a" };
+
+const SERIES_LABELS: Record<Key, string> = {
+  answers: "回答数",
+  unlearned: "未学習",
+  learning: "学習中",
+  mastered: "習得済み",
+};
 
 const points = (
   values: number[],
@@ -33,7 +39,14 @@ function LineChart({ data, keys, max, label }: { data: ReturnType<typeof buildLe
     <div className="line-chart-wrap">
       <svg className="line-chart" viewBox={`0 0 ${width} ${height + 30}`} role="img" aria-label={label}>
         {[0, 0.5, 1].map((ratio) => <line key={ratio} x1={left} x2={right} y1={height - ratio * height} y2={height - ratio * height} className="chart-grid-line" />)}
-        {keys.map((key) => <polyline key={key} points={points(data.map((item) => item[key]), left, right, height, max)} fill="none" stroke={COLORS[key]} strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />)}
+        {keys.map((key) => (
+          <polyline
+            key={key}
+            className={`chart-series chart-series-${key}`}
+            points={points(data.map((item) => item[key]), left, right, height, max)}
+            aria-label={SERIES_LABELS[key]}
+          />
+        ))}
         {data.map((item, index) => tickIndexes.has(index) ? <text key={item.date} x={data.length === 1 ? width / 2 : left + (index / (data.length - 1)) * (right - left)} y={height + 24} textAnchor={index === 0 ? "start" : index === data.length - 1 ? "end" : "middle"}>{item.label}</text> : null)}
       </svg>
     </div>
@@ -51,11 +64,12 @@ export default function LearningProgressCharts({ history, questions, days = 14, 
         <div><span>LEARNING TREND</span><strong>{compact ? "直近7日の推移" : `直近${days}日の学習推移`}</strong></div>
         <HelpButton title="グラフの見方">回答数はその日に解いた延べ問題数です。理解度は各日終了時点の問題数で、回答履歴から再計算します。</HelpButton>
       </div>
-      <div className="chart-legend">
-        <span style={{ color: COLORS.answers }}>● 回答数</span>
-        <span style={{ color: COLORS.unlearned }}>● 未学習</span>
-        <span style={{ color: COLORS.learning }}>● 学習中</span>
-        <span style={{ color: COLORS.mastered }}>● 習得済み</span>
+      <div className="chart-legend" aria-label="グラフ系列の凡例">
+        {(Object.keys(SERIES_LABELS) as Key[]).map((key) => (
+          <span key={key} className={`chart-legend-item chart-${key}`}>
+            <i aria-hidden="true" />{SERIES_LABELS[key]}
+          </span>
+        ))}
       </div>
       <article>
         <h3>毎日の学習量</h3>
@@ -70,4 +84,3 @@ export default function LearningProgressCharts({ history, questions, days = 14, 
     </section>
   );
 }
-
