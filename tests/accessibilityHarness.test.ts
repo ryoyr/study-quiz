@@ -26,6 +26,9 @@ test("E2E試験は主要画面・狭幅・フォーカス・AXツリーを検査
     "horizontal-option-scroller",
     "storage-health-badge",
     "storage-persistence-heading",
+    "アーカイブ確認ダイアログ",
+    "safeFocus",
+    "scrollLocked",
     "?screen=backupCenter",
     "複数選択できません",
     '["学習", "学習"]',
@@ -68,3 +71,14 @@ test("バックアップ復元は差分確認と明示チェック後にだけ�
   assert.match(source, /study-quiz-pre-restore/);
   assert.doesNotMatch(source, /window\.confirm/);
 });
+
+test("共通確認ダイアログはキーボード操作とフォーカス復帰を実装する", () => {
+  const source = readFileSync("src/components/ConfirmDialog.tsx", "utf8");
+  assert.match(source, /role="alertdialog"/);
+  assert.match(source, /aria-modal="true"/);
+  assert.match(source, /cancelButtonRef\.current\?\.focus/);
+  assert.match(source, /previousFocusRef\.current\?\.focus/);
+  assert.match(source, /event\.key === "Escape"/);
+  assert.match(source, /event\.key !== "Tab"/);
+});
+

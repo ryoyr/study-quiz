@@ -97,7 +97,7 @@ export const BACKUP_ENTRIES: BackupEntryDefinition[] =
     storageFormat: toBackupStorageFormat(format),
   }));
 
-const APP_VERSION = "4.3.0";
+const APP_VERSION = "4.4.0";
 const CURRENT_BACKUP_VERSION = 9 as const;
 const SUPPORTED_BACKUP_VERSIONS = [2, 3, 4, 5, 6, 7, 8, 9] as const;
 const LEGACY_HISTORY_KEY = STORAGE_KEYS.legacyHistory;
@@ -750,4 +750,5 @@ export const auditStorage = (
 };
 
 export const backupErrorMessage = errorMessage;
+
 

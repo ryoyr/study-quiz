@@ -134,3 +134,9 @@ UIは表示とイベント受付に限定し、検証・業務処理はUseCase�
 - `CACHE_NAME`は`study-quiz-shell-v18`とする。
 - activate時に同接頭辞のv18以外を削除し、クライアントをclaimする。
 - キャッシュ対象、Navigation Preload、タイムアウト、Range要求と206応答の除外はv4.2設計を継続する。
+
+
+## v4.4詳細追補
+- `CACHE_NAME`は`study-quiz-shell-v19`とする。
+- `preloadResponse`は拒否を`undefined`へ変換し、通常fetchの試行を継続する。
+- `cache.put`は例外を局所的に吸収し、ネットワーク取得済みのResponseを返す。

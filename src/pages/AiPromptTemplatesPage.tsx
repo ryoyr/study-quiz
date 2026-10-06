@@ -6,6 +6,7 @@ import {
   upsertAiPromptTemplate,
 } from "../services/aiPromptTemplateStorage";
 import { buildPrompt } from "../services/promptBuilder";
+import ConfirmDialog from "../components/ConfirmDialog";
 type Props = {
   questions: Question[];
   items: AiPromptTemplate[];
@@ -23,6 +24,9 @@ export default function AiPromptTemplatesPage({
     questions[0]?.id ?? "",
   );
   const [editing, setEditing] = useState<AiPromptTemplate | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<AiPromptTemplate | null>(
+    null,
+  );
   const [message, setMessage] = useState("");
   const template =
     items.find((item) => item.id === selectedTemplate) ?? items[0];
@@ -51,6 +55,20 @@ export default function AiPromptTemplatesPage({
     );
     setEditing(null);
   };
+  const confirmDelete = () => {
+    if (!pendingDelete) return;
+    const next = deleteAiPromptTemplate(items, pendingDelete.id);
+    if (!onChange(next)) {
+      setMessage("削除結果を保存できませんでした。端末の空き容量を確認してください。");
+      setPendingDelete(null);
+      return;
+    }
+    if (selectedTemplate === pendingDelete.id) {
+      setSelectedTemplate(next[0]?.id ?? "");
+    }
+    setMessage(`「${pendingDelete.name}」を削除しました。`);
+    setPendingDelete(null);
+  };
   return (
     <main className="app-shell">
       <section className="home-card ai-template-card">
@@ -70,24 +88,21 @@ export default function AiPromptTemplatesPage({
                     ? "ai-template-item is-selected"
                     : "ai-template-item"
                 }
-                role="button"
-                tabIndex={0}
-                aria-pressed={item.id === selectedTemplate}
-                onClick={() => setSelectedTemplate(item.id)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    setSelectedTemplate(item.id);
-                  }
-                }}
               >
-                <div>
-                  <strong>{item.name}</strong>
-                  <span>{item.builtIn ? "標準" : "利用者作成"}</span>
-                </div>
-                <p>{item.description}</p>
+                <button
+                  className="ai-template-select-button"
+                  type="button"
+                  aria-pressed={item.id === selectedTemplate}
+                  onClick={() => setSelectedTemplate(item.id)}
+                >
+                  <span className="ai-template-title-row">
+                    <strong>{item.name}</strong>
+                    <span>{item.builtIn ? "標準" : "利用者作成"}</span>
+                  </span>
+                  <span className="ai-template-description">{item.description}</span>
+                </button>
                 {!item.builtIn && (
-                  <div>
+                  <div className="ai-template-item-actions">
                     <button
                       type="button"
                       onClick={(e) => {
@@ -101,9 +116,9 @@ export default function AiPromptTemplatesPage({
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (window.confirm("削除しますか？"))
-                          onChange(deleteAiPromptTemplate(items, item.id));
+                        setPendingDelete(item);
                       }}
+                      aria-label={`テンプレート「${item.name}」を削除`}
                     >
                       削除
                     </button>
@@ -227,7 +242,21 @@ export default function AiPromptTemplatesPage({
           前のメニューへ戻る
         </button>
       </section>
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="AI質問テンプレートを削除しますか？"
+        description={
+          pendingDelete
+            ? `「${pendingDelete.name}」は完全に削除されます。この操作は取り消せません。`
+            : ""
+        }
+        confirmLabel="テンプレートを削除"
+        danger
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
     </main>
   );
 }
+
 

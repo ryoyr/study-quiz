@@ -3,6 +3,7 @@ import type { Question } from "../types/Question";
 import type { QuestionState } from "../types/QuestionState";
 import { getMasteryLabel } from "../services/questionStateService";
 import { LPIC101_EXAM_SCOPE_ID, type ExamScope } from "../types/ExamScope";
+import ConfirmDialog from "../components/ConfirmDialog";
 
 type Props = {
   questions: Question[];
@@ -17,6 +18,10 @@ type Props = {
 
 type WeightFilter = "ALL" | "HIGH" | "STANDARD";
 type ArchiveFilter = "ACTIVE" | "ARCHIVED" | "ALL";
+const MAX_ID_LENGTH = 200;
+const MAX_SHORT_TEXT_LENGTH = 500;
+const MAX_LONG_TEXT_LENGTH = 20_000;
+const MAX_TAGS = 30;
 
 const emptyQuestion = (): Question => ({
   id: "",
@@ -62,6 +67,8 @@ export default function QuestionManagementPage({
   const [originalId, setOriginalId] = useState("");
   const [tagText, setTagText] = useState("");
   const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const [pendingArchive, setPendingArchive] = useState<Question | null>(null);
 
   const categories = useMemo(
     () => [
@@ -119,6 +126,7 @@ export default function QuestionManagementPage({
     setEditing({ ...emptyQuestion(), examScopeId: examScopes.find((item) => item.active)?.id ?? LPIC101_EXAM_SCOPE_ID });
     setTagText("");
     setError("");
+    setMessage("");
   };
   const startEdit = (question: Question) => {
     setOriginalId(question.id);
@@ -129,6 +137,7 @@ export default function QuestionManagementPage({
     });
     setTagText((question.tags ?? []).join(", "));
     setError("");
+    setMessage("");
   };
 
   useEffect(() => {
@@ -144,8 +153,37 @@ export default function QuestionManagementPage({
     if (!editing) return;
     const id = editing.id.trim();
     const choices = editing.choices.map((choice) => choice.trim());
+    const tags = parseTags(tagText);
     if (!id || !editing.examScopeId.trim() || !editing.category.trim() || !editing.text.trim()) {
       setError("問題ID、試験枠、カテゴリ、問題文は必須です。");
+      return;
+    }
+    if (id.length > MAX_ID_LENGTH) {
+      setError(`問題IDは${MAX_ID_LENGTH}文字以内で指定してください。`);
+      return;
+    }
+    if (!examScopes.some((item) => item.id === editing.examScopeId && item.active)) {
+      setError("利用可能な試験枠を指定してください。");
+      return;
+    }
+    if (
+      editing.category.trim().length > MAX_SHORT_TEXT_LENGTH ||
+      (editing.subcategory?.trim().length ?? 0) > MAX_SHORT_TEXT_LENGTH
+    ) {
+      setError(`カテゴリとサブカテゴリは${MAX_SHORT_TEXT_LENGTH}文字以内で指定してください。`);
+      return;
+    }
+    if (
+      editing.text.trim().length > MAX_LONG_TEXT_LENGTH ||
+      choices.some((choice) => choice.length > MAX_LONG_TEXT_LENGTH) ||
+      editing.explanation.trim().length > MAX_LONG_TEXT_LENGTH ||
+      (editing.source?.trim().length ?? 0) > MAX_LONG_TEXT_LENGTH
+    ) {
+      setError(`問題文・選択肢・解説・出典は各${MAX_LONG_TEXT_LENGTH.toLocaleString()}文字以内で指定してください。`);
+      return;
+    }
+    if (tags.length > MAX_TAGS || tags.some((item) => item.length > MAX_SHORT_TEXT_LENGTH)) {
+      setError(`タグは${MAX_TAGS}件以下、各${MAX_SHORT_TEXT_LENGTH}文字以内で指定してください。`);
       return;
     }
     if (choices.length < 2 || choices.some((choice) => !choice)) {
@@ -185,7 +223,7 @@ export default function QuestionManagementPage({
       choices,
       explanation: editing.explanation.trim(),
       source: editing.source?.trim() || undefined,
-      tags: parseTags(tagText),
+      tags,
     };
     const saved = onChange(
       originalId
@@ -203,29 +241,37 @@ export default function QuestionManagementPage({
     setEditing(null);
   };
 
-  const archiveQuestion = (id: string) => {
-    if (
-      !window.confirm(
-        `問題 ${id} をアーカイブしますか？学習履歴は保持され、通常の出題から除外されます。`,
-      )
-    )
-      return;
-    onChange(
+  const archiveQuestion = () => {
+    if (!pendingArchive) return;
+    const saved = onChange(
       questions.map((question) =>
-        question.id === id
+        question.id === pendingArchive.id
           ? { ...question, archivedAt: new Date().toISOString() }
           : question,
       ),
     );
+    if (!saved) {
+      setError("アーカイブ結果を保存できませんでした。端末の空き容量を確認してください。");
+    } else {
+      setError("");
+      setMessage(`問題 ${pendingArchive.id} をアーカイブしました。`);
+    }
+    setPendingArchive(null);
   };
   const restoreQuestion = (id: string) => {
-    onChange(
+    const saved = onChange(
       questions.map((question) => {
         if (question.id !== id) return question;
         const { archivedAt: _archivedAt, ...activeQuestion } = question;
         return activeQuestion;
       }),
     );
+    if (!saved) {
+      setError("復元結果を保存できませんでした。端末の空き容量を確認してください。");
+      return;
+    }
+    setError("");
+    setMessage(`問題 ${id} を利用中へ戻しました。`);
   };
 
   if (editing) {
@@ -237,6 +283,7 @@ export default function QuestionManagementPage({
             <label className="form-item">
               <span>問題ID</span>
               <input
+                  maxLength={MAX_ID_LENGTH}
                 value={editing.id}
                 onChange={(event) =>
                   setEditing({ ...editing, id: event.target.value })
@@ -252,6 +299,7 @@ export default function QuestionManagementPage({
             <label className="form-item">
               <span>カテゴリ</span>
               <input
+                  maxLength={MAX_SHORT_TEXT_LENGTH}
                 value={editing.category}
                 onChange={(event) =>
                   setEditing({ ...editing, category: event.target.value })
@@ -261,6 +309,7 @@ export default function QuestionManagementPage({
             <label className="form-item">
               <span>サブカテゴリ（任意）</span>
               <input
+                  maxLength={MAX_SHORT_TEXT_LENGTH}
                 value={editing.subcategory ?? ""}
                 onChange={(event) =>
                   setEditing({ ...editing, subcategory: event.target.value })
@@ -270,6 +319,7 @@ export default function QuestionManagementPage({
             <label className="form-item">
               <span>問題文</span>
               <textarea
+                maxLength={MAX_LONG_TEXT_LENGTH}
                 value={editing.text}
                 onChange={(event) =>
                   setEditing({ ...editing, text: event.target.value })
@@ -285,6 +335,7 @@ export default function QuestionManagementPage({
                   </span>
                   <div className="choice-edit-row">
                     <input
+                      maxLength={MAX_LONG_TEXT_LENGTH}
                       value={choice}
                       onChange={(event) => {
                         const choices = [...editing.choices];
@@ -342,6 +393,7 @@ export default function QuestionManagementPage({
             <label className="form-item">
               <span>解説</span>
               <textarea
+                maxLength={MAX_LONG_TEXT_LENGTH}
                 value={editing.explanation}
                 onChange={(event) =>
                   setEditing({ ...editing, explanation: event.target.value })
@@ -351,6 +403,7 @@ export default function QuestionManagementPage({
             <label className="form-item">
               <span>出典（任意）</span>
               <input
+                maxLength={MAX_LONG_TEXT_LENGTH}
                 value={editing.source ?? ""}
                 onChange={(event) =>
                   setEditing({ ...editing, source: event.target.value })
@@ -360,6 +413,7 @@ export default function QuestionManagementPage({
             <label className="form-item">
               <span>タグ（任意）</span>
               <input
+                maxLength={MAX_LONG_TEXT_LENGTH}
                 value={tagText}
                 onChange={(event) => setTagText(event.target.value)}
                 placeholder="カンマ区切り"
@@ -474,6 +528,16 @@ export default function QuestionManagementPage({
         <div className="question-count" aria-live="polite">
           {filtered.length} / {questions.length}件
         </div>
+        {error && (
+          <div className="error-box" role="alert">
+            {error}
+          </div>
+        )}
+        {message && (
+          <div className="backup-success" role="status">
+            {message}
+          </div>
+        )}
         <div className="question-list">
           {filtered.map((question) => (
             <article key={question.id} className="question-item">
@@ -516,7 +580,12 @@ export default function QuestionManagementPage({
                   <button
                     className="delete-button"
                     type="button"
-                    onClick={() => archiveQuestion(question.id)}
+                    onClick={() => {
+                      setError("");
+                      setMessage("");
+                      setPendingArchive(question);
+                    }}
+                    aria-label={`問題 ${question.id} をアーカイブ`}
                   >
                     アーカイブ
                   </button>
@@ -538,7 +607,21 @@ export default function QuestionManagementPage({
           前のメニューへ戻る
         </button>
       </section>
+      <ConfirmDialog
+        open={pendingArchive !== null}
+        title="問題をアーカイブしますか？"
+        description={
+          pendingArchive
+            ? `問題 ${pendingArchive.id} を通常の出題から除外します。学習履歴は保持され、後から復元できます。`
+            : ""
+        }
+        confirmLabel="アーカイブする"
+        danger
+        onConfirm={archiveQuestion}
+        onCancel={() => setPendingArchive(null)}
+      />
     </main>
   );
 }
+
 

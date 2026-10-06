@@ -120,3 +120,10 @@ UIは表示とイベント受付に限定し、検証・業務処理はUseCase�
 - 差分一覧は`role=list`/`role=listitem`を使用し、分類を文字ラベルで表示する。
 - 復元ボタンは確認チェック前または比較未完了時に`disabled`とし、補足説明を`aria-describedby`で関連付ける。
 - 520px以下では差分集計を2列化し、forced-colorsでは差分バッジと確認領域の枠線を維持する。
+
+
+## v4.4詳細追補
+- `ConfirmDialog`は`open`、タイトル、説明、確認/取消ラベル、危険表示、処理中状態、確定/取消コールバックを受け取る。
+- 表示前の`document.activeElement`を保持し、requestAnimationFrame後に取消ボタンへ移動、アンマウント時に起点へ復帰する。
+- documentのkeydownでEscapeとTab循環を処理し、後始末でリスナーとbody overflowを復元する。
+- 420px以下はボトムシート形状・全幅ボタン、forced-colorsではCanvas系システム色と明示境界を使用する。

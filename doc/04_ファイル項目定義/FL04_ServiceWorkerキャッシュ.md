@@ -41,3 +41,8 @@
 - キャッシュ世代はv18。
 - 復元差分確認画面を含む新しいアプリシェルへ確実に切り替えるため旧世代をactivate時に削除する。
 - キャッシュ戦略、Navigation Preload、Range要求除外、同一scope制約はv4.2から変更しない。
+
+
+## v4.4追補
+- キャッシュ世代はv19。
+- Navigation Preload失敗時は通常fetchへ継続し、Cache Storage書込み失敗時も取得済みレスポンスを返す。

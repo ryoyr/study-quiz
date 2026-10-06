@@ -113,3 +113,10 @@ UIは表示とイベント受付に限定し、検証・業務処理はUseCase�
 - 実装ソースと本設計が異なる場合、最終版ソースを確認して差分管理へ記録する。
 - F13、F17、F18は要件書記載の残課題を維持する。
 
+
+
+## v4.4詳細追補
+- `ai-template-select-button`へ`aria-pressed`を設定し、`article[role=button]`内にボタンを入れる構造を廃止する。
+- 削除確定時は保存結果を確認し、選択中IDを削除した場合は残存先頭テンプレートへ遷移する。
+- `loadGeminiSettings`は`globalThis.localStorage`参照をtry/catchし、失敗時は空APIキーと既定モデルを返す。
+- 45秒タイマー発火と外部AbortSignalを個別判定し、それぞれ異なる利用者向けメッセージを返す。

@@ -9,12 +9,13 @@ import {
   changeCorrectionSuggestionStatus,
   deleteCorrectionSuggestion,
 } from "../services/correctionSuggestionStorage";
+import ConfirmDialog from "../components/ConfirmDialog";
 
 type Props = {
   questions: Question[];
   items: CorrectionSuggestion[];
   initialQuestionId?: string;
-  onChange: (items: CorrectionSuggestion[]) => void;
+  onChange: (items: CorrectionSuggestion[]) => boolean;
   onEditQuestion: (questionId: string) => void;
   onBack: () => void;
 };
@@ -43,6 +44,8 @@ export default function CorrectionSuggestionsPage({
     "all",
   );
   const [message, setMessage] = useState("");
+  const [pendingDelete, setPendingDelete] =
+    useState<CorrectionSuggestion | null>(null);
   const visible = useMemo(
     () => items.filter((item) => filter === "all" || item.status === filter),
     [items, filter],
@@ -72,6 +75,16 @@ export default function CorrectionSuggestionsPage({
   const approveAndEdit = (item: CorrectionSuggestion) => {
     status(item.id, "approved");
     onEditQuestion(item.questionId);
+  };
+  const confirmDelete = () => {
+    if (!pendingDelete) return;
+    if (!onChange(deleteCorrectionSuggestion(items, pendingDelete.id))) {
+      setMessage("削除結果を保存できませんでした。端末の空き容量を確認してください。");
+      setPendingDelete(null);
+      return;
+    }
+    setMessage("修正提案を削除しました。");
+    setPendingDelete(null);
   };
 
   return (
@@ -204,10 +217,8 @@ export default function CorrectionSuggestionsPage({
                   <button
                     className="delete-button"
                     type="button"
-                    onClick={() => {
-                      if (window.confirm("この修正提案を削除しますか？"))
-                        onChange(deleteCorrectionSuggestion(items, item.id));
-                    }}
+                    onClick={() => setPendingDelete(item)}
+                    aria-label={`問題 ${item.questionId} の修正提案を削除`}
                   >
                     削除
                   </button>
@@ -223,7 +234,21 @@ export default function CorrectionSuggestionsPage({
           前のメニューへ戻る
         </button>
       </section>
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="修正提案を削除しますか？"
+        description={
+          pendingDelete
+            ? `問題 ${pendingDelete.questionId} の修正提案は完全に削除されます。この操作は取り消せません。`
+            : ""
+        }
+        confirmLabel="修正提案を削除"
+        danger
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
     </main>
   );
 }
+
 

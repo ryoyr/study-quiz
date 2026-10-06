@@ -349,6 +349,36 @@ const run = async () => {
       );
       reports.push(await evaluate(client, auditExpression(heading)));
     }
+    await clickNavigation(client, "管理");
+    await clickButton(client, "問題管理");
+    await waitFor(client, `document.querySelector("main h1")?.textContent?.trim() === "問題管理"`, "問題管理画面");
+    const openedConfirmation = await evaluate(client, `(() => {
+      const button = document.querySelector('.question-actions .delete-button');
+      if (!button) return false;
+      button.click();
+      return true;
+    })()`);
+    if (!openedConfirmation) failures.push("問題管理: アーカイブ確認を開始できません。");
+    await waitFor(client, `Boolean(document.querySelector('[role="alertdialog"][aria-modal="true"]'))`, "アーカイブ確認ダイアログ");
+    const confirmationState = await evaluate(client, `(() => {
+      const dialog = document.querySelector('[role="alertdialog"]');
+      const labelledBy = dialog?.getAttribute('aria-labelledby');
+      const describedBy = dialog?.getAttribute('aria-describedby');
+      return {
+        named: Boolean(labelledBy && document.getElementById(labelledBy)?.textContent?.trim()),
+        described: Boolean(describedBy && document.getElementById(describedBy)?.textContent?.trim()),
+        safeFocus: document.activeElement?.textContent?.trim() === 'キャンセル',
+        scrollLocked: document.body.style.overflow === 'hidden',
+      };
+    })()`);
+    if (!confirmationState.named || !confirmationState.described || !confirmationState.safeFocus || !confirmationState.scrollLocked)
+      failures.push("問題管理: 確認ダイアログの名前・説明・安全側初期フォーカス・背景固定が不足しています。");
+    await client.send("Input.dispatchKeyEvent", { type: "keyDown", key: "Escape", code: "Escape", windowsVirtualKeyCode: 27 });
+    await client.send("Input.dispatchKeyEvent", { type: "keyUp", key: "Escape", code: "Escape", windowsVirtualKeyCode: 27 });
+    await waitFor(client, `!document.querySelector('[role="alertdialog"]')`, "Escapeによる確認取消");
+    const confirmationClosed = await evaluate(client, `document.activeElement?.classList.contains('delete-button') && document.body.style.overflow !== 'hidden'`);
+    if (!confirmationClosed) failures.push("問題管理: 取消後のフォーカス復帰または背景スクロール復旧に失敗しました。");
+    reports.push(await evaluate(client, auditExpression("問題管理")));
     await client.send("Page.navigate", {
       url: `${origin}${BASE_PATH}?screen=backupCenter`,
     });
@@ -481,7 +511,7 @@ const run = async () => {
     if (failures.length) {
       throw new Error(`E2Eアクセシビリティ試験で${failures.length}件の問題を検出しました。\n${failures.map((item) => `- ${item}`).join("\n")}`);
     }
-    console.log(`E2Eアクセシビリティ試験に成功しました（${reports.length}画面、320x568・393x852、主要ナビゲーション、横スクロール複数選択、固定表示、入力エラー、キーボード、AXツリー）。`);
+    console.log(`E2Eアクセシビリティ試験に成功しました（${reports.length}画面、320x568・393x852、主要ナビゲーション、確認ダイアログ、横スクロール複数選択、固定表示、入力エラー、キーボード、AXツリー）。`);
   } finally {
     try {
       await client?.send("Browser.close");
@@ -510,4 +540,5 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
     process.exitCode = 1;
   });
 }
+
 

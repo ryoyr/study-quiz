@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "study-quiz-shell-";
-const CACHE_NAME = `${CACHE_PREFIX}v18`;
+const CACHE_NAME = `${CACHE_PREFIX}v19`;
 const BASE_URL = new URL("./", self.registration.scope);
 const CORE_SHELL = ["./", "./index.html", "./manifest.webmanifest"].map(
   (path) => new URL(path, BASE_URL).href,
@@ -17,7 +17,12 @@ const cacheResponse = async (cache, request, response) => {
     response.type !== "opaque" &&
     response.status !== 206
   ) {
-    await cache.put(request, response.clone());
+    // キャッシュ容量不足でも、取得済みのネットワーク応答は利用者へ返す。
+    try {
+      await cache.put(request, response.clone());
+    } catch {
+      // Cache Storageへの保存はベストエフォートとする。
+    }
   }
   return response;
 };
@@ -83,7 +88,8 @@ const fetchWithTimeout = async (request, milliseconds = 5000) => {
 const networkFirstNavigation = async (request, preloadResponse) => {
   const cache = await caches.open(CACHE_NAME);
   try {
-    const response = (await preloadResponse) ?? (await fetchWithTimeout(request));
+    const preloaded = await Promise.resolve(preloadResponse).catch(() => undefined);
+    const response = preloaded ?? (await fetchWithTimeout(request));
     await cacheResponse(cache, request, response);
     return response;
   } catch {
@@ -124,3 +130,4 @@ self.addEventListener("fetch", (event) => {
       : cacheFirstAsset(request),
   );
 });
+

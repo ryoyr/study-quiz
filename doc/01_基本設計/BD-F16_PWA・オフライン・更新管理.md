@@ -68,3 +68,7 @@ Service Worker v18はactivate時にNavigation Preloadの有効化を試行する
 
 ## v4.3設計追補
 復元差分・安全退避を含むアプリシェルへ確実に更新するためキャッシュ世代をv18とする。v4.2で追加したNavigation Preloadと従来のオフラインフォールバック、scope外・Range要求の除外方針は維持する。
+
+
+## v4.4設計追補
+Service Worker v19はNavigation PreloadのPromise拒否を局所処理し、その後に通常fetchを試行する。ネットワーク応答取得後のCache Storage書込みはベストエフォートとし、容量不足などで`cache.put`が失敗しても取得済み応答を返す。既存のscope制約、Range要求・206応答除外、旧キャッシュ削除は維持する。

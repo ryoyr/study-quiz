@@ -28,10 +28,18 @@ type GeminiResponse = {
 
 export const DEFAULT_GEMINI_MODEL = "gemini-3.8-flash";
 
+const readLocalStorage = (key: string): string | null => {
+  try {
+    return globalThis.localStorage?.getItem(key) ?? null;
+  } catch {
+    return null;
+  }
+};
+
 export const loadGeminiSettings = (): GeminiSettings => ({
-  apiKey: localStorage.getItem(STORAGE_KEYS.geminiApiKey) ?? "",
+  apiKey: readLocalStorage(STORAGE_KEYS.geminiApiKey) ?? "",
   model:
-    localStorage.getItem(STORAGE_KEYS.geminiModel)?.trim() ||
+    readLocalStorage(STORAGE_KEYS.geminiModel)?.trim() ||
     DEFAULT_GEMINI_MODEL,
 });
 
@@ -75,7 +83,11 @@ export const generateGeminiContent = async (
   if (!prompt.trim()) throw new Error("送信する内容を入力してください。");
 
   const controller = new AbortController();
-  const timer = window.setTimeout(() => controller.abort(), 45_000);
+  let timedOut = false;
+  const timer = globalThis.setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, 45_000);
   const abort = () => controller.abort();
   options.signal?.addEventListener("abort", abort, { once: true });
   try {
@@ -120,11 +132,15 @@ export const generateGeminiContent = async (
     return text;
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") {
-      throw new Error("Gemini APIへの接続がタイムアウトしました。");
+      throw new Error(
+        timedOut
+          ? "Gemini APIへの接続がタイムアウトしました。"
+          : "Gemini APIへの送信を中止しました。",
+      );
     }
     throw error;
   } finally {
-    window.clearTimeout(timer);
+    globalThis.clearTimeout(timer);
     options.signal?.removeEventListener("abort", abort);
   }
 };
@@ -137,4 +153,5 @@ export const testGeminiConnection = async (
     { settings },
   );
 };
+
 

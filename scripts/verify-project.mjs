@@ -43,6 +43,7 @@ const requiredFiles = [
   "src/services/storagePersistenceService.ts",
   "src/services/verifiedStorage.ts",
   "src/components/ConcurrentUpdateNotice.tsx",
+  "src/components/ConfirmDialog.tsx",
   "src/services/studyOptionService.ts",
   "tests/storageKeyRegistry.test.ts",
   "tests/studyOptionService.test.ts",
@@ -51,7 +52,7 @@ const requiredFiles = [
 ];
 for (const path of requiredFiles) assert(existsSync(path), `${path} がありません`);
 const packageJson = readJson("package.json");
-assert(packageJson.version === "4.3.0", "package.jsonの版は4.3.0である必要があります");
+assert(packageJson.version === "4.4.0", "package.jsonの版は4.4.0である必要があります");
 for (const script of ["verify:structure", "test", "test:e2e", "typecheck", "build", "check"]) {
   assert(typeof packageJson.scripts?.[script] === "string", `scripts.${script} がありません`);
 }
@@ -117,10 +118,12 @@ const appleIcon = readPngSize("public/apple-touch-icon.png");
 assert(appleIcon.width === 180 && appleIcon.height === 180, "apple-touch-icon.png は180x180である必要があります");
 for (const [path, tokens] of [
   ["src/main.tsx", ["<ErrorBoundary>", "<ConcurrentUpdateNotice />", "<PwaUpdatePrompt />"]],
-  ["public/sw.js", ["SKIP_WAITING", "matchAll", "Promise.allSettled", "navigationPreload", "pwa-maskable-512x512.png"]],
+  ["public/sw.js", ["CACHE_PREFIX}v19", "SKIP_WAITING", "matchAll", "Promise.allSettled", "navigationPreload", "pwa-maskable-512x512.png", "Cache Storageへの保存はベストエフォート"]],
   ["src/services/fullBackupService.ts", ["CURRENT_BACKUP_VERSION = 9", "FNV-1A-32", "auditStorage", "compareFullBackup", "downloadBackupFile"]],
   ["src/pages/BackupCenterPage.tsx", ["storage-health-badge", "整合性チェック済み", "端末データの保持を強化", "現在データとの差分集計", "study-quiz-pre-restore"]],
   ["src/components/StudyFilterPanel.tsx", ["masteryFilters", "questionModes", "horizontal-option-scroller"]],
+  ["src/components/ConfirmDialog.tsx", ["role=\"alertdialog\"", "aria-modal=\"true\"", "createPortal", "previousFocusRef", "FOCUSABLE_SELECTOR"]],
+  ["src/pages/QuestionManagementPage.tsx", ["<ConfirmDialog", "MAX_LONG_TEXT_LENGTH", "MAX_TAGS"]],
   ["src/App.css", ["overflow-x: auto", "scroll-snap-type: x proximity"]],
 ]) {
   try {
@@ -137,4 +140,5 @@ if (failures.length > 0) {
 } else {
   console.log("構成検証に成功しました（TypeScript設定、PWA資材、統合状態）。");
 }
+
 
