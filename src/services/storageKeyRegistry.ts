@@ -166,3 +166,4 @@ export const isRegisteredStorageKey = (key: string): boolean =>
 export const BACKUP_STORAGE_DEFINITIONS = Object.values(
   STORAGE_KEY_REGISTRY,
 ).filter((definition) => definition.backup);
+

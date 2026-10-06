@@ -52,3 +52,4 @@ export default function AppChrome({ children, active, onNavigate, remainingDays,
     </div>
   );
 }
+

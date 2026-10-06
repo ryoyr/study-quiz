@@ -99,3 +99,4 @@ export const calculateStatisticsForPeriod = (
     filterHistoryByPeriod(history, period, now),
     thresholdSeconds,
   );
+

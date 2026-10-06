@@ -21,7 +21,7 @@ export type BackupStorageFormat = "json" | "number";
 
 export interface FullBackupFile {
   format: "study-quiz-full-backup";
-  version: 2 | 3 | 4 | 5 | 6;
+  version: 2 | 3 | 4 | 5 | 6 | 7;
   appVersion: string;
   exportedAt: string;
   entries: Record<string, string>;
@@ -34,15 +34,23 @@ export interface BackupEntryDefinition {
   storageFormat: BackupStorageFormat;
 }
 
+const toBackupStorageFormat = (
+  format: "json" | "number" | "internal",
+): BackupStorageFormat => {
+  if (format === "internal")
+    throw new Error("内部保存領域はバックアップへ含められません。");
+  return format;
+};
+
 export const BACKUP_ENTRIES: BackupEntryDefinition[] =
   BACKUP_STORAGE_DEFINITIONS.map(({ key, label, format }) => ({
     key,
     label,
     required: false,
-    storageFormat: format,
+    storageFormat: toBackupStorageFormat(format),
   }));
 
-const APP_VERSION = "3.0.1";
+const APP_VERSION = "3.1.0";
 const LEGACY_HISTORY_KEY = STORAGE_KEYS.legacyHistory;
 const API_KEY = STORAGE_KEYS.geminiApiKey;
 const LEGACY_MODEL_KEY = STORAGE_KEYS.geminiModel;
@@ -315,7 +323,7 @@ const validateStoredEntry = (
     const value = Number(raw);
     const valid =
       definition.key === STORAGE_KEYS.schemaVersion
-        ? Number.isInteger(value) && value >= 1 && value <= 6
+        ? Number.isInteger(value) && value >= 1 && value <= 7
         : Number.isFinite(value) && value >= 0 && value <= 480;
     if (!valid) throw new Error(`${definition.label}の値が不正です。`);
     return;
@@ -388,7 +396,7 @@ export const createFullBackup = (): FullBackupFile => {
   });
   return {
     format: "study-quiz-full-backup",
-    version: 6,
+    version: 7,
     appVersion: APP_VERSION,
     exportedAt: new Date().toISOString(),
     entries,
@@ -424,7 +432,7 @@ export const parseFullBackup = (text: string): FullBackupFile => {
 
   if (
     value.format !== "study-quiz-full-backup" ||
-    ![2, 3, 4, 5, 6].includes(value.version ?? 0) ||
+    ![2, 3, 4, 5, 6, 7].includes(value.version ?? 0) ||
     !isObject(value.entries)
   )
     throw new Error("対応していないバックアップ形式です。");
@@ -437,7 +445,7 @@ export const parseFullBackup = (text: string): FullBackupFile => {
   delete entries[API_KEY];
   delete entries[LEGACY_MODEL_KEY];
 
-  // v5以前には試験枠・出題初期値がないため、復元前に現行形式へ補完する。
+  // 旧版には試験枠・複数選択の出題初期値がない場合があるため、復元前に現行形式へ補完する。
   if (entries[STORAGE_KEYS.setup]) {
     entries[STORAGE_KEYS.setup] = JSON.stringify(
       normalizeSetup(JSON.parse(entries[STORAGE_KEYS.setup]) as Partial<Setup>),
@@ -463,7 +471,7 @@ export const parseFullBackup = (text: string): FullBackupFile => {
 
   return {
     format: "study-quiz-full-backup",
-    version: 6,
+    version: 7,
     appVersion:
       typeof value.appVersion === "string" ? value.appVersion : "legacy",
     exportedAt: normalizeExportedAt(value.exportedAt),
@@ -502,3 +510,4 @@ export const inspectBackup = (backup: FullBackupFile) =>
   }));
 
 export const backupErrorMessage = errorMessage;
+

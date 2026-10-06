@@ -12,7 +12,19 @@ import type { Setup } from "../types/Setup";
 
 type Props = { setup: Setup; examScopes: ExamScope[]; questions: Question[]; onSave: (setup: Setup) => Promise<void> };
 type NumberKey = "dailyNewLimit" | "dailyQuestionLimit" | "bufferRate" | "instantThresholdSeconds" | "dailyMinimumQuestions";
-const applySelection = (setup: Setup, selection: StudySelection): Setup => ({ ...setup, examScopeId: selection.examScopeId, defaultCategory: legacyCategoryFromCategories(selection.categories), defaultCategories: selection.categories, defaultMasteryFilter: selection.masteryFilter, defaultQuestionMode: selection.questionMode, defaultQuestionIds: selection.questionIds });
+const applySelection = (setup: Setup, selection: StudySelection): Setup => ({
+  ...setup,
+  examScopeId: selection.examScopeId,
+  defaultCategory: legacyCategoryFromCategories(selection.categories),
+  defaultCategories: selection.categories,
+  defaultMasteryFilter:
+    selection.masteryFilters.length === 1 ? selection.masteryFilters[0] : "ALL",
+  defaultMasteryFilters: selection.masteryFilters,
+  defaultQuestionMode:
+    selection.questionModes.length === 1 ? selection.questionModes[0] : "ADAPTIVE",
+  defaultQuestionModes: selection.questionModes,
+  defaultQuestionIds: selection.questionIds,
+});
 
 export default function InitialSetupPage({ setup, examScopes, questions, onSave }: Props) {
   const [draft, setDraft] = useState<Setup>({ ...setup, reservedDates: setup.reservedDates ?? [], reservedWeekdays: setup.reservedWeekdays ?? [] });
@@ -59,3 +71,4 @@ export default function InitialSetupPage({ setup, examScopes, questions, onSave 
     </main>
   );
 }
+

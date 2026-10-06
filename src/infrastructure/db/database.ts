@@ -23,7 +23,9 @@ export interface ExamRecord {
   defaultCategory?: string;
   defaultCategories?: string[];
   defaultMasteryFilter?: MasteryFilter;
+  defaultMasteryFilters?: MasteryFilter[];
   defaultQuestionMode?: QuestionMode;
+  defaultQuestionModes?: QuestionMode[];
   defaultQuestionIds?: string[];
   theme?: ThemePreference;
   createdAt: string;
@@ -161,3 +163,4 @@ export const clearInitialSetupRecords = async (): Promise<void> => {
   transaction.objectStore("settings").delete("setup");
   await completion;
 };
+

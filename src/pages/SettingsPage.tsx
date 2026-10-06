@@ -27,8 +27,12 @@ const applySelection = (setup: Setup, selection: StudySelection): Setup => ({
   examScopeId: selection.examScopeId,
   defaultCategory: legacyCategoryFromCategories(selection.categories),
   defaultCategories: selection.categories,
-  defaultMasteryFilter: selection.masteryFilter,
-  defaultQuestionMode: selection.questionMode,
+  defaultMasteryFilter:
+    selection.masteryFilters.length === 1 ? selection.masteryFilters[0] : "ALL",
+  defaultMasteryFilters: selection.masteryFilters,
+  defaultQuestionMode:
+    selection.questionModes.length === 1 ? selection.questionModes[0] : "ADAPTIVE",
+  defaultQuestionModes: selection.questionModes,
   defaultQuestionIds: selection.questionIds,
 });
 
@@ -92,3 +96,4 @@ export default function SettingsPage({ setup, examScopes, questions, questionSta
     </main>
   );
 }
+

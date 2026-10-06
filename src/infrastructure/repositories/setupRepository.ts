@@ -27,7 +27,9 @@ export const findSetup = async (): Promise<Setup | null> => {
     defaultCategory: exam.defaultCategory,
     defaultCategories: exam.defaultCategories,
     defaultMasteryFilter: exam.defaultMasteryFilter,
+    defaultMasteryFilters: exam.defaultMasteryFilters,
     defaultQuestionMode: exam.defaultQuestionMode,
+    defaultQuestionModes: exam.defaultQuestionModes,
     defaultQuestionIds: exam.defaultQuestionIds,
     theme: exam.theme,
     setupCompleted: records.setupCompleted,
@@ -53,7 +55,9 @@ export const persistSetup = async (setup: Setup): Promise<void> => {
       defaultCategory: normalized.defaultCategory,
       defaultCategories: normalized.defaultCategories,
       defaultMasteryFilter: normalized.defaultMasteryFilter,
+      defaultMasteryFilters: normalized.defaultMasteryFilters,
       defaultQuestionMode: normalized.defaultQuestionMode,
+      defaultQuestionModes: normalized.defaultQuestionModes,
       defaultQuestionIds: normalized.defaultQuestionIds,
       theme: normalized.theme,
       createdAt: normalized.createdAt,
@@ -65,3 +69,4 @@ export const persistSetup = async (setup: Setup): Promise<void> => {
 };
 
 export const removeSetup = clearInitialSetupRecords;
+

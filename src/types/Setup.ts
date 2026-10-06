@@ -17,14 +17,18 @@ export interface Setup {
   reservedWeekdays?: number[];
   /** 出題対象の上位試験枠。 */
   examScopeId: string;
-  /** 学習画面を開いたときの初期トピック。ALLは試験枠全体。 */
+  /** 旧版互換用の単一トピック。複数選択時はALLを保持する。 */
   defaultCategory: string;
   /** 複数選択した初期トピック。ALLのみの場合は試験枠全体。 */
   defaultCategories: string[];
-  /** 学習画面を開いたときの初期理解度フィルター。 */
+  /** 旧版互換用の単一理解度。複数選択時はALLを保持する。 */
   defaultMasteryFilter: MasteryFilter;
-  /** 学習画面を開いたときの初期出題方法。 */
+  /** 複数選択した初期理解度。ALLは単独で保持する。 */
+  defaultMasteryFilters: MasteryFilter[];
+  /** 旧版互換用の単一出題方法。複数選択時はADAPTIVEを保持する。 */
   defaultQuestionMode: QuestionMode;
+  /** 複数選択した初期出題方法。ALLは単独で保持する。 */
+  defaultQuestionModes: QuestionMode[];
   /** 個別指定する既定問題。空配列はフィルター一致全体。 */
   defaultQuestionIds: string[];
   theme: ThemePreference;
@@ -58,7 +62,9 @@ export const createDefaultSetup = (): Setup => {
     defaultCategory: "ALL",
     defaultCategories: ["ALL"],
     defaultMasteryFilter: "ALL",
+    defaultMasteryFilters: ["ALL"],
     defaultQuestionMode: "ADAPTIVE",
+    defaultQuestionModes: ["ADAPTIVE"],
     defaultQuestionIds: [],
     theme: "system",
     setupCompleted: false,

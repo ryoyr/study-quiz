@@ -39,7 +39,9 @@ const requiredFiles = [
   "src/main.tsx",
   "src/App.tsx",
   "src/services/storageKeyRegistry.ts",
+  "src/services/studyOptionService.ts",
   "tests/storageKeyRegistry.test.ts",
+  "tests/studyOptionService.test.ts",
   "scripts/e2e-accessibility.mjs",
   "tests/accessibilityHarness.test.ts",
 ];
@@ -105,6 +107,8 @@ assert(appleIcon.width === 180 && appleIcon.height === 180, "apple-touch-icon.pn
 for (const [path, tokens] of [
   ["src/main.tsx", ["<ErrorBoundary>", "<PwaUpdatePrompt />"]],
   ["public/sw.js", ["SKIP_WAITING", "matchAll", "pwa-maskable-512x512.png"]],
+  ["src/components/StudyFilterPanel.tsx", ["masteryFilters", "questionModes", "horizontal-option-scroller"]],
+  ["src/App.css", ["overflow-x: auto", "scroll-snap-type: x proximity"]],
 ]) {
   try {
     const source = readFileSync(path, "utf8");
@@ -120,3 +124,4 @@ if (failures.length > 0) {
 } else {
   console.log("構成検証に成功しました（TypeScript設定、PWA資材、統合状態）。");
 }
+

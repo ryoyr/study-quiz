@@ -35,7 +35,9 @@ test("個別日と曜日指定を学習しない日として統合する", () =>
     defaultCategory: "ALL",
     defaultCategories: ["ALL"],
     defaultMasteryFilter: "ALL",
+    defaultMasteryFilters: ["ALL"],
     defaultQuestionMode: "ADAPTIVE",
+    defaultQuestionModes: ["ADAPTIVE"],
     defaultQuestionIds: [],
     theme: "system",
     setupCompleted: true,
@@ -47,3 +49,4 @@ test("個別日と曜日指定を学習しない日として統合する", () =>
     ["2026-10-07", "2026-10-10", "2026-10-11"],
   );
 });
+

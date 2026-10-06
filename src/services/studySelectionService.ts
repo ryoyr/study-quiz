@@ -1,26 +1,48 @@
 import type { Question } from "../types/Question";
 import type { MasteryLevel, QuestionState } from "../types/QuestionState";
-import type { Setup, MasteryFilter, QuestionMode } from "../types/Setup";
+import type { MasteryFilter, QuestionMode, Setup } from "../types/Setup";
 import type { StudyHistory } from "../types/StudyHistory";
-import type { GeneratedStudySession, SourceType } from "../types/StudySession";
+import type {
+  GeneratedStudySession,
+  SourceType,
+  StudySessionItem,
+} from "../types/StudySession";
 import { analyzeWeakQuestions } from "./weakQuestionService.ts";
-import { generateStudySession } from "./sessionGenerator.ts";
+import {
+  calculateRequiredNewCount,
+  generateStudySession,
+} from "./sessionGenerator.ts";
 import { normalizeStudyCategories } from "./studyRangeService.ts";
+import {
+  normalizeMasteryFilters,
+  normalizeQuestionModes,
+} from "./studyOptionService.ts";
 
 export interface StudySelection {
   examScopeId: string;
   /** ALLのみ、または選択した複数カテゴリ。 */
   categories: string[];
-  masteryFilter: MasteryFilter;
-  questionMode: QuestionMode;
+  /** ALLのみ、またはOR条件で扱う複数理解度。 */
+  masteryFilters: MasteryFilter[];
+  /** ALLのみ、または候補を和集合にする複数出題方法。 */
+  questionModes: QuestionMode[];
   questionIds: string[];
 }
 
 export const selectionFromSetup = (setup: Setup): StudySelection => ({
   examScopeId: setup.examScopeId,
-  categories: normalizeStudyCategories(setup.defaultCategories, setup.defaultCategory),
-  masteryFilter: setup.defaultMasteryFilter,
-  questionMode: setup.defaultQuestionMode,
+  categories: normalizeStudyCategories(
+    setup.defaultCategories,
+    setup.defaultCategory,
+  ),
+  masteryFilters: normalizeMasteryFilters(
+    setup.defaultMasteryFilters,
+    setup.defaultMasteryFilter,
+  ),
+  questionModes: normalizeQuestionModes(
+    setup.defaultQuestionModes,
+    setup.defaultQuestionMode,
+  ),
   questionIds: [...setup.defaultQuestionIds],
 });
 
@@ -37,44 +59,201 @@ export const filterStudyQuestions = (
   selection: StudySelection,
 ): Question[] => {
   const selectedIds = new Set(selection.questionIds);
-  const selectedCategories = new Set(normalizeStudyCategories(selection.categories));
-  return questions.filter((question) =>
-    question.examScopeId === selection.examScopeId &&
-    (selectedCategories.has("ALL") || selectedCategories.has(question.category)) &&
-    (selection.masteryFilter === "ALL" || masteryForQuestion(question.id, states) === selection.masteryFilter) &&
-    (selectedIds.size === 0 || selectedIds.has(question.id)),
+  const selectedCategories = new Set(
+    normalizeStudyCategories(selection.categories),
+  );
+  const selectedMastery = new Set(
+    normalizeMasteryFilters(selection.masteryFilters),
+  );
+  return questions.filter(
+    (question) =>
+      question.examScopeId === selection.examScopeId &&
+      (selectedCategories.has("ALL") ||
+        selectedCategories.has(question.category)) &&
+      (selectedMastery.has("ALL") ||
+        selectedMastery.has(masteryForQuestion(question.id, states))) &&
+      (selectedIds.size === 0 || selectedIds.has(question.id)),
   );
 };
 
-const manualSession = (
-  questions: Question[],
-  source: SourceType,
-  setup: Setup,
+const primarySource = (sourceTypes: readonly SourceType[]): SourceType => {
+  if (sourceTypes.includes("REVIEW")) return "REVIEW";
+  if (sourceTypes.includes("WEAK")) return "WEAK";
+  if (sourceTypes.includes("NEW")) return "NEW";
+  return "CUSTOM";
+};
+
+const sourceOrder: SourceType[] = ["REVIEW", "WEAK", "NEW", "CUSTOM"];
+
+const createSession = (
+  items: StudySessionItem[],
+  remainingNewQuestions: number,
+  effectiveDays: number,
+  requiredNewCount: number,
   now: Date,
 ): GeneratedStudySession => {
-  const selected = [...questions]
-    .sort((left, right) => right.weight - left.weight || left.id.localeCompare(right.id))
-    .slice(0, setup.dailyQuestionLimit);
+  const selected = items.map((item, index) => ({ ...item, order: index + 1 }));
   return {
     id: crypto.randomUUID(),
     createdAt: now.toISOString(),
-    items: selected.map((question, index) => ({
+    items: selected,
+    newCount: selected.filter((item) => item.primarySourceType === "NEW").length,
+    reviewCount: selected.filter(
+      (item) => item.primarySourceType === "REVIEW",
+    ).length,
+    weakCount: selected.filter((item) => item.primarySourceType === "WEAK")
+      .length,
+    otherCount: selected.filter(
+      (item) => item.primarySourceType === "CUSTOM",
+    ).length,
+    totalCount: selected.length,
+    estimatedMinutes: selected.length === 0 ? 0 : Math.ceil(selected.length * 0.75),
+    remainingNewQuestions,
+    effectiveDays,
+    requiredNewCount,
+  };
+};
+
+const customSession = (
+  questions: Question[],
+  setup: Setup,
+  history: StudyHistory[],
+  now: Date,
+): GeneratedStudySession => {
+  const answered = new Set(history.map((item) => item.questionId));
+  const remainingNewQuestions = questions.filter(
+    (question) => !answered.has(question.id),
+  ).length;
+  const { effectiveDays, requiredNewCount } = calculateRequiredNewCount(
+    remainingNewQuestions,
+    setup,
+    now,
+  );
+  const maxWeight = Math.max(1, ...questions.map((question) => question.weight));
+  const items = [...questions]
+    .sort(
+      (left, right) =>
+        right.weight - left.weight || left.id.localeCompare(right.id),
+    )
+    .slice(0, setup.dailyQuestionLimit)
+    .map<StudySessionItem>((question, index) => ({
       order: index + 1,
       question,
-      primarySourceType: source,
-      sourceTypes: [source],
-      priorityScore: Math.min(1, Math.max(0.1, question.weight / 5)),
-    })),
-    newCount: source === "NEW" ? selected.length : 0,
-    reviewCount: source === "REVIEW" ? selected.length : 0,
-    weakCount: source === "WEAK" ? selected.length : 0,
-    otherCount: source === "CUSTOM" ? selected.length : 0,
-    totalCount: selected.length,
-    estimatedMinutes: Math.max(1, Math.ceil(selected.length * 0.75)),
-    remainingNewQuestions: 0,
-    effectiveDays: 1,
-    requiredNewCount: source === "NEW" ? selected.length : 0,
+      primarySourceType: "CUSTOM",
+      sourceTypes: ["CUSTOM"],
+      priorityScore: Math.min(1, Math.max(0.1, question.weight / maxWeight)),
+    }));
+  return createSession(
+    items,
+    remainingNewQuestions,
+    effectiveDays,
+    requiredNewCount,
+    now,
+  );
+};
+
+const generateMultiModeSession = (
+  pool: Question[],
+  history: StudyHistory[],
+  setup: Setup,
+  states: QuestionState[],
+  modes: QuestionMode[],
+  now: Date,
+): GeneratedStudySession => {
+  const answered = new Set(history.map((item) => item.questionId));
+  const newQuestions = pool.filter((question) => !answered.has(question.id));
+  const { effectiveDays, requiredNewCount } = calculateRequiredNewCount(
+    newQuestions.length,
+    setup,
+    now,
+  );
+  const maxWeight = Math.max(1, ...pool.map((question) => question.weight));
+  const weakScores = new Map(
+    analyzeWeakQuestions(pool, history)
+      .filter((item) => item.weaknessScore >= 0.35)
+      .map((item) => [item.question.id, item.weaknessScore]),
+  );
+  const candidates = new Map<
+    string,
+    { question: Question; sourceTypes: Set<SourceType>; priorityScore: number }
+  >();
+  const add = (
+    question: Question,
+    sources: readonly SourceType[],
+    priorityScore: number,
+  ) => {
+    const current = candidates.get(question.id) ?? {
+      question,
+      sourceTypes: new Set<SourceType>(),
+      priorityScore: 0,
+    };
+    sources.forEach((source) => current.sourceTypes.add(source));
+    current.priorityScore = Math.max(current.priorityScore, priorityScore);
+    candidates.set(question.id, current);
   };
+
+  if (modes.includes("ADAPTIVE")) {
+    generateStudySession(pool, history, setup, states, now).items.forEach((item) =>
+      add(item.question, item.sourceTypes, item.priorityScore),
+    );
+  }
+  if (modes.includes("NEW")) {
+    newQuestions.forEach((question) =>
+      add(question, ["NEW"], 0.5 + question.weight / maxWeight / 4),
+    );
+  }
+  if (modes.includes("REVIEW")) {
+    pool.forEach((question) => {
+      const due = states.find(
+        (state) => state.questionId === question.id,
+      )?.nextReviewAt;
+      if (due && new Date(due).getTime() <= now.getTime()) {
+        const overdueDays = Math.max(
+          0,
+          Math.floor((now.getTime() - new Date(due).getTime()) / 86_400_000),
+        );
+        add(question, ["REVIEW"], Math.min(1, 0.8 + overdueDays / 100));
+      }
+    });
+  }
+  if (modes.includes("WEAK")) {
+    pool.forEach((question) => {
+      const score = weakScores.get(question.id);
+      if (score !== undefined)
+        add(question, ["WEAK"], Math.min(1, 0.7 + score / 4));
+    });
+  }
+
+  const items = [...candidates.values()]
+    .map<StudySessionItem>((candidate) => {
+      const sources = sourceOrder.filter((source) =>
+        candidate.sourceTypes.has(source),
+      );
+      return {
+        order: 0,
+        question: candidate.question,
+        primarySourceType: primarySource(sources),
+        sourceTypes: sources,
+        priorityScore: candidate.priorityScore,
+      };
+    })
+    .sort(
+      (left, right) =>
+        right.priorityScore - left.priorityScore ||
+        sourceOrder.indexOf(left.primarySourceType) -
+          sourceOrder.indexOf(right.primarySourceType) ||
+        right.question.weight - left.question.weight ||
+        left.question.id.localeCompare(right.question.id),
+    )
+    .slice(0, setup.dailyQuestionLimit);
+
+  return createSession(
+    items,
+    newQuestions.length,
+    effectiveDays,
+    requiredNewCount,
+    now,
+  );
 };
 
 export const generateSelectedStudySession = (
@@ -86,31 +265,13 @@ export const generateSelectedStudySession = (
   now = new Date(),
 ): GeneratedStudySession => {
   const pool = filterStudyQuestions(questions, states, selection);
-  if (selection.questionIds.length > 0) return manualSession(pool, "CUSTOM", setup, now);
-  if (selection.questionMode === "ADAPTIVE")
+  if (selection.questionIds.length > 0)
+    return customSession(pool, setup, history, now);
+
+  const modes = normalizeQuestionModes(selection.questionModes);
+  if (modes.includes("ALL")) return customSession(pool, setup, history, now);
+  if (modes.length === 1 && modes[0] === "ADAPTIVE")
     return generateStudySession(pool, history, setup, states, now);
 
-  const answered = new Set(history.map((item) => item.questionId));
-  if (selection.questionMode === "NEW")
-    return manualSession(pool.filter((question) => !answered.has(question.id)), "NEW", setup, now);
-  if (selection.questionMode === "REVIEW") {
-    return manualSession(
-      pool.filter((question) => {
-        const due = states.find((state) => state.questionId === question.id)?.nextReviewAt;
-        return Boolean(due && new Date(due).getTime() <= now.getTime());
-      }),
-      "REVIEW",
-      setup,
-      now,
-    );
-  }
-  if (selection.questionMode === "WEAK") {
-    const weakIds = new Set(
-      analyzeWeakQuestions(pool, history)
-        .filter((item) => item.weaknessScore >= 0.35)
-        .map((item) => item.question.id),
-    );
-    return manualSession(pool.filter((question) => weakIds.has(question.id)), "WEAK", setup, now);
-  }
-  return manualSession(pool, "CUSTOM", setup, now);
+  return generateMultiModeSession(pool, history, setup, states, modes, now);
 };

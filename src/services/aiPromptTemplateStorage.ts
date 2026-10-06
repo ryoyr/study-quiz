@@ -75,3 +75,4 @@ export const deleteAiPromptTemplate = (
   const result = items.filter((item) => item.id !== id || item.builtIn);
   return result;
 };
+

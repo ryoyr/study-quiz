@@ -8,3 +8,4 @@ export const applyTheme = (theme: ThemePreference): void => {
   const dark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
   document.querySelector('meta[name="theme-color"]')?.setAttribute("content", dark ? "#0f172a" : "#2563eb");
 };
+

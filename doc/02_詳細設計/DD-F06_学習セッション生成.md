@@ -118,3 +118,10 @@ UIは表示とイベント受付に限定し、検証・業務処理はUseCase�
 - `filterStudyQuestions`: `examScopeId`、`category`、`masteryFilter`、`questionIds` の積集合を返す。
 - `generateSelectedStudySession`: 個別指定、ADAPTIVE、NEW、REVIEW、WEAK、ALLの順に分岐する。
 - CUSTOMソースを追加し、セッション内訳で指定問題を識別する。
+
+## v3.1詳細追補
+- `filterStudyQuestions`: `masteryFilters` の選択値をOR条件で評価する。カテゴリ・試験枠・個別問題との間はAND条件とする。
+- `generateSelectedStudySession`: `questionModes` が複数の場合、ADAPTIVE・NEW・REVIEW・WEAKの候補をIDで統合する。
+- 複数モードに該当した問題は `sourceTypes` に全根拠を保持し、`primarySourceType` は REVIEW、WEAK、NEW、CUSTOM の順で決定する。
+- `ALL` は条件一致全件をCUSTOMセッションとして扱い、個別問題指定は出題方法より優先する。
+

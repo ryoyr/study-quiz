@@ -59,3 +59,4 @@ export const fitQuestionsToTimeBudget = (
           Math.floor(budget.remainingSeconds / estimatedSecondsPerQuestion),
         ),
       );
+

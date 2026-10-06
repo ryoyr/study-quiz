@@ -58,4 +58,5 @@
 
 
 ## v3.0設計追補
-IndexedDBのバージョンを2とし、`examScopes` ストアを追加する。旧試験ID `linuc101` は読込み互換を保ち、保存時に `lpic101` へ正規化する。localStorageとバックアップはschema version 6とする。
+IndexedDBのバージョンを2とし、`examScopes` ストアを追加する。旧試験ID `linuc101` は読込み互換を保ち、保存時に `lpic101` へ正規化する。localStorageとバックアップはschema version 7とする。旧単一選択の理解度・出題方法は配列形式へ自動移行する。
+

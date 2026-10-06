@@ -78,6 +78,11 @@ import {
   type StudySelection,
 } from "./services/studySelectionService";
 import { normalizeStudyCategories, studyRangeLabel } from "./services/studyRangeService";
+import {
+  masteryFiltersLabel,
+  normalizeMasteryFilters,
+  questionModesLabel,
+} from "./services/studyOptionService";
 import { applyTheme } from "./services/themeService";
 import {
   loadCorrectionSuggestions,
@@ -328,11 +333,14 @@ export default function App() {
 
   const filteredQuestions = useMemo(() => {
     const selectedCategories = new Set(normalizeStudyCategories(studySelection.categories));
+    const selectedMastery = new Set(
+      normalizeMasteryFilters(studySelection.masteryFilters),
+    );
     return availableQuestions.filter((question) => {
         if (question.examScopeId !== studySelection.examScopeId) return false;
         if (!selectedCategories.has("ALL") && !selectedCategories.has(question.category)) return false;
         const mastery = questionStates.find((state) => state.questionId === question.id)?.masteryLevel ?? "UNLEARNED";
-        if (studySelection.masteryFilter !== "ALL" && mastery !== studySelection.masteryFilter) return false;
+        if (!selectedMastery.has("ALL") && !selectedMastery.has(mastery)) return false;
         return studySelection.questionIds.length === 0 || studySelection.questionIds.includes(question.id);
       });
   }, [availableQuestions, questionStates, studySelection]);
@@ -949,6 +957,14 @@ export default function App() {
             <div className="summary-row">
               <span>出題範囲</span>
               <strong>{studyRangeLabel(studySelection.categories)}</strong>
+            </div>
+            <div className="summary-row">
+              <span>理解度</span>
+              <strong>{masteryFiltersLabel(studySelection.masteryFilters)}</strong>
+            </div>
+            <div className="summary-row">
+              <span>出題方法</span>
+              <strong>{questionModesLabel(studySelection.questionModes)}</strong>
             </div>
             <div className="summary-row">
               <span>対象問題数</span>
@@ -1578,6 +1594,8 @@ export default function App() {
         <section className="home-scope-summary" aria-label="現在の出題設定">
           <div><span>試験枠</span><strong>{examScopes.find((item) => item.id === studySelection.examScopeId)?.name ?? studySelection.examScopeId}</strong></div>
           <div><span>範囲</span><strong>{studyRangeLabel(studySelection.categories)}</strong></div>
+          <div><span>理解度</span><strong>{masteryFiltersLabel(studySelection.masteryFilters)}</strong></div>
+          <div><span>出題方法</span><strong>{questionModesLabel(studySelection.questionModes)}</strong></div>
           <div><span>対象</span><strong>{filteredQuestions.length}問</strong></div>
           <button type="button" onClick={() => setScreen("learn")}>出題条件を変更</button>
         </section>
@@ -1597,3 +1615,4 @@ export default function App() {
     </main>,
   );
 }
+

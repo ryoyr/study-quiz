@@ -40,3 +40,4 @@ export const getEffectiveReservedDates = (
   }
   return [...dates].sort();
 };
+

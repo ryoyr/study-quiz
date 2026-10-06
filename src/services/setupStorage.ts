@@ -1,16 +1,32 @@
 import { LPIC101_EXAM_SCOPE_ID } from "../types/ExamScope";
-import type { MasteryFilter, QuestionMode, Setup, ThemePreference } from "../types/Setup";
+import type { Setup, ThemePreference } from "../types/Setup";
 import { STORAGE_KEYS } from "./storageKeyRegistry.ts";
-import { legacyCategoryFromCategories, normalizeStudyCategories } from "./studyRangeService.ts";
+import {
+  legacyCategoryFromCategories,
+  normalizeStudyCategories,
+} from "./studyRangeService.ts";
+import {
+  normalizeMasteryFilters,
+  normalizeQuestionModes,
+} from "./studyOptionService.ts";
 import { differenceInCalendarDays } from "./localDateService.ts";
 
 const STORAGE_KEY = STORAGE_KEYS.setup;
-const MASTERY_FILTERS: MasteryFilter[] = ["ALL", "UNLEARNED", "LEARNING", "MASTERED"];
-const QUESTION_MODES: QuestionMode[] = ["ADAPTIVE", "NEW", "REVIEW", "WEAK", "ALL"];
 const THEMES: ThemePreference[] = ["system", "light", "dark"];
 
 export const normalizeSetup = (value: Partial<Setup>): Setup => {
-  const defaultCategories = normalizeStudyCategories(value.defaultCategories, value.defaultCategory);
+  const defaultCategories = normalizeStudyCategories(
+    value.defaultCategories,
+    value.defaultCategory,
+  );
+  const defaultMasteryFilters = normalizeMasteryFilters(
+    value.defaultMasteryFilters,
+    value.defaultMasteryFilter,
+  );
+  const defaultQuestionModes = normalizeQuestionModes(
+    value.defaultQuestionModes,
+    value.defaultQuestionMode,
+  );
   return {
     name: value.name ?? "LPIC-1 101",
     examDate: value.examDate ?? "",
@@ -20,18 +36,27 @@ export const normalizeSetup = (value: Partial<Setup>): Setup => {
     instantThresholdSeconds: value.instantThresholdSeconds ?? 30,
     dailyMinimumQuestions: value.dailyMinimumQuestions ?? 15,
     reservedDates: Array.isArray(value.reservedDates) ? value.reservedDates : [],
-    reservedWeekdays: Array.isArray(value.reservedWeekdays) ? value.reservedWeekdays : [],
+    reservedWeekdays: Array.isArray(value.reservedWeekdays)
+      ? value.reservedWeekdays
+      : [],
     examScopeId: value.examScopeId?.trim() || LPIC101_EXAM_SCOPE_ID,
     defaultCategory: legacyCategoryFromCategories(defaultCategories),
     defaultCategories,
-    defaultMasteryFilter: MASTERY_FILTERS.includes(value.defaultMasteryFilter as MasteryFilter)
-      ? (value.defaultMasteryFilter as MasteryFilter)
-      : "ALL",
-    defaultQuestionMode: QUESTION_MODES.includes(value.defaultQuestionMode as QuestionMode)
-      ? (value.defaultQuestionMode as QuestionMode)
-      : "ADAPTIVE",
+    defaultMasteryFilter:
+      defaultMasteryFilters.length === 1 ? defaultMasteryFilters[0] : "ALL",
+    defaultMasteryFilters,
+    defaultQuestionMode:
+      defaultQuestionModes.length === 1 ? defaultQuestionModes[0] : "ADAPTIVE",
+    defaultQuestionModes,
     defaultQuestionIds: Array.isArray(value.defaultQuestionIds)
-      ? [...new Set(value.defaultQuestionIds.filter((item): item is string => typeof item === "string" && Boolean(item.trim())))]
+      ? [
+          ...new Set(
+            value.defaultQuestionIds.filter(
+              (item): item is string =>
+                typeof item === "string" && Boolean(item.trim()),
+            ),
+          ),
+        ]
       : [],
     theme: THEMES.includes(value.theme as ThemePreference)
       ? (value.theme as ThemePreference)

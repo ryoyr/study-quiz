@@ -67,3 +67,4 @@ test("不正なFSRS評価は履歴へ取り込まない", () => {
 
   assert.equal(loadHistory()[0]?.fsrsRating, undefined);
 });
+

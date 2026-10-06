@@ -7,7 +7,7 @@ import { STORAGE_KEYS } from "./storageKeyRegistry.ts";
 const LEGACY_HISTORY_KEY = STORAGE_KEYS.legacyHistory;
 const HISTORY_KEY = STORAGE_KEYS.answerHistory;
 const SCHEMA_KEY = STORAGE_KEYS.schemaVersion;
-export const CURRENT_STORAGE_SCHEMA_VERSION = 6;
+export const CURRENT_STORAGE_SCHEMA_VERSION = 7;
 
 const defaultStorage = (): StorageLike => {
   if (!("localStorage" in globalThis)) {
@@ -46,3 +46,4 @@ export const migrateLegacyStorage = (
   executeStorageTransaction(mutations, storage);
   return true;
 };
+

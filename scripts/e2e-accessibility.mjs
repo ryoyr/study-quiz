@@ -345,6 +345,36 @@ const run = async () => {
     await waitFor(client, `document.querySelector("main h1")?.textContent?.trim() === "その他"`, "その他画面");
     await clickButton(client, "設定");
     await waitFor(client, `document.querySelector("main h1")?.textContent?.trim() === "学習設定"`, "iPhone幅の設定画面");
+    const multiSelectLayout = await evaluate(
+      client,
+      `(() => {
+        const groups = [...document.querySelectorAll('.horizontal-option-scroller')];
+        const labels = [...document.querySelectorAll('.horizontal-option-fieldset label')];
+        const clickLabel = (text) => {
+          const label = labels.find((item) => item.textContent?.trim() === text);
+          label?.querySelector('input')?.click();
+          return Boolean(label);
+        };
+        const clicked = ['未学習', '学習中', '未回答', '復習期限'].every(clickLabel);
+        const selectedByLegend = [...document.querySelectorAll('.horizontal-option-fieldset')].map((fieldset) => ({
+          legend: fieldset.querySelector('legend')?.textContent ?? '',
+          checked: [...fieldset.querySelectorAll('input:checked')].map((input) => input.parentElement?.textContent?.trim()),
+        }));
+        return {
+          count: groups.length,
+          horizontal: groups.every((group) => getComputedStyle(group).overflowX === 'auto' && getComputedStyle(group).flexWrap === 'nowrap'),
+          hasOverflow: groups.some((group) => group.scrollWidth > group.clientWidth),
+          clicked,
+          selectedByLegend,
+        };
+      })()`,
+    );
+    if (multiSelectLayout.count !== 3 || !multiSelectLayout.horizontal || !multiSelectLayout.hasOverflow)
+      failures.push("学習設定（393px）: 複数選択欄が横スクロール表示になっていません。");
+    const masteryGroup = multiSelectLayout.selectedByLegend.find((item) => item.legend.startsWith("理解度"));
+    const modeGroup = multiSelectLayout.selectedByLegend.find((item) => item.legend.startsWith("出題方法"));
+    if (!multiSelectLayout.clicked || masteryGroup?.checked?.length !== 2 || modeGroup?.checked?.length !== 3)
+      failures.push("学習設定（393px）: 理解度または出題方法を複数選択できません。");
     reports.push(await evaluate(client, auditExpression("学習設定（393px）")));
     const dateInputFits = await evaluate(
       client,
@@ -375,7 +405,7 @@ const run = async () => {
     if (failures.length) {
       throw new Error(`E2Eアクセシビリティ試験で${failures.length}件の問題を検出しました。\n${failures.map((item) => `- ${item}`).join("\n")}`);
     }
-    console.log(`E2Eアクセシビリティ試験に成功しました（${reports.length}画面、320x568・393x852、主要ナビゲーション、固定表示、入力エラー、キーボード、AXツリー）。`);
+    console.log(`E2Eアクセシビリティ試験に成功しました（${reports.length}画面、320x568・393x852、主要ナビゲーション、横スクロール複数選択、固定表示、入力エラー、キーボード、AXツリー）。`);
   } finally {
     try {
       await client?.send("Browser.close");
@@ -404,3 +434,4 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
     process.exitCode = 1;
   });
 }
+

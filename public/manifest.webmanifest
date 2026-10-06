@@ -1,15 +1,14 @@
 {
-  "id": "./",
-  "name": "Study Quiz",
+  "name": "Study Quiz - LPIC-1 101",
   "short_name": "StudyQuiz",
   "description": "LPIC-1 101をオフラインで学習できる適応型PWA",
   "lang": "ja",
-  "theme_color": "#2563eb",
-  "background_color": "#eef3f8",
-  "display": "standalone",
-  "orientation": "portrait-primary",
   "start_url": "./",
   "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#eff6ff",
+  "theme_color": "#2563eb",
   "categories": ["education", "productivity"],
   "icons": [
     {

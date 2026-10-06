@@ -18,7 +18,9 @@ const validSetup = (): Setup => ({
   defaultCategory: "ALL",
   defaultCategories: ["ALL"],
   defaultMasteryFilter: "ALL",
+  defaultMasteryFilters: ["ALL"],
   defaultQuestionMode: "ADAPTIVE",
+  defaultQuestionModes: ["ADAPTIVE"],
   defaultQuestionIds: [],
   theme: "system",
   setupCompleted: true,
@@ -94,3 +96,30 @@ test("学習範囲の重複を除去し、要約表示を生成する", () => {
   assert.equal(studyRangeLabel(["101", "102", "103"]), "3トピック");
   assert.deepEqual(normalizeStudyCategories(undefined, "104"), ["104"]);
 });
+
+test("旧設定の単一理解度・出題方法を複数選択形式へ移行する", () => {
+  const legacy = { ...validSetup(), defaultMasteryFilter: "LEARNING" as const, defaultQuestionMode: "REVIEW" as const };
+  delete (legacy as Partial<Setup>).defaultMasteryFilters;
+  delete (legacy as Partial<Setup>).defaultQuestionModes;
+  const normalized = normalizeSetup(legacy);
+  assert.deepEqual(normalized.defaultMasteryFilters, ["LEARNING"]);
+  assert.deepEqual(normalized.defaultQuestionModes, ["REVIEW"]);
+});
+
+test("理解度・出題方法の複数選択を受け付け、ALLとの混在は拒否する", () => {
+  const multiple = {
+    ...validSetup(),
+    defaultMasteryFilters: ["UNLEARNED", "LEARNING"] as Setup["defaultMasteryFilters"],
+    defaultQuestionModes: ["NEW", "REVIEW", "WEAK"] as Setup["defaultQuestionModes"],
+  };
+  assert.deepEqual(validateSetup(multiple, now), {});
+  assert.equal(
+    validateSetup({ ...multiple, defaultMasteryFilters: ["ALL", "LEARNING"] }).defaultMasteryFilters,
+    "理解度の初期値が不正です。",
+  );
+  assert.equal(
+    validateSetup({ ...multiple, defaultQuestionModes: ["ALL", "NEW"] }).defaultQuestionModes,
+    "出題方法の初期値が不正です。",
+  );
+});
+
