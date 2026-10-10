@@ -17,6 +17,13 @@ test("品質向上画面は選択ロジック・件数・対象問題・分割�
     "未確認の品質提案がある問題を除外する",
     "品質維持の分割単位",
     "現在の分割プロンプトをコピー",
+    "JSON入力契約",
+    "JSON出力契約",
+    "quality-input-contract",
+    "quality-output-contract",
+    "quality-current-batch-json-export",
+    "quality-prompt",
+    "quality-proposal-json",
     "表示分をすべて選択",
     "次の",
   ]) {
@@ -42,6 +49,9 @@ test("品質レビューは回答定義・解説・出典を比較し再生成�
     "難易度",
     "却下して再生成プロンプトをコピー",
     "buildQuestionQualityRegenerationPrompt",
+    "quality-before",
+    "quality-after",
+    "quality-status-filter",
     "レビュー済みとして適用",
   ]) {
     assert.match(source, new RegExp(token, "u"));

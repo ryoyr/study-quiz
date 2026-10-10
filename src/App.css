@@ -6483,3 +6483,58 @@ tbody tr:hover { background: var(--surface-hover); }
     outline: 2px solid Highlight;
   }
 }
+
+.quality-contract-panel {
+  margin: 0 0 14px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-solid);
+}
+.quality-contract-panel summary {
+  cursor: pointer;
+  font-weight: 900;
+  color: var(--text-strong);
+}
+.quality-contract-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+.quality-contract-grid section {
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-soft);
+}
+.quality-contract-grid h3 {
+  margin: 0 0 6px;
+  color: var(--text-strong);
+  font-size: .95rem;
+}
+.quality-contract-grid p {
+  color: var(--text-muted);
+  font-size: .78rem;
+  line-height: 1.5;
+}
+.quality-contract-grid pre {
+  max-height: 300px;
+  margin: 8px 0 0;
+  padding: 10px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-solid);
+  color: var(--text-main);
+  font-size: .72rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 720px) {
+  .quality-contract-grid {
+    grid-template-columns: 1fr;
+  }
+}

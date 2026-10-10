@@ -426,7 +426,47 @@ export default function QuestionQualityGeneratorPage({
         </section>
 
         <section className="fact-check-section quality-prompt-section">
-          <h2>3. 分割ごとに品質プロンプトを発行</h2>
+          <h2>3. JSON入力・出力契約と品質プロンプト</h2>
+          <details className="quality-contract-panel" open>
+            <summary>JSON入力・出力契約を確認</summary>
+            <div className="quality-contract-grid">
+              <section>
+                <h3>JSON入力契約</h3>
+                <p>選択した既存問題を外部レビューへ渡す形式です。</p>
+                <pre data-testid="quality-input-contract">{JSON.stringify({
+                  format: "study-quiz-question-quality-input",
+                  version: 1,
+                  exportedAt: "ISO-8601",
+                  questions: [{
+                    id: "問題ID",
+                    question: "問題文",
+                    questionType: "single | multiple | text",
+                    choices: ["選択肢"],
+                    answer: { kind: "回答方式別の正答定義" },
+                    explanation: "解説",
+                    source: "出典",
+                    difficulty: 1,
+                  }],
+                }, null, 2)}</pre>
+              </section>
+              <section>
+                <h3>JSON出力契約</h3>
+                <p>AIから取り込む修正・補足提案の形式です。proposedには変更項目だけを含めます。</p>
+                <pre data-testid="quality-output-contract">{JSON.stringify({
+                  format: "study-quiz-question-quality-proposals",
+                  version: 1,
+                  proposals: [{
+                    questionId: "問題ID",
+                    kind: "correction | supplement",
+                    summary: "変更概要",
+                    reason: "品質基準に基づく理由",
+                    reference: "一次情報名またはURL",
+                    proposed: { explanation: "変更後の解説" },
+                  }],
+                }, null, 2)}</pre>
+              </section>
+            </div>
+          </details>
           <div className="quality-batch-toolbar">
             <label>
               <span>現在の分割</span>
@@ -442,6 +482,7 @@ export default function QuestionQualityGeneratorPage({
             <button
               className="secondary-button"
               type="button"
+              data-testid="quality-current-batch-json-export"
               disabled={!currentBatch}
               onClick={() => currentBatch && downloadJson(createQualityInput(currentBatch.questions), `study-quiz-quality-input-batch-${currentBatch.number}-${new Date().toISOString().replace(/[:.]/g, "-")}.json`)}
             >
@@ -456,7 +497,13 @@ export default function QuestionQualityGeneratorPage({
               選択全体JSONを出力
             </button>
           </div>
-          <textarea rows={18} readOnly value={prompt} aria-label="問題品質確認プロンプト" />
+          <textarea
+            rows={18}
+            readOnly
+            value={prompt}
+            aria-label="問題品質確認プロンプト"
+            data-testid="quality-prompt"
+          />
           <button
             className="primary-button"
             type="button"
@@ -483,6 +530,7 @@ export default function QuestionQualityGeneratorPage({
             type="file"
             accept="application/json,.json"
             aria-label="取り込む問題品質提案JSON"
+            data-testid="quality-proposal-file"
             onChange={(event) => {
               const file = event.target.files?.[0];
               if (file) void readResultFile(file);
@@ -491,6 +539,8 @@ export default function QuestionQualityGeneratorPage({
           <textarea
             rows={12}
             value={resultText}
+            aria-label="問題品質提案JSON入力"
+            data-testid="quality-proposal-json"
             onChange={(event) => setResultText(event.target.value)}
             placeholder='{"format":"study-quiz-question-quality-proposals","version":1,"proposals":[...]}'
           />

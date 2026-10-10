@@ -214,7 +214,11 @@ export default function QuestionQualityReviewPage({
         <div className="quality-review-filters">
           <label>
             <span>状態</span>
-            <select value={filter} onChange={(event) => setFilter(event.target.value as typeof filter)}>
+            <select
+              value={filter}
+              data-testid="quality-status-filter"
+              onChange={(event) => setFilter(event.target.value as typeof filter)}
+            >
               <option value="pending">未確認</option>
               <option value="applied">適用済み</option>
               <option value="rejected">却下</option>
@@ -272,7 +276,7 @@ export default function QuestionQualityReviewPage({
                   </p>
                 )}
                 <div className="quality-answer-comparison">
-                  <section>
+                  <section data-testid="quality-before">
                     <strong>変更前の問題文・回答・解説</strong>
                     <span>{questionTypeLabel(item.beforeQuestion)} / 難易度 {item.beforeQuestion.difficulty}</span>
                     <p>{item.beforeQuestion.text}</p>
@@ -281,7 +285,7 @@ export default function QuestionQualityReviewPage({
                     <small>解説: {item.beforeQuestion.explanation}</small>
                     <small>出典: {item.beforeQuestion.source || "なし"}</small>
                   </section>
-                  <section>
+                  <section data-testid="quality-after">
                     <strong>提案後の問題文・回答・解説</strong>
                     <span>{questionTypeLabel(item.proposedQuestion)} / 難易度 {item.proposedQuestion.difficulty}</span>
                     <p>{item.proposedQuestion.text}</p>

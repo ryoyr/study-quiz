@@ -698,17 +698,27 @@ const runQuestionQualityJourney = async (client, downloadDirectory) => {
   );
   const qualityContract = await evaluate(
     client,
-    `(() => ({ input: [...document.querySelectorAll("button")].some((button) => button.textContent?.includes("対象問題JSONを出力")), prompt: document.querySelector("textarea[readonly]")?.value.includes("study-quiz-question-quality-proposals") }))()`,
+    `(() => ({
+      inputContract: document.querySelector('[data-testid="quality-input-contract"]')?.textContent?.includes("study-quiz-question-quality-input") === true,
+      outputContract: document.querySelector('[data-testid="quality-output-contract"]')?.textContent?.includes("study-quiz-question-quality-proposals") === true,
+      exportEnabled: document.querySelector('[data-testid="quality-current-batch-json-export"]')?.disabled === false,
+      prompt: document.querySelector('[data-testid="quality-prompt"]')?.value.includes("study-quiz-question-quality-proposals") === true,
+    }))()`,
   );
-  if (!qualityContract.input || !qualityContract.prompt)
+  if (
+    !qualityContract.inputContract ||
+    !qualityContract.outputContract ||
+    !qualityContract.exportEnabled ||
+    !qualityContract.prompt
+  )
     throw new Error("問題品質のJSON入力・出力契約を画面で確認できません。");
   await evaluate(
     client,
-    `(() => { const input = document.querySelector('input[aria-label="取り込む問題品質提案JSON"]'); if (!input) return false; const transfer = new DataTransfer(); transfer.items.add(new File([${JSON.stringify(JSON.stringify(proposalResult))}], "quality-proposals.json", { type: "application/json" })); Object.defineProperty(input, "files", { value: transfer.files, configurable: true }); input.dispatchEvent(new Event("change", { bubbles: true })); return true; })()`,
+    `(() => { const input = document.querySelector('[data-testid="quality-proposal-file"]'); if (!input) return false; const transfer = new DataTransfer(); transfer.items.add(new File([${JSON.stringify(JSON.stringify(proposalResult))}], "quality-proposals.json", { type: "application/json" })); Object.defineProperty(input, "files", { value: transfer.files, configurable: true }); input.dispatchEvent(new Event("change", { bubbles: true })); return true; })()`,
   );
   await waitFor(
     client,
-    `document.querySelector("textarea:not([readonly])")?.value.includes("study-quiz-question-quality-proposals")`,
+    `document.querySelector('[data-testid="quality-proposal-json"]')?.value.includes("study-quiz-question-quality-proposals")`,
     "品質提案JSONの読込み",
   );
   await clickButton(client, "JSONを検証・プレビュー");
@@ -731,7 +741,7 @@ const runQuestionQualityJourney = async (client, downloadDirectory) => {
   );
   const beforeAfterVisible = await evaluate(
     client,
-    `document.body.textContent.includes("変更前の解説") && document.body.textContent.includes("提案後の解説") && document.body.textContent.includes(${JSON.stringify(improvedExplanation)})`,
+    `(() => { const before = document.querySelector('[data-testid="quality-before"]'); const after = document.querySelector('[data-testid="quality-after"]'); return Boolean(before && after) && before.textContent.includes("変更前") && after.textContent.includes("提案後") && after.textContent.includes(${JSON.stringify(improvedExplanation)}); })()`,
   );
   if (!beforeAfterVisible)
     throw new Error("品質提案の適用前後を区別して表示できません。");
@@ -750,7 +760,7 @@ const runQuestionQualityJourney = async (client, downloadDirectory) => {
 
   await evaluate(
     client,
-    `(() => { const select = document.querySelector('.correction-filter select'); if (!select) return false; const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value")?.set; setter?.call(select, "applied"); select.dispatchEvent(new Event("change", { bubbles: true })); return true; })()`,
+    `(() => { const select = document.querySelector('[data-testid="quality-status-filter"]'); if (!select) return false; const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value")?.set; setter?.call(select, "applied"); select.dispatchEvent(new Event("change", { bubbles: true })); return true; })()`,
   );
   await waitFor(
     client,

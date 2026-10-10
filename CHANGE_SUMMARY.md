@@ -1,5 +1,13 @@
 # 変更内容一覧 — 4.4.0 → 4.7.0
 
+## 4.7.0 品質向上Chrome E2E契約修正
+
+- E2Eが旧ボタン名`対象問題JSONを出力`へ依存し、現行の`現在の分割JSONを出力`／`選択全体JSONを出力`を認識できない問題を修正。
+- 画面へ`study-quiz-question-quality-input` version 1と`study-quiz-question-quality-proposals` version 1の可視契約を追加。
+- 表示文言ではなく意味的な`data-testid`で、入力契約、出力契約、JSON出力、プロンプト、ファイル取込、提案JSON、前後比較、状態フィルターをE2E検証。
+- 品質向上後に潜在していた旧`.correction-filter`と旧「変更前の解説／提案後の解説」依存も現行レビューUIへ更新。
+- Chrome E2Eを実走し、全ジャーニー成功を確認。
+
 ## 4.7.0 問題・解説品質向上UI拡張
 
 - 旧選択ロジック（カテゴリfilter後に先頭からslice）を明文化し、カテゴリ・難易度・回答方式・出典・検索・pending除外・ページへ拡張。

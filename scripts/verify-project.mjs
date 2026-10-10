@@ -71,6 +71,7 @@ const requiredFiles = [
   "tests/accessibilityHarness.test.ts",
   "tests/questionQualityPlanningService.test.ts",
   "tests/questionQualityPlanningUi.test.ts",
+  "VALIDATION_REPORT_E2E_CONTRACT_FIX_20261011.md",
 ];
 for (const path of requiredFiles) assert(existsSync(path), `${path} がありません`);
 const packageJson = readJson("package.json");
@@ -192,7 +193,8 @@ for (const [path, tokens] of [
   ["src/services/questionAnswerModel.ts", ["QuestionAnswerDefinition", "answerDefinitionOf", "responseToHistoryFields", "answerDefinitionForExternalUse", "createStudyHistoryQuestionSnapshot", "historyQuestionText"]],
   ["src/services/similarQuestionService.ts", ["answerNumbers", "acceptedAnswers", "questionTypeLabel"]],
   ["src/services/questionQualityService.ts", ["study-quiz-question-quality-input", "study-quiz-question-quality-proposals", "study-quiz-question-seed-updates", "planQuestionQualitySelection", "createQuestionQualityBatches", "buildQuestionQualityRegenerationPrompt", "誤答選択肢", "重複回避", "出力前セルフチェック"]],
-  ["src/pages/QuestionQualityGeneratorPage.tsx", ["対象問題の選択ロジック", "対象件数・対象問題を確認", "品質維持の分割単位", "現在の分割プロンプトをコピー"]],
+  ["src/pages/QuestionQualityGeneratorPage.tsx", ["対象問題の選択ロジック", "対象件数・対象問題を確認", "品質維持の分割単位", "現在の分割プロンプトをコピー", "JSON入力契約", "JSON出力契約", "quality-input-contract", "quality-output-contract", "quality-current-batch-json-export", "quality-proposal-json"]],
+  ["scripts/e2e-accessibility.mjs", ["quality-input-contract", "quality-output-contract", "quality-current-batch-json-export", "quality-proposal-file", "quality-proposal-json", "quality-before", "quality-after", "quality-status-filter"]],
   ["src/pages/QuestionQualityReviewPage.tsx", ["変更前の問題文", "提案後の問題文", "却下して再生成プロンプトをコピー", "適用済みの初期データ更新JSONを出力"]],
   ["src/services/contentPullRequestApi.ts", ["credentials: \"include\"", "api/quiz-content/access-session", "requestThroughContentAccessSession", "createContentPullRequestWithAccessSession"]],
   ["workers/quiz-content-pr/src/index.ts", ["ACCESS_SESSION_PATH", "PULL_REQUESTS_PATH", "accessSessionResponse", "verifyAccessIdentity"]],

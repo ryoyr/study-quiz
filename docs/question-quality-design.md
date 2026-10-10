@@ -156,3 +156,26 @@ JSON契約は従来の`study-quiz-question-quality-proposals` version 1を維持
 - 回答方式・正答・選択肢・解説・出典・難易度のレビューUI
 - 既存JSON取込、適用、却下、バックアップ、seed update
 - ファクトチェック、問題マスター、GitHub PR連携の回帰
+
+
+## 10. 画面上のJSON契約とE2E安定性
+
+品質向上画面はプロンプト内部だけでなく、次のversion 1契約を画面上の展開可能な領域へ表示する。
+
+- JSON入力契約: `study-quiz-question-quality-input`
+- JSON出力契約: `study-quiz-question-quality-proposals`
+
+表示文言は利用者向け改善で変化し得るため、Chrome E2Eはボタン文言や旧CSSクラスではなく、責務を示す次の識別子を利用する。
+
+|識別子|責務|
+|---|---|
+|`quality-input-contract`|入力JSON契約|
+|`quality-output-contract`|提案JSON契約|
+|`quality-current-batch-json-export`|現在分割の入力JSON出力|
+|`quality-prompt`|品質プロンプト|
+|`quality-proposal-file`|提案JSONファイル取込|
+|`quality-proposal-json`|提案JSONテキスト|
+|`quality-before` / `quality-after`|レビュー前後比較|
+|`quality-status-filter`|提案状態フィルター|
+
+識別子はテスト専用のDOM構造位置ではなく、利用者が操作・確認する機能責務へ付与する。E2Eでは入力契約、出力契約、出力操作可能状態、プロンプト内出力契約を別々に確認する。
