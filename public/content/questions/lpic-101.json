@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "datasetId": "lpic-101",
-  "version": 1,
+  "version": 2,
   "questions": [
     {
       "id": "LPIC101-001",
@@ -2083,7 +2083,7 @@
         "df",
         "du",
         "free",
-        "lsblk -fのみ"
+        "lsblk"
       ],
       "answerIndex": 0,
       "explanation": "dfはマウント済みファイルシステム単位の容量と使用量を表示する。",
@@ -2302,6 +2302,29 @@
         "101",
         "104.7"
       ]
+    },
+    {
+      "id": "TEST",
+      "examScopeId": "lpic101",
+      "category": "TEST",
+      "subcategory": "TEST",
+      "text": "[連携テスト] GitHub PR 作成確認",
+      "questionType": "multiple",
+      "choices": [
+        "TESTA",
+        "TESTB"
+      ],
+      "answerIndex": 0,
+      "answerIndices": [
+        0,
+        1
+      ],
+      "explanation": "GitHub連携の動作確認用テストデータです。",
+      "tags": [
+        "連携テスト"
+      ],
+      "weight": 1,
+      "difficulty": 1
     }
   ]
 }
