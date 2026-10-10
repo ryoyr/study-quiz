@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## 4.7.0 - 2026-10-11
+
+- 初期問題更新ツールのURLパス復号を修正し、空白を含む配置先でも動作するようにしました。
+- 初期問題更新時に既存overrideを保持してマージし、3回答方式を含む共通Question制約と更新パックメタデータを検証するよう強化しました。
+- seed更新ツールの回帰試験を、空白パス、CWD分離、既存保持、未知ID、重複、不正Question、ID不一致へ拡張しました。
+- 現行`Question`形式と問題IDを維持したまま、`public/content`へ問題マスターJSONとマニフェストを分離しました。
+- 前回配布フィンガープリントを基準に、端末編集を上書きしない安全同期、競合表示、配布元削除のアーカイブ化を追加しました。
+- 問題管理へ、追加・更新・アーカイブの前後差分、PRメタデータ、明示確認、PR URL・open/closed/merged状態を表示するGitHub連携画面を追加しました。
+- Cloudflare Access JWT、許可メール、CORS、Rate Limiting、入力上限を検証するWorkersを追加しました。
+- GitHub Appの短命installation tokenを用い、Git Data APIで問題JSONとマニフェストを1コミットし、専用ブランチからPull Requestを作成します。
+- 内容由来の冪等ブランチにより再送時のコミット・PR重複を防ぎ、mainへの直接更新・自動マージを行わない構成にしました。
+- 問題マスターをService Workerのnetwork-first対象とし、通信失敗時は直近キャッシュへフォールバックします。キャッシュ世代はv23です。
+- storage schema 9、IndexedDB version 2、完全バックアップversion 10、旧バックアップ2～10の読込み互換は変更していません。
+
 ## 4.6.0 - 2026-10-11
 
 - ファクトチェック方式を流用し、問題・解説の品質確認用JSONと外部レビュー用プロンプトを追加しました。
@@ -69,3 +83,8 @@
 - 旧 `answerIndex` と `selectedIndex` は互換フィールドとして維持します。
 - 回答判定の単体試験を追加しました。
 
+## 4.7.0 typecheck remediation - 2026-10-11
+
+- `contentPullRequestApi.ts`の独自`ViteImportMeta extends ImportMeta`を削除し、Vite標準の`import.meta.env`を直接参照するよう修正しました。
+- `vite-env.d.ts`へ`VITE_QUIZ_CONTENT_API_URL?: string`を宣言マージし、Viteの`ImportMetaEnv`契約と競合しない型定義へ変更しました。
+- TS2430の再発を防ぐ契約テストを追加しました。

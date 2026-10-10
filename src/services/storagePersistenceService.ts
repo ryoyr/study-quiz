@@ -86,4 +86,3 @@ export const requestPersistentStorage = async (
   }
   return readStoragePersistenceStatus(manager);
 };
-

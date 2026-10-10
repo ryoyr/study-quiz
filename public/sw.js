@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "study-quiz-shell-";
-const CACHE_NAME = `${CACHE_PREFIX}v22`;
+const CACHE_NAME = `${CACHE_PREFIX}v23`;
 const BASE_URL = new URL("./", self.registration.scope);
 const CORE_SHELL = ["./", "./index.html", "./manifest.webmanifest"].map(
   (path) => new URL(path, BASE_URL).href,
@@ -112,6 +112,20 @@ const cacheFirstAsset = async (request) => {
   }
 };
 
+// 問題マスターは配布更新を優先し、通信失敗時だけ直近の検証済み応答へ戻す。
+const networkFirstContent = async (request) => {
+  const cache = await caches.open(CACHE_NAME);
+  try {
+    const response = await fetchWithTimeout(
+      new Request(request, { cache: "no-cache" }),
+    );
+    if (!response.ok) throw new Error(`Content fetch failed: ${response.status}`);
+    return await cacheResponse(cache, request, response);
+  } catch {
+    return (await cache.match(request)) ?? Response.error();
+  }
+};
+
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   if (request.method !== "GET" || request.headers.has("range")) return;
@@ -127,7 +141,8 @@ self.addEventListener("fetch", (event) => {
   event.respondWith(
     request.mode === "navigate"
       ? networkFirstNavigation(request, event.preloadResponse)
+      : url.pathname.startsWith(new URL("content/", BASE_URL).pathname)
+        ? networkFirstContent(request)
       : cacheFirstAsset(request),
   );
 });
-

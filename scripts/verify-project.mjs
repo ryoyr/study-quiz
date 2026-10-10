@@ -42,6 +42,20 @@ const requiredFiles = [
   "docs/detailed-design.md",
   "docs/traceability.md",
   "docs/question-quality-design.md",
+  "docs/github-integration-assessment.md",
+  "docs/github-integration-progress.md",
+  "docs/github-cloudflare-setup.md",
+  "public/content/manifest.json",
+  "public/content/questions/lpic-101.json",
+  "src/services/questionMasterService.ts",
+  "src/services/questionMasterChangeService.ts",
+  "src/services/contentPullRequestApi.ts",
+  "src/pages/QuestionMasterPage.tsx",
+  "src/types/QuestionMaster.ts",
+  "workers/quiz-content-pr/src/index.ts",
+  "workers/quiz-content-pr/src/auth.ts",
+  "workers/quiz-content-pr/src/github.ts",
+  "workers/quiz-content-pr/wrangler.toml.example",
   "tsconfig.json",
   "tsconfig.app.json",
   "tsconfig.node.json",
@@ -74,7 +88,7 @@ const requiredFiles = [
 ];
 for (const path of requiredFiles) assert(existsSync(path), `${path} がありません`);
 const packageJson = readJson("package.json");
-assert(packageJson.version === "4.6.0", "package.jsonの版は4.6.0である必要があります");
+assert(packageJson.version === "4.7.0", "package.jsonの版は4.7.0である必要があります");
 for (const script of ["verify:structure", "test", "test:e2e", "typecheck", "build", "check"]) {
   assert(typeof packageJson.scripts?.[script] === "string", `scripts.${script} がありません`);
 }
@@ -148,9 +162,21 @@ for (const icon of manifest.icons ?? []) {
 }
 const appleIcon = readPngSize("public/apple-touch-icon.png");
 assert(appleIcon.width === 180 && appleIcon.height === 180, "apple-touch-icon.png は180x180である必要があります");
+const contentManifest = readJson("public/content/manifest.json");
+const contentDataset = readJson("public/content/questions/lpic-101.json");
+assert(contentManifest.schemaVersion === 1, "問題マスターmanifestのschemaVersionが不正です");
+assert(contentDataset.schemaVersion === 1, "問題データセットのschemaVersionが不正です");
+assert(contentManifest.datasets?.[0]?.id === contentDataset.datasetId, "問題マスターのdataset IDが一致しません");
+assert(contentManifest.datasets?.[0]?.version === contentDataset.version, "問題マスターのdataset versionが一致しません");
+assert(contentManifest.datasets?.[0]?.questionCount === contentDataset.questions?.length, "問題マスターの件数が一致しません");
+const clientSources = [
+  "src/services/contentPullRequestApi.ts",
+  "src/pages/QuestionMasterPage.tsx",
+].map((path) => readFileSync(path, "utf8")).join("\n");
+assert(!/GITHUB_PRIVATE_KEY|GITHUB_INSTALLATION_ID|BEGIN RSA PRIVATE KEY/u.test(clientSources), "GitHub秘密情報をクライアントへ含めてはいけません");
 for (const [path, tokens] of [
   ["src/main.tsx", ["<ErrorBoundary>", "<ConcurrentUpdateNotice />", "<PwaUpdatePrompt />"]],
-  ["public/sw.js", ["CACHE_PREFIX}v22", "SKIP_WAITING", "matchAll", "Promise.allSettled", "navigationPreload", "pwa-maskable-512x512.png", "Cache Storageへの保存はベストエフォート"]],
+  ["public/sw.js", ["CACHE_PREFIX}v23", "SKIP_WAITING", "matchAll", "Promise.allSettled", "navigationPreload", "networkFirstContent", "content/", "pwa-maskable-512x512.png", "Cache Storageへの保存はベストエフォート"]],
   ["src/services/fullBackupService.ts", ["CURRENT_BACKUP_VERSION = 10", "FNV-1A-32", "auditStorage", "compareFullBackup", "downloadBackupFile", "questionQualityProposals"]],
   ["src/pages/BackupCenterPage.tsx", ["storage-health-badge", "整合性チェック済み", "端末データの保持を強化", "現在データとの差分集計", "study-quiz-pre-restore"]],
   ["src/components/StudyFilterPanel.tsx", ["masteryFilters", "questionModes", "horizontal-option-scroller"]],
@@ -177,4 +203,3 @@ if (failures.length > 0) {
 } else {
   console.log("構成検証に成功しました（TypeScript設定、PWA資材、統合状態）。");
 }
-

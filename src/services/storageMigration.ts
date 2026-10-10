@@ -118,4 +118,3 @@ export const migrateLegacyStorage = (
   executeStorageTransaction(mutations, storage);
   return true;
 };
-

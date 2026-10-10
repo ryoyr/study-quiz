@@ -92,4 +92,3 @@ export const getRemainingDays = (
   examDate: string,
   now = new Date(),
 ): number => differenceInCalendarDays(examDate, now);
-

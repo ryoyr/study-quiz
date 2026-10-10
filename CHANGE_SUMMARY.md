@@ -1,4 +1,14 @@
-# 変更内容一覧 — 4.4.0 → 4.6.0
+# 変更内容一覧 — 4.4.0 → 4.7.0
+
+## 4.7.0 問題マスターGitHub連携
+
+- 既存Question形式・問題ID・端末保存を維持し、配布元を`public/content`のmanifest／dataset JSONへ分離。
+- 端末編集を保護する三者比較、安全更新、競合表示、配布元削除のアーカイブ化を追加。
+- 送信前差分、明示確認、Workers API、PR URL・状態確認を問題管理へ統合。
+- Cloudflare Access JWT、許可メール、CORS、Rate Limiting、2MiB上限、固定リポジトリ／パス制御を実装。
+- GitHub AppとGit Data APIで複数ファイルを1コミットし、専用ブランチからPRを作成。main直接更新・自動マージは未実装。
+- Service Worker v23で問題マスターをnetwork-first化。
+- schema 9、IndexedDB 2、backup 10を維持。
 
 ## 4.6.0 問題・解説品質向上
 

@@ -62,4 +62,3 @@ export const differenceInCalendarDays = (
   };
   return ordinalFromParts(target) - ordinalFromParts(base);
 };
-

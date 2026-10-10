@@ -81,4 +81,3 @@ export default function AppIcon({ name, title, className, ...props }: Props) {
     </svg>
   );
 }
-

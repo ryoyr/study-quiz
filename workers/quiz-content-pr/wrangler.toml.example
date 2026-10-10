@@ -1,0 +1,28 @@
+name = "study-quiz-content-pr"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+workers_dev = false
+
+[vars]
+# 秘密情報ではない固定値。実環境の値へ置換する。
+GITHUB_OWNER = "YOUR_GITHUB_OWNER"
+GITHUB_REPO = "YOUR_REPOSITORY"
+GITHUB_BASE_BRANCH = "main"
+GITHUB_CONTENT_ROOT = "public/content"
+ALLOWED_ORIGIN = "https://YOUR_ACCOUNT.github.io"
+ACCESS_TEAM_DOMAIN = "YOUR_TEAM.cloudflareaccess.com"
+ACCESS_AUD = "YOUR_ACCESS_APPLICATION_AUD"
+ALLOWED_EMAILS = "editor1@example.com,editor2@example.com"
+
+# GitHub連携は頻度が低いため、利用者・API単位で1分10回に制限する。
+[[ratelimits]]
+name = "RATE_LIMITER"
+namespace_id = "1001"
+  [ratelimits.simple]
+  limit = 10
+  period = 60
+
+# 次の値はファイルへ書かず、wrangler secret put で登録する。
+# GITHUB_APP_ID
+# GITHUB_INSTALLATION_ID
+# GITHUB_PRIVATE_KEY

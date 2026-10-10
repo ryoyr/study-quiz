@@ -69,4 +69,3 @@ test("問題編集はCSV取込と同等の入力上限を適用する", () => {
   assert.match(validation, /longText: 20_000/);
   assert.match(validation, /maxTags: 30/);
 });
-

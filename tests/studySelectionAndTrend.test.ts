@@ -143,4 +143,3 @@ test("学習推移へ未来履歴と不正日時を混ぜない", () => {
   assert.equal(trend[0].answers, 1);
   assert.equal(trend[0].learning, 1);
 });
-

@@ -149,4 +149,3 @@ test("有効な回答時点スナップショットを保持し、不正なも�
   assert.equal(history[0].questionSnapshot?.questionText, "回答時点の問題");
   assert.equal(history[1].questionSnapshot, undefined);
 });
-

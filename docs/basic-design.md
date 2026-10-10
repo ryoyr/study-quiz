@@ -145,3 +145,23 @@ Gemini APIへ自動送信する機能と、他のAIへ手動コピーする機�
 ## 10. 互換性方針
 
 4.6.0では品質提案キー追加に伴いschema 9、backup version 10へ更新する。IndexedDB version 2は維持し、旧バックアップversion 2～10を読込可能とする。version 9以降はチェックサム検証後に現行形式へ正規化する。
+
+## 4.7.0 GitHub連携構成
+
+```text
+QuestionManagementPage / CSV
+        ↓ saveQuestions（既存）
+localStorage study-quiz-questions-v1
+        ↓ 差分・明示確認
+QuestionMasterPage → contentPullRequestApi
+        ↓ HTTPS + Access
+Cloudflare Worker
+        ↓ GitHub App installation token
+GitHub Git Data API → quiz-content/* → Pull Request → 人がmainへマージ
+        ↓ GitHub Pages deploy
+public/content manifest + datasets
+        ↓ network-first / validate / safe merge
+既存questions + 履歴・FSRS参照を維持
+```
+
+境界は、配布原本、端末正本、GitHub書込みの3つに分ける。端末編集はGitHub通信の成否に依存せず、Workers未設定でも学習機能を継続する。

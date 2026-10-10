@@ -12,4 +12,3 @@ export interface ExamScope {
 }
 
 export const LPIC101_EXAM_SCOPE_ID = "lpic101";
-

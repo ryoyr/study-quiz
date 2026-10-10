@@ -1,0 +1,2307 @@
+{
+  "schemaVersion": 1,
+  "datasetId": "lpic-101",
+  "version": 1,
+  "questions": [
+    {
+      "id": "LPIC101-001",
+      "examScopeId": "lpic101",
+      "category": "101 システムアーキテクチャ",
+      "subcategory": "101.1 ハードウェア設定",
+      "text": "PCIデバイスを一覧表示し、ベンダーやデバイスIDを確認したい。最も適切なコマンドはどれか。",
+      "choices": [
+        "lsusb",
+        "lspci",
+        "lsblk",
+        "lscpu"
+      ],
+      "answerIndex": 1,
+      "explanation": "lspciはPCIバス上のデバイス情報を表示する。lsusbはUSB、lsblkはブロックデバイス、lscpuはCPU情報を扱う。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "101.1"
+      ]
+    },
+    {
+      "id": "LPIC101-002",
+      "examScopeId": "lpic101",
+      "category": "101 システムアーキテクチャ",
+      "subcategory": "101.1 ハードウェア設定",
+      "text": "カーネルが認識したCPUの詳細情報を、仮想ファイルから確認する場合に参照するものはどれか。",
+      "choices": [
+        "/proc/cpuinfo",
+        "/etc/fstab",
+        "/var/log/wtmp",
+        "/boot/grub/grub.cfg"
+      ],
+      "answerIndex": 0,
+      "explanation": "/proc/cpuinfoにはカーネルが認識したCPU情報が公開される。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "101.1"
+      ]
+    },
+    {
+      "id": "LPIC101-003",
+      "examScopeId": "lpic101",
+      "category": "101 システムアーキテクチャ",
+      "subcategory": "101.1 ハードウェア設定",
+      "text": "USBデバイスを接続した直後に、カーネルが出力した最新メッセージを確認するコマンドはどれか。",
+      "choices": [
+        "dmesg",
+        "passwd",
+        "ldd",
+        "free"
+      ],
+      "answerIndex": 0,
+      "explanation": "dmesgはカーネルリングバッファを表示し、デバイス認識時のメッセージ確認に使える。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "101.1"
+      ]
+    },
+    {
+      "id": "LPIC101-004",
+      "examScopeId": "lpic101",
+      "category": "101 システムアーキテクチャ",
+      "subcategory": "101.2 システムの起動",
+      "text": "UEFI環境でブートローダーの実行ファイルが置かれる代表的な領域はどれか。",
+      "choices": [
+        "EFIシステムパーティション",
+        "swap領域",
+        "/tmp専用領域",
+        "LVMのメタデータ領域"
+      ],
+      "answerIndex": 0,
+      "explanation": "UEFIはFAT系で作成されたEFIシステムパーティション上のEFI実行ファイルを利用する。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "101.2"
+      ]
+    },
+    {
+      "id": "LPIC101-005",
+      "examScopeId": "lpic101",
+      "category": "101 システムアーキテクチャ",
+      "subcategory": "101.2 システムの起動",
+      "text": "systemdを使う環境で、今回の起動に関するログを確認するコマンドはどれか。",
+      "choices": [
+        "journalctl -b",
+        "systemctl isolate",
+        "grub-install",
+        "init 0"
+      ],
+      "answerIndex": 0,
+      "explanation": "journalctl -bは現在のブートに対応するジャーナルを表示する。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "101.2"
+      ]
+    },
+    {
+      "id": "LPIC101-006",
+      "examScopeId": "lpic101",
+      "category": "101 システムアーキテクチャ",
+      "subcategory": "101.2 システムの起動",
+      "text": "Linux起動時にinitramfsが果たす役割として最も適切なものはどれか。",
+      "choices": [
+        "ユーザーのホームディレクトリを暗号化する",
+        "ルートファイルシステムをマウントするまでに必要な一時的環境を提供する",
+        "すべてのユーザープロセスを終了する",
+        "パッケージリポジトリを更新する"
+      ],
+      "answerIndex": 1,
+      "explanation": "initramfsは必要なドライバーやツールを含む初期ルート環境として、本来のルートファイルシステムへ移行するまで利用される。",
+      "difficulty": 3,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "101.2"
+      ]
+    },
+    {
+      "id": "LPIC101-007",
+      "examScopeId": "lpic101",
+      "category": "101 システムアーキテクチャ",
+      "subcategory": "101.3 ランレベルとブートターゲット",
+      "text": "systemdで次回以降の標準起動先をmulti-user.targetへ変更するコマンドはどれか。",
+      "choices": [
+        "systemctl set-default multi-user.target",
+        "systemctl start multi-user.target",
+        "systemctl get-default multi-user.target",
+        "telinit multi-user.target"
+      ],
+      "answerIndex": 0,
+      "explanation": "set-defaultはdefault.targetの参照先を変更し、標準の起動ターゲットを設定する。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "101.3"
+      ]
+    },
+    {
+      "id": "LPIC101-008",
+      "examScopeId": "lpic101",
+      "category": "101 システムアーキテクチャ",
+      "subcategory": "101.3 ランレベルとブートターゲット",
+      "text": "10分後にシステムを停止する予約を行うコマンドはどれか。",
+      "choices": [
+        "shutdown -h +10",
+        "reboot --delay 10",
+        "halt -c 10",
+        "systemctl stop +10"
+      ],
+      "answerIndex": 0,
+      "explanation": "shutdown -h +10は10分後の停止を予約する。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "101.3"
+      ]
+    },
+    {
+      "id": "LPIC101-009",
+      "examScopeId": "lpic101",
+      "category": "102 インストールとパッケージ管理",
+      "subcategory": "102.1 ディスクレイアウト",
+      "text": "ログの増加でルートファイルシステム全体が圧迫されるリスクを分離したい。独立パーティション候補として最も適切なものはどれか。",
+      "choices": [
+        "/var",
+        "/bin",
+        "/proc",
+        "/dev"
+      ],
+      "answerIndex": 0,
+      "explanation": "/varにはログや可変データが置かれるため、独立させると容量超過の影響を分離しやすい。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "102.1"
+      ]
+    },
+    {
+      "id": "LPIC101-010",
+      "examScopeId": "lpic101",
+      "category": "102 インストールとパッケージ管理",
+      "subcategory": "102.1 ディスクレイアウト",
+      "text": "物理ボリューム、ボリュームグループ、論理ボリュームの順に構成する仕組みはどれか。",
+      "choices": [
+        "RAID 0",
+        "LVM",
+        "NFS",
+        "GPT"
+      ],
+      "answerIndex": 1,
+      "explanation": "LVMはPVをVGへまとめ、その空間からLVを作成する。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "102.1"
+      ]
+    },
+    {
+      "id": "LPIC101-011",
+      "examScopeId": "lpic101",
+      "category": "102 インストールとパッケージ管理",
+      "subcategory": "102.1 ディスクレイアウト",
+      "text": "メモリ不足時にページ退避先として利用される領域はどれか。",
+      "choices": [
+        "swap",
+        "/boot",
+        "ESP",
+        "inode table"
+      ],
+      "answerIndex": 0,
+      "explanation": "swapはメモリページの退避などに使われる。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "102.1"
+      ]
+    },
+    {
+      "id": "LPIC101-012",
+      "examScopeId": "lpic101",
+      "category": "102 インストールとパッケージ管理",
+      "subcategory": "102.2 ブートマネージャ",
+      "text": "GRUB 2の設定生成に使われ、多くの環境で直接手編集を避けるべきファイルはどれか。",
+      "choices": [
+        "/boot/grub/grub.cfg",
+        "/etc/passwd",
+        "/etc/hosts",
+        "/var/lib/dpkg/status"
+      ],
+      "answerIndex": 0,
+      "explanation": "grub.cfgは生成物であり、通常は/etc/default/grubや/etc/grub.d配下を変更して再生成する。",
+      "difficulty": 3,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "102.2"
+      ]
+    },
+    {
+      "id": "LPIC101-013",
+      "examScopeId": "lpic101",
+      "category": "102 インストールとパッケージ管理",
+      "subcategory": "102.2 ブートマネージャ",
+      "text": "GRUB 2で設定ファイルを生成する代表的なコマンドはどれか。",
+      "choices": [
+        "grub-mkconfig",
+        "grub-shell-save",
+        "bootctl mount",
+        "mkfs.grub"
+      ],
+      "answerIndex": 0,
+      "explanation": "grub-mkconfigはスクリプトと既定値からGRUB 2設定を生成する。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "102.2"
+      ]
+    },
+    {
+      "id": "LPIC101-014",
+      "examScopeId": "lpic101",
+      "category": "102 インストールとパッケージ管理",
+      "subcategory": "102.2 ブートマネージャ",
+      "text": "起動時にカーネルへ一時的な引数を追加して検証したい。最も適切な操作はどれか。",
+      "choices": [
+        "GRUBメニューで対象エントリを編集してlinux行へ追記する",
+        "/etc/fstabを削除する",
+        "swapを初期化する",
+        "BIOS時刻を変更する"
+      ],
+      "answerIndex": 0,
+      "explanation": "GRUBメニューで一時編集すれば、永続設定を変えずにその起動だけカーネル引数を試せる。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "102.2"
+      ]
+    },
+    {
+      "id": "LPIC101-015",
+      "examScopeId": "lpic101",
+      "category": "102 インストールとパッケージ管理",
+      "subcategory": "102.3 共有ライブラリ",
+      "text": "実行ファイルが必要とする共有ライブラリを確認するコマンドはどれか。",
+      "choices": [
+        "ldd",
+        "ldconfig -pのみ",
+        "filefrag",
+        "depmod"
+      ],
+      "answerIndex": 0,
+      "explanation": "lddは対象実行ファイルの共有ライブラリ依存関係と解決先を表示する。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "102.3"
+      ]
+    },
+    {
+      "id": "LPIC101-016",
+      "examScopeId": "lpic101",
+      "category": "102 インストールとパッケージ管理",
+      "subcategory": "102.4 Debianパッケージ管理",
+      "text": "ローカルにあるsample.debをdpkgでインストールするコマンドはどれか。",
+      "choices": [
+        "dpkg -i sample.deb",
+        "dpkg -S sample.deb",
+        "apt-cache sample.deb",
+        "rpm -i sample.deb"
+      ],
+      "answerIndex": 0,
+      "explanation": "dpkg -iは指定したdebパッケージをインストールする。依存関係解決はapt系コマンドで補う場合がある。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "102.4"
+      ]
+    },
+    {
+      "id": "LPIC101-017",
+      "examScopeId": "lpic101",
+      "category": "102 インストールとパッケージ管理",
+      "subcategory": "102.4 Debianパッケージ管理",
+      "text": "Debian系で、あるファイルがどのインストール済みパッケージに属するか調べるコマンドはどれか。",
+      "choices": [
+        "dpkg -S /path/to/file",
+        "dpkg -L /path/to/file",
+        "apt remove /path/to/file",
+        "ldd /path/to/file"
+      ],
+      "answerIndex": 0,
+      "explanation": "dpkg -Sはファイル名から所有パッケージを検索する。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "102.4"
+      ]
+    },
+    {
+      "id": "LPIC101-018",
+      "examScopeId": "lpic101",
+      "category": "102 インストールとパッケージ管理",
+      "subcategory": "102.4 Debianパッケージ管理",
+      "text": "APTでリポジトリのパッケージ索引を更新する操作はどれか。",
+      "choices": [
+        "apt update",
+        "apt upgrade",
+        "apt clean",
+        "apt show"
+      ],
+      "answerIndex": 0,
+      "explanation": "apt updateはパッケージ索引を取得・更新する。upgradeは更新可能なパッケージの導入を行う。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "102.4"
+      ]
+    },
+    {
+      "id": "LPIC101-019",
+      "examScopeId": "lpic101",
+      "category": "102 インストールとパッケージ管理",
+      "subcategory": "102.5 RPM・YUM・DNF",
+      "text": "RPMデータベースに対し、あるファイルの所有パッケージを問い合わせるコマンドはどれか。",
+      "choices": [
+        "rpm -qf /path/to/file",
+        "rpm -ql /path/to/file",
+        "rpm -ivh /path/to/file",
+        "dnf clean /path/to/file"
+      ],
+      "answerIndex": 0,
+      "explanation": "rpm -qfは指定ファイルを所有するインストール済みパッケージを表示する。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "102.5"
+      ]
+    },
+    {
+      "id": "LPIC101-020",
+      "examScopeId": "lpic101",
+      "category": "102 インストールとパッケージ管理",
+      "subcategory": "102.5 RPM・YUM・DNF",
+      "text": "RPM系で依存関係を解決しながらパッケージを導入する高レベルツールはどれか。",
+      "choices": [
+        "dnf",
+        "ldconfig",
+        "dpkg-deb",
+        "make"
+      ],
+      "answerIndex": 0,
+      "explanation": "DNFやYUMはリポジトリ情報を使って依存関係を解決する。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "102.5"
+      ]
+    },
+    {
+      "id": "LPIC101-021",
+      "examScopeId": "lpic101",
+      "category": "102 インストールとパッケージ管理",
+      "subcategory": "102.5 RPM・YUM・DNF",
+      "text": "インストール済みRPMパッケージが提供するファイル一覧を表示するコマンドはどれか。",
+      "choices": [
+        "rpm -ql package",
+        "rpm -qf package",
+        "rpm -e --test package",
+        "yum repolist package"
+      ],
+      "answerIndex": 0,
+      "explanation": "rpm -qlはパッケージに含まれるファイルの一覧を問い合わせる。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "102.5"
+      ]
+    },
+    {
+      "id": "LPIC101-022",
+      "examScopeId": "lpic101",
+      "category": "102 インストールとパッケージ管理",
+      "subcategory": "102.6 仮想化とコンテナ",
+      "text": "完全仮想化のゲストOSについて正しい説明はどれか。",
+      "choices": [
+        "ゲストは必ずホストと同じカーネルを共有する",
+        "ハイパーバイザーが仮想ハードウェアを提供し、ゲストは独自カーネルを実行できる",
+        "プロセス名前空間だけを分離する",
+        "ルートファイルシステムを持てない"
+      ],
+      "answerIndex": 1,
+      "explanation": "仮想マシンは仮想ハードウェア上で独自のOSとカーネルを動かせる。コンテナは通常ホストカーネルを共有する。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "102.6"
+      ]
+    },
+    {
+      "id": "LPIC101-023",
+      "examScopeId": "lpic101",
+      "category": "102 インストールとパッケージ管理",
+      "subcategory": "102.6 仮想化とコンテナ",
+      "text": "コンテナと仮想マシンの一般的な違いとして正しいものはどれか。",
+      "choices": [
+        "コンテナは通常ホストのカーネルを共有する",
+        "コンテナは必ずBIOSから起動する",
+        "仮想マシンはファイルシステムを持たない",
+        "仮想マシンはCPUを利用できない"
+      ],
+      "answerIndex": 0,
+      "explanation": "コンテナは名前空間やcgroupなどで分離しつつ、通常はホストカーネルを共有する。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "102.6"
+      ]
+    },
+    {
+      "id": "LPIC101-024",
+      "examScopeId": "lpic101",
+      "category": "103 GNUとUNIXコマンド",
+      "subcategory": "103.1 コマンドライン",
+      "text": "シェルがコマンド名をどの実行ファイルへ解決するか確認するコマンドはどれか。",
+      "choices": [
+        "type",
+        "touch",
+        "tr",
+        "tee"
+      ],
+      "answerIndex": 0,
+      "explanation": "typeはコマンドがエイリアス、組み込み、関数、外部コマンドのどれとして解決されるか確認できる。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "103.1"
+      ]
+    },
+    {
+      "id": "LPIC101-025",
+      "examScopeId": "lpic101",
+      "category": "103 GNUとUNIXコマンド",
+      "subcategory": "103.1 コマンドライン",
+      "text": "変数EDITORを子プロセスにも引き継がせる操作はどれか。",
+      "choices": [
+        "export EDITOR",
+        "unset EDITOR",
+        "readonly -p",
+        "history -c"
+      ],
+      "answerIndex": 0,
+      "explanation": "exportしたシェル変数は環境変数として子プロセスへ渡される。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "103.1"
+      ]
+    },
+    {
+      "id": "LPIC101-026",
+      "examScopeId": "lpic101",
+      "category": "103 GNUとUNIXコマンド",
+      "subcategory": "103.1 コマンドライン",
+      "text": "変数展開を行わず、文字列$HOMEをそのまま表示しやすい引用符はどれか。",
+      "choices": [
+        "単一引用符 ' '",
+        "二重引用符 \" \"",
+        "バッククォート ` `",
+        "丸括弧 ( )"
+      ],
+      "answerIndex": 0,
+      "explanation": "単一引用符内では通常、変数展開やコマンド置換を行わない。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "103.1"
+      ]
+    },
+    {
+      "id": "LPIC101-027",
+      "examScopeId": "lpic101",
+      "category": "103 GNUとUNIXコマンド",
+      "subcategory": "103.2 テキストフィルター",
+      "text": "区切り文字:の第1フィールドだけを取り出すコマンドはどれか。",
+      "choices": [
+        "cut -d: -f1",
+        "sort -d: -f1",
+        "wc -d: -f1",
+        "head -d: -f1"
+      ],
+      "answerIndex": 0,
+      "explanation": "cutの-dで区切り文字、-fで抽出フィールドを指定する。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "103.2"
+      ]
+    },
+    {
+      "id": "LPIC101-028",
+      "examScopeId": "lpic101",
+      "category": "103 GNUとUNIXコマンド",
+      "subcategory": "103.2 テキストフィルター",
+      "text": "連続する重複行を1行にまとめたい。一般に事前に組み合わせるコマンドはどれか。",
+      "choices": [
+        "sort | uniq",
+        "cat | tee",
+        "head | tail",
+        "tr | paste"
+      ],
+      "answerIndex": 0,
+      "explanation": "uniqは隣接する重複行を扱うため、全体の重複除去ではsortで並べてから使うのが一般的である。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "103.2"
+      ]
+    },
+    {
+      "id": "LPIC101-029",
+      "examScopeId": "lpic101",
+      "category": "103 GNUとUNIXコマンド",
+      "subcategory": "103.2 テキストフィルター",
+      "text": "テキスト中の小文字a-zを大文字A-Zへ対応変換するコマンドはどれか。",
+      "choices": [
+        "tr 'a-z' 'A-Z'",
+        "cut 'a-z' 'A-Z'",
+        "wc 'a-z' 'A-Z'",
+        "split 'a-z' 'A-Z'"
+      ],
+      "answerIndex": 0,
+      "explanation": "trは文字集合単位の置換・削除に使う。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "103.2"
+      ]
+    },
+    {
+      "id": "LPIC101-030",
+      "examScopeId": "lpic101",
+      "category": "103 GNUとUNIXコマンド",
+      "subcategory": "103.3 ファイル管理",
+      "text": "ディレクトリtreeを属性を保ちながら再帰的にbackupへコピーする代表的なコマンドはどれか。",
+      "choices": [
+        "cp -a tree backup",
+        "mv -n tree backup",
+        "ln tree backup",
+        "touch tree backup"
+      ],
+      "answerIndex": 0,
+      "explanation": "cp -aは再帰コピーに加え、可能な範囲で属性やリンクを保持する。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "103.3"
+      ]
+    },
+    {
+      "id": "LPIC101-031",
+      "examScopeId": "lpic101",
+      "category": "103 GNUとUNIXコマンド",
+      "subcategory": "103.3 ファイル管理",
+      "text": "カレントディレクトリ以下から、7日より前に更新された通常ファイルを検索する条件はどれか。",
+      "choices": [
+        "find . -type f -mtime +7",
+        "find . -type d -mtime -7",
+        "locate . -mtime +7",
+        "which . -type f"
+      ],
+      "answerIndex": 0,
+      "explanation": "findの-type fで通常ファイル、-mtime +7で指定日数より前の更新を条件にする。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "103.3"
+      ]
+    },
+    {
+      "id": "LPIC101-032",
+      "examScopeId": "lpic101",
+      "category": "103 GNUとUNIXコマンド",
+      "subcategory": "103.3 ファイル管理",
+      "text": "archive.tar.gzを作成するコマンドはどれか。",
+      "choices": [
+        "tar -czf archive.tar.gz directory",
+        "gzip -x archive.tar.gz directory",
+        "cpio -l archive.tar.gz directory",
+        "dd -czf archive.tar.gz directory"
+      ],
+      "answerIndex": 0,
+      "explanation": "tarの-cは作成、-zはgzip、-fはアーカイブファイル名の指定である。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "103.3"
+      ]
+    },
+    {
+      "id": "LPIC101-033",
+      "examScopeId": "lpic101",
+      "category": "103 GNUとUNIXコマンド",
+      "subcategory": "103.4 ストリームとリダイレクト",
+      "text": "標準出力と標準エラー出力を同じlog.txtへ上書き保存するBashの記述はどれか。",
+      "choices": [
+        "command >log.txt 2>&1",
+        "command <log.txt 2>&1",
+        "command 2>1 >log.txt",
+        "command |< log.txt"
+      ],
+      "answerIndex": 0,
+      "explanation": "まず標準出力をlog.txtへ向け、2>&1で標準エラーを現在の標準出力と同じ宛先へ向ける。",
+      "difficulty": 3,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "103.4"
+      ]
+    },
+    {
+      "id": "LPIC101-034",
+      "examScopeId": "lpic101",
+      "category": "103 GNUとUNIXコマンド",
+      "subcategory": "103.4 ストリームとリダイレクト",
+      "text": "コマンド出力を画面に表示しながらfile.logにも追記する例はどれか。",
+      "choices": [
+        "command | tee -a file.log",
+        "command > file.log | cat",
+        "command < tee file.log",
+        "command && file.log"
+      ],
+      "answerIndex": 0,
+      "explanation": "teeは標準入力を標準出力とファイルへ複製し、-aで追記する。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "103.4"
+      ]
+    },
+    {
+      "id": "LPIC101-035",
+      "examScopeId": "lpic101",
+      "category": "103 GNUとUNIXコマンド",
+      "subcategory": "103.4 ストリームとリダイレクト",
+      "text": "dateコマンドの出力を変数todayへ代入するBashの記述はどれか。",
+      "choices": [
+        "today=$(date)",
+        "today=${date}",
+        "today=|date",
+        "date > $today"
+      ],
+      "answerIndex": 0,
+      "explanation": "$(...)はコマンド置換であり、標準出力を文字列として利用できる。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "103.4"
+      ]
+    },
+    {
+      "id": "LPIC101-036",
+      "examScopeId": "lpic101",
+      "category": "103 GNUとUNIXコマンド",
+      "subcategory": "103.5 プロセス管理",
+      "text": "シェルで実行中のフォアグラウンドジョブを一時停止する一般的なキー操作はどれか。",
+      "choices": [
+        "Ctrl+Z",
+        "Ctrl+D",
+        "Ctrl+L",
+        "Ctrl+U"
+      ],
+      "answerIndex": 0,
+      "explanation": "Ctrl+Zは通常SIGTSTPを送り、ジョブを停止状態にする。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "103.5"
+      ]
+    },
+    {
+      "id": "LPIC101-037",
+      "examScopeId": "lpic101",
+      "category": "103 GNUとUNIXコマンド",
+      "subcategory": "103.5 プロセス管理",
+      "text": "PID 4242へ通常の終了要求を送るコマンドはどれか。",
+      "choices": [
+        "kill -TERM 4242",
+        "kill -KILL -1",
+        "jobs 4242",
+        "bg 4242"
+      ],
+      "answerIndex": 0,
+      "explanation": "SIGTERMはプロセスに後処理の機会を与える通常の終了要求で、既定シグナルでもある。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "103.5"
+      ]
+    },
+    {
+      "id": "LPIC101-038",
+      "examScopeId": "lpic101",
+      "category": "103 GNUとUNIXコマンド",
+      "subcategory": "103.5 プロセス管理",
+      "text": "SSH接続が切れても長時間作業の端末状態を維持し、後から再接続したい。適したツールはどれか。",
+      "choices": [
+        "tmux",
+        "nice",
+        "xargs",
+        "sed"
+      ],
+      "answerIndex": 0,
+      "explanation": "tmuxやGNU Screenは端末セッションを分離・再接続できる。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "103.5"
+      ]
+    },
+    {
+      "id": "LPIC101-039",
+      "examScopeId": "lpic101",
+      "category": "103 GNUとUNIXコマンド",
+      "subcategory": "103.6 プロセス優先度",
+      "text": "Linuxのnice値について正しい説明はどれか。",
+      "choices": [
+        "値が大きいほど一般にCPU優先度は低くなる",
+        "値が大きいほど必ずリアルタイム実行になる",
+        "一般ユーザーは任意に負の値へ変更できる",
+        "nice値はディスク容量を表す"
+      ],
+      "answerIndex": 0,
+      "explanation": "通常スケジューリングではnice値が大きいほど譲歩的になり、優先度は低くなる。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "103.6"
+      ]
+    },
+    {
+      "id": "LPIC101-040",
+      "examScopeId": "lpic101",
+      "category": "103 GNUとUNIXコマンド",
+      "subcategory": "103.6 プロセス優先度",
+      "text": "既に動作中のPID 5000のnice値を10へ変更するコマンドはどれか。",
+      "choices": [
+        "renice 10 -p 5000",
+        "nice 10 -p 5000",
+        "priority 10 5000",
+        "ps --nice 10 5000"
+      ],
+      "answerIndex": 0,
+      "explanation": "reniceは実行中プロセスのnice値を変更する。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "103.6"
+      ]
+    },
+    {
+      "id": "LPIC101-041",
+      "examScopeId": "lpic101",
+      "category": "103 GNUとUNIXコマンド",
+      "subcategory": "103.7 正規表現",
+      "text": "grepの基本正規表現で、行頭がrootの行を検索するパターンはどれか。",
+      "choices": [
+        "^root",
+        "root$",
+        ".root",
+        "[root]$"
+      ],
+      "answerIndex": 0,
+      "explanation": "^は行頭を表すアンカーである。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "103.7"
+      ]
+    },
+    {
+      "id": "LPIC101-042",
+      "examScopeId": "lpic101",
+      "category": "103 GNUとUNIXコマンド",
+      "subcategory": "103.7 正規表現",
+      "text": "拡張正規表現でcatまたはdogのどちらかに一致させるパターンをgrepで使う例はどれか。",
+      "choices": [
+        "grep -E 'cat|dog'",
+        "grep -F 'cat|dog'",
+        "grep -v 'cat&dog'",
+        "grep -n 'cat,dog'"
+      ],
+      "answerIndex": 0,
+      "explanation": "拡張正規表現では|が選択を表し、grep -Eで利用できる。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "103.7"
+      ]
+    },
+    {
+      "id": "LPIC101-043",
+      "examScopeId": "lpic101",
+      "category": "103 GNUとUNIXコマンド",
+      "subcategory": "103.7 正規表現",
+      "text": "sedで各行の最初に現れるoldをnewへ置換する式はどれか。",
+      "choices": [
+        "sed 's/old/new/'",
+        "sed 'd/old/new/'",
+        "sed 'p/old/new/'",
+        "sed 'y/old/new/g'"
+      ],
+      "answerIndex": 0,
+      "explanation": "sコマンドは置換を行う。gフラグがなければ各行の最初の一致を置換する。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "103.7"
+      ]
+    },
+    {
+      "id": "LPIC101-044",
+      "examScopeId": "lpic101",
+      "category": "103 GNUとUNIXコマンド",
+      "subcategory": "103.8 基本的な編集",
+      "text": "viでノーマルモードから現在行を削除する操作はどれか。",
+      "choices": [
+        "dd",
+        "yy",
+        "u",
+        ":w"
+      ],
+      "answerIndex": 0,
+      "explanation": "ddは現在行を削除する。yyは行のヤンク、uは取り消し、:wは保存である。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "103.8"
+      ]
+    },
+    {
+      "id": "LPIC101-045",
+      "examScopeId": "lpic101",
+      "category": "104 デバイスとファイルシステム",
+      "subcategory": "104.1 パーティションとファイルシステム",
+      "text": "新しいext4ファイルシステムを/dev/sdb1へ作成するコマンドはどれか。",
+      "choices": [
+        "mkfs.ext4 /dev/sdb1",
+        "fsck.ext4 /dev/sdb1",
+        "mount.ext4 /dev/sdb1",
+        "tune2fs -l /dev/sdb1"
+      ],
+      "answerIndex": 0,
+      "explanation": "mkfs.ext4は対象ブロックデバイスへext4ファイルシステムを作成する。実行すると既存データを失うため対象確認が重要である。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "104.1"
+      ]
+    },
+    {
+      "id": "LPIC101-046",
+      "examScopeId": "lpic101",
+      "category": "104 デバイスとファイルシステム",
+      "subcategory": "104.2 ファイルシステム整合性",
+      "text": "アンマウント済みext系ファイルシステムの整合性を検査・修復する代表的なコマンドはどれか。",
+      "choices": [
+        "fsck",
+        "mkfifo",
+        "mount",
+        "quotaon"
+      ],
+      "answerIndex": 0,
+      "explanation": "fsckはファイルシステム検査のフロントエンドである。原則として対象をアンマウントして実行する。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "104.2"
+      ]
+    },
+    {
+      "id": "LPIC101-047",
+      "examScopeId": "lpic101",
+      "category": "104 デバイスとファイルシステム",
+      "subcategory": "104.3 マウントとアンマウント",
+      "text": "/etc/fstabでUUIDを使う主な利点はどれか。",
+      "choices": [
+        "デバイス名の列挙順が変わっても対象を安定して識別しやすい",
+        "ファイルシステムを自動的に暗号化する",
+        "容量を無制限にできる",
+        "root権限が不要になる"
+      ],
+      "answerIndex": 0,
+      "explanation": "UUIDはファイルシステム固有の識別子で、/dev/sdXのような列挙順依存の名前より安定する。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "104.3"
+      ]
+    },
+    {
+      "id": "LPIC101-048",
+      "examScopeId": "lpic101",
+      "category": "104 デバイスとファイルシステム",
+      "subcategory": "104.5 パーミッションと所有権",
+      "text": "ディレクトリへsetgidビットを設定した場合の代表的な効果はどれか。",
+      "choices": [
+        "新規作成物がディレクトリのグループを継承しやすくなる",
+        "誰でも削除できなくなる",
+        "所有者がrootへ固定される",
+        "実行ファイルが必ずroot権限で動く"
+      ],
+      "answerIndex": 0,
+      "explanation": "ディレクトリのsetgidは配下に作成されるファイルやディレクトリのグループ継承に利用される。",
+      "difficulty": 3,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "104.5"
+      ]
+    },
+    {
+      "id": "LPIC101-049",
+      "examScopeId": "lpic101",
+      "category": "104 デバイスとファイルシステム",
+      "subcategory": "104.6 ハードリンクとシンボリックリンク",
+      "text": "ハードリンクについて正しい説明はどれか。",
+      "choices": [
+        "元のパス名が削除されても、同じinodeへの別リンクが残ればデータへアクセスできる",
+        "必ず別ファイルシステムを越えて作成できる",
+        "ディレクトリへ常に自由に作成できる",
+        "リンク先パス文字列だけを保持する"
+      ],
+      "answerIndex": 0,
+      "explanation": "ハードリンクは同じinodeを参照する別ディレクトリエントリである。通常はファイルシステムを越えられない。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "104.6"
+      ]
+    },
+    {
+      "id": "LPIC101-050",
+      "examScopeId": "lpic101",
+      "category": "104 デバイスとファイルシステム",
+      "subcategory": "104.7 FHSとファイル検索",
+      "text": "更新されたファイル名データベースを使って高速にパスを検索するコマンドはどれか。",
+      "choices": [
+        "locate",
+        "find",
+        "whereis",
+        "which"
+      ],
+      "answerIndex": 0,
+      "explanation": "locateは事前生成されたデータベースを検索するため高速だが、最新状態を反映するにはデータベース更新が必要である。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "104.7"
+      ]
+    },
+    {
+      "id": "LPIC101-051",
+      "examScopeId": "lpic101",
+      "category": "101 システムアーキテクチャ",
+      "subcategory": "101.1 ハードウェア設定",
+      "text": "USBバス上のデバイスを一覧表示するコマンドはどれか。",
+      "choices": [
+        "lsusb",
+        "lspci",
+        "lsmod",
+        "lsblk"
+      ],
+      "answerIndex": 0,
+      "explanation": "lsusbはUSBバスと接続デバイスを一覧表示する。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "101.1"
+      ]
+    },
+    {
+      "id": "LPIC101-052",
+      "examScopeId": "lpic101",
+      "category": "101 システムアーキテクチャ",
+      "subcategory": "101.1 ハードウェア設定",
+      "text": "現在ロードされているカーネルモジュールを確認するコマンドはどれか。",
+      "choices": [
+        "lsmod",
+        "modprobe -r",
+        "depmod -a",
+        "lspci"
+      ],
+      "answerIndex": 0,
+      "explanation": "lsmodはロード済みカーネルモジュールを表示する。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "101.1"
+      ]
+    },
+    {
+      "id": "LPIC101-053",
+      "examScopeId": "lpic101",
+      "category": "101 システムアーキテクチャ",
+      "subcategory": "101.1 ハードウェア設定",
+      "text": "依存関係も考慮してカーネルモジュールdummyをロードするコマンドはどれか。",
+      "choices": [
+        "modprobe dummy",
+        "insmod -r dummy",
+        "lsmod dummy",
+        "rmmod -a dummy"
+      ],
+      "answerIndex": 0,
+      "explanation": "modprobeはモジュール依存関係を解決してロードする。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "101.1"
+      ]
+    },
+    {
+      "id": "LPIC101-054",
+      "examScopeId": "lpic101",
+      "category": "101 システムアーキテクチャ",
+      "subcategory": "101.2 システムの起動",
+      "text": "カーネル起動時に最初のユーザー空間プロセスとして通常PID 1で動作するものはどれか。",
+      "choices": [
+        "initまたはsystemd",
+        "sshd",
+        "cron",
+        "udevdのみ"
+      ],
+      "answerIndex": 0,
+      "explanation": "init系プロセス（多くの環境ではsystemd）がPID 1としてサービス起動などを管理する。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "101.2"
+      ]
+    },
+    {
+      "id": "LPIC101-055",
+      "examScopeId": "lpic101",
+      "category": "101 システムアーキテクチャ",
+      "subcategory": "101.2 システムの起動",
+      "text": "systemd環境で起動に失敗したユニットを一覧表示するコマンドはどれか。",
+      "choices": [
+        "systemctl --failed",
+        "journalctl --vacuum",
+        "systemctl mask",
+        "dmesg -c"
+      ],
+      "answerIndex": 0,
+      "explanation": "systemctl --failedはfailed状態のユニットを一覧表示する。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "101.2"
+      ]
+    },
+    {
+      "id": "LPIC101-056",
+      "examScopeId": "lpic101",
+      "category": "101 システムアーキテクチャ",
+      "subcategory": "101.3 ランレベルとブートターゲット",
+      "text": "systemdでrescue.targetへ直ちに切り替えるコマンドはどれか。",
+      "choices": [
+        "systemctl isolate rescue.target",
+        "systemctl enable rescue.target",
+        "systemctl status rescue.target",
+        "systemctl daemon-reload rescue.target"
+      ],
+      "answerIndex": 0,
+      "explanation": "isolateは指定ターゲットを開始し、不要なユニットを停止して動作状態を切り替える。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "101.3"
+      ]
+    },
+    {
+      "id": "LPIC101-057",
+      "examScopeId": "lpic101",
+      "category": "101 システムアーキテクチャ",
+      "subcategory": "101.3 ランレベルとブートターゲット",
+      "text": "実行中のshutdown予約を取り消すコマンドはどれか。",
+      "choices": [
+        "shutdown -c",
+        "shutdown -r",
+        "systemctl cancel",
+        "halt --undo"
+      ],
+      "answerIndex": 0,
+      "explanation": "shutdown -cは保留中のシャットダウンを取り消す。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "101.3"
+      ]
+    },
+    {
+      "id": "LPIC101-058",
+      "examScopeId": "lpic101",
+      "category": "102 インストールとパッケージ管理",
+      "subcategory": "102.1 ディスクレイアウト",
+      "text": "UEFIシステムでEFIシステムパーティションに一般的に用いるファイルシステムはどれか。",
+      "choices": [
+        "FAT系",
+        "ext4のみ",
+        "XFSのみ",
+        "swap"
+      ],
+      "answerIndex": 0,
+      "explanation": "UEFIファームウェアが読み取れるよう、EFIシステムパーティションには通常FAT32などのFAT系を使用する。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "102.1"
+      ]
+    },
+    {
+      "id": "LPIC101-059",
+      "examScopeId": "lpic101",
+      "category": "102 インストールとパッケージ管理",
+      "subcategory": "102.1 ディスクレイアウト",
+      "text": "LVMでボリュームグループvg0の空き領域を確認する代表的なコマンドはどれか。",
+      "choices": [
+        "vgs",
+        "pvs --remove",
+        "lvremove",
+        "mkfs.lvm"
+      ],
+      "answerIndex": 0,
+      "explanation": "vgsはボリュームグループのサイズや空き領域を要約表示する。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "102.1"
+      ]
+    },
+    {
+      "id": "LPIC101-060",
+      "examScopeId": "lpic101",
+      "category": "102 インストールとパッケージ管理",
+      "subcategory": "102.2 ブートマネージャ",
+      "text": "GRUB Legacyでブートローダーの設定に使われる代表的なファイルはどれか。",
+      "choices": [
+        "/boot/grub/menu.lst",
+        "/etc/fstab",
+        "/etc/inittab",
+        "/var/log/boot"
+      ],
+      "answerIndex": 0,
+      "explanation": "GRUB Legacyではmenu.lstまたはgrub.confが設定ファイルとして使われる。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "102.2"
+      ]
+    },
+    {
+      "id": "LPIC101-061",
+      "examScopeId": "lpic101",
+      "category": "102 インストールとパッケージ管理",
+      "subcategory": "102.2 ブートマネージャ",
+      "text": "GRUB 2の設定で既定の起動項目や待ち時間を指定する代表的なファイルはどれか。",
+      "choices": [
+        "/etc/default/grub",
+        "/etc/profile",
+        "/etc/modules",
+        "/boot/initrd"
+      ],
+      "answerIndex": 0,
+      "explanation": "/etc/default/grubの値と/etc/grub.d配下のスクリプトからgrub.cfgを生成する。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "102.2"
+      ]
+    },
+    {
+      "id": "LPIC101-062",
+      "examScopeId": "lpic101",
+      "category": "102 インストールとパッケージ管理",
+      "subcategory": "102.3 共有ライブラリ",
+      "text": "共有ライブラリ検索キャッシュを更新するコマンドはどれか。",
+      "choices": [
+        "ldconfig",
+        "ldd",
+        "objdump",
+        "strings"
+      ],
+      "answerIndex": 0,
+      "explanation": "ldconfigは設定されたディレクトリを走査して共有ライブラリのリンクとキャッシュを更新する。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "102.3"
+      ]
+    },
+    {
+      "id": "LPIC101-063",
+      "examScopeId": "lpic101",
+      "category": "102 インストールとパッケージ管理",
+      "subcategory": "102.3 共有ライブラリ",
+      "text": "一時的に共有ライブラリの検索先を追加する環境変数はどれか。",
+      "choices": [
+        "LD_LIBRARY_PATH",
+        "PATH_INFO",
+        "LIBEXEC_PATH",
+        "MODULE_PATH"
+      ],
+      "answerIndex": 0,
+      "explanation": "LD_LIBRARY_PATHは動的リンカーのライブラリ検索先を一時的に追加する。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "102.3"
+      ]
+    },
+    {
+      "id": "LPIC101-064",
+      "examScopeId": "lpic101",
+      "category": "102 インストールとパッケージ管理",
+      "subcategory": "102.4 Debianパッケージ管理",
+      "text": "インストール済みDebianパッケージsampleが配置したファイル一覧を表示するコマンドはどれか。",
+      "choices": [
+        "dpkg -L sample",
+        "dpkg -S sample",
+        "apt update sample",
+        "dpkg -i sample"
+      ],
+      "answerIndex": 0,
+      "explanation": "dpkg -Lは指定したインストール済みパッケージのファイル一覧を表示する。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "102.4"
+      ]
+    },
+    {
+      "id": "LPIC101-065",
+      "examScopeId": "lpic101",
+      "category": "102 インストールとパッケージ管理",
+      "subcategory": "102.4 Debianパッケージ管理",
+      "text": "APTでパッケージsampleを設定ファイルも含めて削除するコマンドはどれか。",
+      "choices": [
+        "apt purge sample",
+        "apt clean sample",
+        "apt show sample",
+        "apt download sample"
+      ],
+      "answerIndex": 0,
+      "explanation": "apt purgeはパッケージ本体に加えて管理対象の設定ファイルも削除する。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "102.4"
+      ]
+    },
+    {
+      "id": "LPIC101-066",
+      "examScopeId": "lpic101",
+      "category": "102 インストールとパッケージ管理",
+      "subcategory": "102.5 RPM・YUM・DNF",
+      "text": "未インストールのRPMファイルsample.rpmに含まれるファイル一覧を表示するコマンドはどれか。",
+      "choices": [
+        "rpm -qlp sample.rpm",
+        "rpm -qf sample.rpm",
+        "rpm -Va sample.rpm",
+        "dnf repolist sample.rpm"
+      ],
+      "answerIndex": 0,
+      "explanation": "rpm -qに-lと-pを組み合わせると、指定RPMファイルの内容を問い合わせられる。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "102.5"
+      ]
+    },
+    {
+      "id": "LPIC101-067",
+      "examScopeId": "lpic101",
+      "category": "102 インストールとパッケージ管理",
+      "subcategory": "102.5 RPM・YUM・DNF",
+      "text": "RPMパッケージのインストール後に変更されたファイルを検証するコマンドはどれか。",
+      "choices": [
+        "rpm -V package",
+        "rpm -ql package",
+        "rpm -qf package",
+        "rpm -U --test only"
+      ],
+      "answerIndex": 0,
+      "explanation": "rpm -VはRPMデータベースのメタデータと実ファイルの属性を比較する。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "102.5"
+      ]
+    },
+    {
+      "id": "LPIC101-068",
+      "examScopeId": "lpic101",
+      "category": "102 インストールとパッケージ管理",
+      "subcategory": "102.6 仮想化とコンテナ",
+      "text": "仮想マシン内で動作中であることをsystemd環境で確認するコマンドはどれか。",
+      "choices": [
+        "systemd-detect-virt",
+        "systemctl virtual",
+        "uname --hypervisor",
+        "lsmod --guest"
+      ],
+      "answerIndex": 0,
+      "explanation": "systemd-detect-virtは仮想化環境やコンテナを検出する。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "102.6"
+      ]
+    },
+    {
+      "id": "LPIC101-069",
+      "examScopeId": "lpic101",
+      "category": "102 インストールとパッケージ管理",
+      "subcategory": "102.6 仮想化とコンテナ",
+      "text": "クラウドイメージの初回起動時にユーザーデータなどから設定を適用する代表的な仕組みはどれか。",
+      "choices": [
+        "cloud-init",
+        "cron.daily",
+        "initramfs-tools",
+        "logrotate"
+      ],
+      "answerIndex": 0,
+      "explanation": "cloud-initはクラウドインスタンスの初期設定をメタデータやユーザーデータから適用する。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "102.6"
+      ]
+    },
+    {
+      "id": "LPIC101-070",
+      "examScopeId": "lpic101",
+      "category": "103 GNUとUNIXコマンド",
+      "subcategory": "103.1 コマンドライン",
+      "text": "直前に実行したコマンドの終了ステータスをBashで参照する変数はどれか。",
+      "choices": [
+        "$?",
+        "$$",
+        "$!",
+        "$#"
+      ],
+      "answerIndex": 0,
+      "explanation": "$?には直前のコマンドの終了ステータスが格納される。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "103.1"
+      ]
+    },
+    {
+      "id": "LPIC101-071",
+      "examScopeId": "lpic101",
+      "category": "103 GNUとUNIXコマンド",
+      "subcategory": "103.1 コマンドライン",
+      "text": "コマンドmanualのマニュアルページを表示するコマンドはどれか。",
+      "choices": [
+        "man command",
+        "helpfile command",
+        "doc command",
+        "info --delete command"
+      ],
+      "answerIndex": 0,
+      "explanation": "manはオンラインマニュアルの指定ページを表示する。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "103.1"
+      ]
+    },
+    {
+      "id": "LPIC101-072",
+      "examScopeId": "lpic101",
+      "category": "103 GNUとUNIXコマンド",
+      "subcategory": "103.2 テキストフィルター",
+      "text": "ファイルの行数だけを表示するコマンドはどれか。",
+      "choices": [
+        "wc -l file",
+        "cut -l file",
+        "head -l file",
+        "nl -c file"
+      ],
+      "answerIndex": 0,
+      "explanation": "wc -lは改行数を数え、通常は行数の確認に使う。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "103.2"
+      ]
+    },
+    {
+      "id": "LPIC101-073",
+      "examScopeId": "lpic101",
+      "category": "103 GNUとUNIXコマンド",
+      "subcategory": "103.2 テキストフィルター",
+      "text": "2つの整列済みファイルを共通フィールドで結合するコマンドはどれか。",
+      "choices": [
+        "join",
+        "paste -s",
+        "tr",
+        "split"
+      ],
+      "answerIndex": 0,
+      "explanation": "joinは共通の結合フィールドを持つ整列済みファイルを行単位で結合する。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "103.2"
+      ]
+    },
+    {
+      "id": "LPIC101-074",
+      "examScopeId": "lpic101",
+      "category": "103 GNUとUNIXコマンド",
+      "subcategory": "103.2 テキストフィルター",
+      "text": "入力行を引数へ変換してコマンドを繰り返し実行する際に使うコマンドはどれか。",
+      "choices": [
+        "xargs",
+        "tee",
+        "od",
+        "fmt"
+      ],
+      "answerIndex": 0,
+      "explanation": "xargsは標準入力から項目を読み取り、コマンドライン引数を組み立てて実行する。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "103.2"
+      ]
+    },
+    {
+      "id": "LPIC101-075",
+      "examScopeId": "lpic101",
+      "category": "103 GNUとUNIXコマンド",
+      "subcategory": "103.3 ファイル管理",
+      "text": "ファイルdataを移動せずシンボリックリンクlinkを作成するコマンドはどれか。",
+      "choices": [
+        "ln -s data link",
+        "ln data -d link",
+        "mv -s data link",
+        "cp -l -s data"
+      ],
+      "answerIndex": 0,
+      "explanation": "ln -sはリンク先パスを保持するシンボリックリンクを作成する。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "103.3"
+      ]
+    },
+    {
+      "id": "LPIC101-076",
+      "examScopeId": "lpic101",
+      "category": "103 GNUとUNIXコマンド",
+      "subcategory": "103.3 ファイル管理",
+      "text": "cp実行時に既存ファイルを上書きする前に確認するオプションはどれか。",
+      "choices": [
+        "-i",
+        "-f",
+        "-r",
+        "-p"
+      ],
+      "answerIndex": 0,
+      "explanation": "cp -iは上書き前に対話的な確認を行う。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "103.3"
+      ]
+    },
+    {
+      "id": "LPIC101-077",
+      "examScopeId": "lpic101",
+      "category": "103 GNUとUNIXコマンド",
+      "subcategory": "103.3 ファイル管理",
+      "text": "gzipで圧縮されたfile.gzを展開するコマンドはどれか。",
+      "choices": [
+        "gunzip file.gz",
+        "untar file.gz",
+        "unzip file.gz",
+        "bzip2 -z file.gz"
+      ],
+      "answerIndex": 0,
+      "explanation": "gunzipはgzip形式のファイルを展開する。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "103.3"
+      ]
+    },
+    {
+      "id": "LPIC101-078",
+      "examScopeId": "lpic101",
+      "category": "103 GNUとUNIXコマンド",
+      "subcategory": "103.4 ストリームとリダイレクト",
+      "text": "commandの標準エラー出力だけをerror.logへ追記する記述はどれか。",
+      "choices": [
+        "command 2>>error.log",
+        "command >>error.log 2>&1",
+        "command <error.log",
+        "command 1>&2 error.log"
+      ],
+      "answerIndex": 0,
+      "explanation": "2>>はファイルディスクリプタ2の標準エラー出力を追記する。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "103.4"
+      ]
+    },
+    {
+      "id": "LPIC101-079",
+      "examScopeId": "lpic101",
+      "category": "103 GNUとUNIXコマンド",
+      "subcategory": "103.4 ストリームとリダイレクト",
+      "text": "cmd1が成功した場合にだけcmd2を実行する演算子はどれか。",
+      "choices": [
+        "cmd1 && cmd2",
+        "cmd1 || cmd2",
+        "cmd1 ;& cmd2",
+        "cmd1 |&> cmd2"
+      ],
+      "answerIndex": 0,
+      "explanation": "&&では左側の終了ステータスが0のときだけ右側を実行する。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "103.4"
+      ]
+    },
+    {
+      "id": "LPIC101-080",
+      "examScopeId": "lpic101",
+      "category": "103 GNUとUNIXコマンド",
+      "subcategory": "103.5 プロセス管理",
+      "text": "現在のシェルで管理しているジョブ一覧を表示するコマンドはどれか。",
+      "choices": [
+        "jobs",
+        "ps -eのみ",
+        "fg -l",
+        "wait -p all"
+      ],
+      "answerIndex": 0,
+      "explanation": "jobsは現在のシェルのジョブテーブルを表示する。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "103.5"
+      ]
+    },
+    {
+      "id": "LPIC101-081",
+      "examScopeId": "lpic101",
+      "category": "103 GNUとUNIXコマンド",
+      "subcategory": "103.5 プロセス管理",
+      "text": "停止中のジョブ番号1をフォアグラウンドへ戻すコマンドはどれか。",
+      "choices": [
+        "fg %1",
+        "bg %1",
+        "jobs %1",
+        "kill %1"
+      ],
+      "answerIndex": 0,
+      "explanation": "fg %1はジョブ番号1をフォアグラウンドで再開する。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "103.5"
+      ]
+    },
+    {
+      "id": "LPIC101-082",
+      "examScopeId": "lpic101",
+      "category": "103 GNUとUNIXコマンド",
+      "subcategory": "103.5 プロセス管理",
+      "text": "ログアウト後もコマンドを継続しやすくする代表的なコマンドはどれか。",
+      "choices": [
+        "nohup command &",
+        "exec command",
+        "wait command",
+        "nice -n -20 command"
+      ],
+      "answerIndex": 0,
+      "explanation": "nohupはSIGHUPを無視するようにコマンドを実行し、バックグラウンド実行と組み合わせられる。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "103.5"
+      ]
+    },
+    {
+      "id": "LPIC101-083",
+      "examScopeId": "lpic101",
+      "category": "103 GNUとUNIXコマンド",
+      "subcategory": "103.6 プロセス優先度",
+      "text": "新しいcommandをnice値10で開始するコマンドはどれか。",
+      "choices": [
+        "nice -n 10 command",
+        "renice -n 10 command",
+        "ps -n 10 command",
+        "nohup -n 10 command"
+      ],
+      "answerIndex": 0,
+      "explanation": "nice -nは新規プロセスのnice値を調整して起動する。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "103.6"
+      ]
+    },
+    {
+      "id": "LPIC101-084",
+      "examScopeId": "lpic101",
+      "category": "103 GNUとUNIXコマンド",
+      "subcategory": "103.7 正規表現",
+      "text": "grepで空行だけに一致する基本正規表現はどれか。",
+      "choices": [
+        "^$",
+        ".*",
+        "[^$]",
+        "$^text"
+      ],
+      "answerIndex": 0,
+      "explanation": "^は行頭、$は行末なので、間に文字がない^$は空行に一致する。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "103.7"
+      ]
+    },
+    {
+      "id": "LPIC101-085",
+      "examScopeId": "lpic101",
+      "category": "103 GNUとUNIXコマンド",
+      "subcategory": "103.7 正規表現",
+      "text": "grepで一致しない行だけを表示するオプションはどれか。",
+      "choices": [
+        "-v",
+        "-n",
+        "-c",
+        "-l"
+      ],
+      "answerIndex": 0,
+      "explanation": "grep -vはパターンに一致しない行を選択する。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "103.7"
+      ]
+    },
+    {
+      "id": "LPIC101-086",
+      "examScopeId": "lpic101",
+      "category": "103 GNUとUNIXコマンド",
+      "subcategory": "103.8 基本的な編集",
+      "text": "viで編集内容を保存して終了するコマンドはどれか。",
+      "choices": [
+        ":wq",
+        ":q!",
+        "dd",
+        "yy"
+      ],
+      "answerIndex": 0,
+      "explanation": ":wqはファイルを書き込み、viを終了する。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "103.8"
+      ]
+    },
+    {
+      "id": "LPIC101-087",
+      "examScopeId": "lpic101",
+      "category": "103 GNUとUNIXコマンド",
+      "subcategory": "103.8 基本的な編集",
+      "text": "viのノーマルモードで直前の変更を取り消すキーはどれか。",
+      "choices": [
+        "u",
+        "r",
+        "p",
+        "x"
+      ],
+      "answerIndex": 0,
+      "explanation": "uは直前の変更を取り消す。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "103.8"
+      ]
+    },
+    {
+      "id": "LPIC101-088",
+      "examScopeId": "lpic101",
+      "category": "104 デバイスとファイルシステム",
+      "subcategory": "104.1 パーティションとファイルシステム",
+      "text": "GPTパーティションテーブルを対話的に編集できる代表的なコマンドはどれか。",
+      "choices": [
+        "gdisk",
+        "mkfs",
+        "fsck",
+        "mount"
+      ],
+      "answerIndex": 0,
+      "explanation": "gdiskはGPTパーティションテーブルを扱う対話型ツールである。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "104.1"
+      ]
+    },
+    {
+      "id": "LPIC101-089",
+      "examScopeId": "lpic101",
+      "category": "104 デバイスとファイルシステム",
+      "subcategory": "104.1 パーティションとファイルシステム",
+      "text": "swap領域として/dev/sdb2を初期化するコマンドはどれか。",
+      "choices": [
+        "mkswap /dev/sdb2",
+        "mkfs.swapfs /dev/sdb2",
+        "swapon -f /dev/sdb2",
+        "fdisk --swap /dev/sdb2"
+      ],
+      "answerIndex": 0,
+      "explanation": "mkswapはデバイスまたはファイルへswap領域を設定する。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "104.1"
+      ]
+    },
+    {
+      "id": "LPIC101-090",
+      "examScopeId": "lpic101",
+      "category": "104 デバイスとファイルシステム",
+      "subcategory": "104.2 ファイルシステム整合性",
+      "text": "ext系ファイルシステムの予約ブロック率などを調整するコマンドはどれか。",
+      "choices": [
+        "tune2fs",
+        "xfs_repair",
+        "mkisofs",
+        "sync"
+      ],
+      "answerIndex": 0,
+      "explanation": "tune2fsはext2/ext3/ext4の調整可能なパラメータを変更・表示する。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "104.2"
+      ]
+    },
+    {
+      "id": "LPIC101-091",
+      "examScopeId": "lpic101",
+      "category": "104 デバイスとファイルシステム",
+      "subcategory": "104.2 ファイルシステム整合性",
+      "text": "マウント済みファイルシステムごとの使用量を表示するコマンドはどれか。",
+      "choices": [
+        "df",
+        "du",
+        "free",
+        "lsblk -fのみ"
+      ],
+      "answerIndex": 0,
+      "explanation": "dfはマウント済みファイルシステム単位の容量と使用量を表示する。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "104.2"
+      ]
+    },
+    {
+      "id": "LPIC101-092",
+      "examScopeId": "lpic101",
+      "category": "104 デバイスとファイルシステム",
+      "subcategory": "104.2 ファイルシステム整合性",
+      "text": "ディレクトリtreeが使用するディスク容量の合計を読みやすい単位で表示するコマンドはどれか。",
+      "choices": [
+        "du -sh tree",
+        "df -sh tree",
+        "ls -shR treeのみ",
+        "stat -h tree"
+      ],
+      "answerIndex": 0,
+      "explanation": "du -sは合計、-hは読みやすい単位でディレクトリ配下の使用量を表示する。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "104.2"
+      ]
+    },
+    {
+      "id": "LPIC101-093",
+      "examScopeId": "lpic101",
+      "category": "104 デバイスとファイルシステム",
+      "subcategory": "104.3 マウントとアンマウント",
+      "text": "/etc/fstabの全エントリを検証しながらマウントする代表的なコマンドはどれか。",
+      "choices": [
+        "mount -a",
+        "mount -o remount",
+        "umount -a",
+        "findmnt -u"
+      ],
+      "answerIndex": 0,
+      "explanation": "mount -aはfstabのうちnoautoなどを除く対象をまとめてマウントする。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "104.3"
+      ]
+    },
+    {
+      "id": "LPIC101-094",
+      "examScopeId": "lpic101",
+      "category": "104 デバイスとファイルシステム",
+      "subcategory": "104.3 マウントとアンマウント",
+      "text": "現在のマウント構造をツリー形式で確認するコマンドはどれか。",
+      "choices": [
+        "findmnt",
+        "mkfs",
+        "mountpoint -dのみ",
+        "blkid -w"
+      ],
+      "answerIndex": 0,
+      "explanation": "findmntはマウント済みファイルシステムを検索・表示し、既定でツリー表示する。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "104.3"
+      ]
+    },
+    {
+      "id": "LPIC101-095",
+      "examScopeId": "lpic101",
+      "category": "104 デバイスとファイルシステム",
+      "subcategory": "104.5 パーミッションと所有権",
+      "text": "ファイルscript.shの所有者に実行権限を追加するコマンドはどれか。",
+      "choices": [
+        "chmod u+x script.sh",
+        "chown u+x script.sh",
+        "umask u+x script.sh",
+        "setfacl -d script.sh"
+      ],
+      "answerIndex": 0,
+      "explanation": "chmod u+xは所有者クラスへ実行権限を追加する。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "104.5"
+      ]
+    },
+    {
+      "id": "LPIC101-096",
+      "examScopeId": "lpic101",
+      "category": "104 デバイスとファイルシステム",
+      "subcategory": "104.5 パーミッションと所有権",
+      "text": "新規ファイルの既定権限から書込み権限を抑制する値を確認・設定する仕組みはどれか。",
+      "choices": [
+        "umask",
+        "chattr",
+        "quota",
+        "sticky bitのみ"
+      ],
+      "answerIndex": 0,
+      "explanation": "umaskは新規作成時の基準権限から取り除く権限ビットを指定する。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "104.5"
+      ]
+    },
+    {
+      "id": "LPIC101-097",
+      "examScopeId": "lpic101",
+      "category": "104 デバイスとファイルシステム",
+      "subcategory": "104.5 パーミッションと所有権",
+      "text": "共有ディレクトリで利用者が他人のファイルを削除しにくくするビットはどれか。",
+      "choices": [
+        "sticky bit",
+        "setuid",
+        "setgidだけ",
+        "immutable bitの既定設定"
+      ],
+      "answerIndex": 0,
+      "explanation": "ディレクトリのsticky bitは、通常、所有者などに削除・名前変更を制限する。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "104.5"
+      ]
+    },
+    {
+      "id": "LPIC101-098",
+      "examScopeId": "lpic101",
+      "category": "104 デバイスとファイルシステム",
+      "subcategory": "104.6 ハードリンクとシンボリックリンク",
+      "text": "シンボリックリンクについて正しい説明はどれか。",
+      "choices": [
+        "リンク先を示すパス文字列を保持し、別ファイルシステムも参照できる",
+        "必ずリンク先と同じinode番号になる",
+        "リンク先削除後も内容を保持する",
+        "ディレクトリには作成できない"
+      ],
+      "answerIndex": 0,
+      "explanation": "シンボリックリンクはリンク先パスを保持する別ファイルで、リンク先が消えると参照切れになり得る。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "104.6"
+      ]
+    },
+    {
+      "id": "LPIC101-099",
+      "examScopeId": "lpic101",
+      "category": "104 デバイスとファイルシステム",
+      "subcategory": "104.7 FHSとファイル検索",
+      "text": "ホスト固有のシステム設定ファイルを置くFHS上のディレクトリはどれか。",
+      "choices": [
+        "/etc",
+        "/usr/share",
+        "/var/tmp",
+        "/proc"
+      ],
+      "answerIndex": 0,
+      "explanation": "/etcにはホスト固有のシステム設定を配置する。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "104.7"
+      ]
+    },
+    {
+      "id": "LPIC101-100",
+      "examScopeId": "lpic101",
+      "category": "104 デバイスとファイルシステム",
+      "subcategory": "104.7 FHSとファイル検索",
+      "text": "一般利用者向けのローカルインストール済み実行ファイルを置く代表的なディレクトリはどれか。",
+      "choices": [
+        "/usr/local/bin",
+        "/var/lib/bin",
+        "/etc/bin",
+        "/proc/local"
+      ],
+      "answerIndex": 0,
+      "explanation": "/usr/local/binはローカル管理者が導入した一般利用者向けコマンドの代表的な配置先である。",
+      "difficulty": 2,
+      "weight": 3,
+      "source": "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/",
+      "tags": [
+        "LPIC-1",
+        "101",
+        "104.7"
+      ]
+    }
+  ]
+}

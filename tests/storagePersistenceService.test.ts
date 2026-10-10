@@ -56,4 +56,3 @@ test("StorageManager非対応環境では安全にunsupportedを返す", async (
   assert.equal(status.usage, null);
   assert.equal(status.quota, null);
 });
-

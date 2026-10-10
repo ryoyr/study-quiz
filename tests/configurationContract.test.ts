@@ -64,4 +64,3 @@ test("アプリ版・ロックファイル・バックアップ版の表示が�
     new RegExp(`const APP_VERSION = ["']${packageJson.version}["']`),
   );
 });
-

@@ -145,4 +145,3 @@ const qualityOverridesById = new Map(
 export const questions: Question[] = baseQuestions.map(
   (question) => qualityOverridesById.get(question.id) ?? question,
 );
-

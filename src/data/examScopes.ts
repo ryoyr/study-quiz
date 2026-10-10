@@ -20,4 +20,3 @@ export const defaultExamScopes: ExamScope[] = [
     updatedAt: catalogTimestamp,
   },
 ];
-

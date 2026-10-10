@@ -113,6 +113,13 @@ export const STORAGE_KEY_REGISTRY = {
     backup: false,
     legacy: false,
   },
+  questionMasterState: {
+    key: "study-quiz-question-master-state-v1",
+    label: "問題マスター同期状態",
+    format: "json",
+    backup: false,
+    legacy: false,
+  },
   uiGuideSeen: {
     key: "study-quiz-ui-guide-seen-v2",
     label: "初回操作ガイド表示済み",
@@ -159,6 +166,7 @@ export const STORAGE_KEYS = {
   activeSession: STORAGE_KEY_REGISTRY.activeSession.key,
   transactionJournal: STORAGE_KEY_REGISTRY.transactionJournal.key,
   questionSeedVersion: STORAGE_KEY_REGISTRY.questionSeedVersion.key,
+  questionMasterState: STORAGE_KEY_REGISTRY.questionMasterState.key,
   uiGuideSeen: STORAGE_KEY_REGISTRY.uiGuideSeen.key,
   legacyHistory: STORAGE_KEY_REGISTRY.legacyHistory.key,
   geminiApiKey: STORAGE_KEY_REGISTRY.geminiApiKey.key,
@@ -179,4 +187,3 @@ export const storageLabelForKey = (key: string): string =>
 export const BACKUP_STORAGE_DEFINITIONS = Object.values(
   STORAGE_KEY_REGISTRY,
 ).filter((definition) => definition.backup);
-

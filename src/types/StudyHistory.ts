@@ -26,4 +26,3 @@ export interface StudyHistory {
   instantScore: number;
   fsrsRating?: "AGAIN" | "HARD" | "GOOD" | "EASY";
 }
-

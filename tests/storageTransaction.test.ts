@@ -252,4 +252,3 @@ test("コミット後のジャーナル削除欠落を検出して元へ戻す",
   assert.equal(storage.getItem(STORAGE_KEYS.answerHistory), '["old"]');
   assert.equal(storage.getItem(STORAGE_TRANSACTION_JOURNAL_KEY), null);
 });
-

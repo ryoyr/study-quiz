@@ -280,4 +280,3 @@ export const generateSelectedStudySession = (
 
   return generateMultiModeSession(pool, history, setup, states, modes, now);
 };
-

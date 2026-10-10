@@ -50,4 +50,3 @@ export default function StreakCard({ streak }: Props) {
     </section>
   );
 }
-

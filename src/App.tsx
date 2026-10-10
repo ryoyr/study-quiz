@@ -28,6 +28,7 @@ import InitialSetupPage from "./pages/InitialSetupPage";
 import LearningHistoryPage from "./pages/LearningHistoryPage";
 import MistakeNotesPage from "./pages/MistakeNotesPage";
 import QuestionManagementPage from "./pages/QuestionManagementPage";
+import QuestionMasterPage from "./pages/QuestionMasterPage";
 import QuestionQualityGeneratorPage from "./pages/QuestionQualityGeneratorPage";
 import QuestionQualityReviewPage from "./pages/QuestionQualityReviewPage";
 import SimilarQuestionGeneratorPage from "./pages/SimilarQuestionGeneratorPage";
@@ -158,7 +159,8 @@ type Screen =
   | "factCheck"
   | "qualityGenerate"
   | "qualityReview"
-  | "similarQuestion";
+  | "similarQuestion"
+  | "questionMaster";
 
 const PWA_SHORTCUT_SCREENS = new Set<Screen>([
   "home",
@@ -209,6 +211,7 @@ const sectionForScreen = (screen: Screen): NavigationSection => {
       "qualityGenerate",
       "qualityReview",
       "similarQuestion",
+      "questionMaster",
     ].includes(screen)
   )
     return "manage";
@@ -899,6 +902,15 @@ export default function App() {
       />,
     );
   }
+  if (screen === "questionMaster") {
+    return withChrome(
+      <QuestionMasterPage
+        questions={storedQuestions}
+        onQuestionsChange={commitQuestions}
+        onBack={() => setScreen("manage")}
+      />,
+    );
+  }
   if (screen === "similarQuestion") {
     return withChrome(
       <SimilarQuestionGeneratorPage
@@ -1537,6 +1549,13 @@ export default function App() {
               onClick={() => setScreen("questions")}
             />
             <FeatureLink
+              icon="shield-check"
+              title="問題マスター・GitHub連携"
+              description="差分確認、最新版同期、Pull Request作成"
+              tone="green"
+              onClick={() => setScreen("questionMaster")}
+            />
+            <FeatureLink
               icon="sparkles"
               title="類似問題生成"
               description="AI案をコピー方式で作成し、確認後に登録"
@@ -1801,4 +1820,3 @@ export default function App() {
     </main>,
   );
 }
-

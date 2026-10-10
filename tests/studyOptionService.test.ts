@@ -30,4 +30,3 @@ test("複数選択の要約表示を生成する", () => {
   assert.equal(masteryFiltersLabel(["UNLEARNED", "LEARNING"]), "未学習・学習中");
   assert.equal(questionModesLabel(["NEW", "REVIEW", "WEAK"]), "3項目");
 });
-

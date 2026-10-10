@@ -47,14 +47,16 @@ test("iOS用アイコンとService Workerのプリキャッシュ対象が存在
   assert.match(worker, /js\|css/);
 });
 
-test("Service Workerのキャッシュ世代はv4.6.0配布版へ更新されている", () => {
+test("Service Workerのキャッシュ世代は問題マスター連携版へ更新されている", () => {
   const serviceWorker = readFileSync("public/sw.js", "utf8");
   assert.match(serviceWorker, /study-quiz-shell-/);
-  assert.match(serviceWorker, /CACHE_NAME = `\$\{CACHE_PREFIX\}v22`/);
+  assert.match(serviceWorker, /CACHE_NAME = `\$\{CACHE_PREFIX\}v23`/);
+  assert.match(serviceWorker, /networkFirstContent/);
+  assert.match(serviceWorker, /new URL\("content\/", BASE_URL\)/);
+  assert.match(serviceWorker, /if \(!response\.ok\) throw/);
   assert.match(serviceWorker, /Promise\.allSettled/);
   assert.match(serviceWorker, /request\.headers\.has\("range"\)/);
   assert.match(serviceWorker, /navigationPreload/);
   assert.match(serviceWorker, /Promise\.resolve\(preloadResponse\)\.catch/);
   assert.match(serviceWorker, /Cache Storageへの保存はベストエフォート/);
 });
-

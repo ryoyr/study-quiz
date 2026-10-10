@@ -23,6 +23,8 @@ LPIC-1 Exam 101向けのローカルファースト学習PWAです。問題管�
 - 統一SVGアイコン、クイックアクセス、現在地を明示する固定ナビゲーション
 - 削除・アーカイブ時のキーボード対応確認ダイアログとフォーカス復帰
 - 問題編集の入力長・タグ件数制約と保存失敗通知
+- 問題マスターJSON・マニフェストの版管理と、端末編集を保護する安全同期
+- Cloudflare Workers／GitHub App経由の変更確認・専用ブランチ・Pull Request作成
 
 ## 動作環境
 
@@ -41,6 +43,12 @@ npm run dev
 
 ```bash
 VITE_BASE_PATH=/ npm run build
+```
+
+GitHub連携を有効にする場合は、公開Workers URLだけを設定します。GitHubの秘密鍵やトークンを`VITE_*`へ設定してはいけません。
+
+```bash
+VITE_QUIZ_CONTENT_API_URL=https://quiz-content-api.example.com/ npm run build
 ```
 
 ## 品質確認
@@ -86,6 +94,8 @@ npm run test:e2e
 
 通常データはブラウザーの `localStorage`、初回設定の互換保存はIndexedDBを使用します。Gemini APIキーは完全バックアップへ含めません。保存形式は起動時およびバックアップ復元時に現行形式へ正規化されます。完全バックアップversion 10には偶発的な破損・編集を検知するチェックサムを付与します（電子署名ではありません）。
 
+配布元の問題マスターは`public/content`で管理します。最新版適用では前回配布フィンガープリントと端末データを比較し、端末で独自編集した問題を自動上書きしません。配布元から削除された問題も、履歴・FSRSの問題ID参照を維持するため端末ではアーカイブします。
+
 問題・解説の品質向上では、問題JSONの出力、修正・補足提案JSONの取込、適用前後レビュー、実行環境への適用ができます。適用済み内容は初期データ更新JSONとして出力し、次で新規環境の初期問題へ反映します。
 
 ```bash
@@ -107,12 +117,13 @@ node tools/apply_question_seed_updates.mjs <seed-update-pack.json>
 - `scripts`: 構成検証とE2E試験
 - `docs`: 要件、基本設計、詳細設計、トレーサビリティ
 - `tools`: 配布資材の再生成補助
+- `workers/quiz-content-pr`: Access認証とGitHub Pull Request作成Worker
 
-現状分析は`CURRENT_STATE_ASSESSMENT.md`、変更内容は`CHANGE_SUMMARY.md`、タスクは`TASK_MANAGEMENT.md`、今後の推奨は`FUTURE_RECOMMENDATIONS.md`、削除候補は`REMOVAL_CANDIDATES.md`を参照してください。
+GitHub連携の現状調査は`docs/github-integration-assessment.md`、設定・運用は`docs/github-cloudflare-setup.md`、回収進捗は`docs/github-integration-progress.md`を参照してください。既存全体の現状分析は`CURRENT_STATE_ASSESSMENT.md`、変更内容は`CHANGE_SUMMARY.md`、タスクは`TASK_MANAGEMENT.md`にあります。
 
 ## バージョン
 
-- アプリ: 4.6.0
+- アプリ: 4.7.0
 - ストレージスキーマ: 9
 - 完全バックアップ形式: 10
 
@@ -121,4 +132,3 @@ node tools/apply_question_seed_updates.mjs <seed-update-pack.json>
 - 配色テーマ: オーロラ / フォーカス / フォレスト / サンセット / モノクロ
 - 明るさ: 端末に合わせる / ライト / ダーク
 - 配色テーマと明るさは独立して保存されます。旧設定には「オーロラ」を自動補完します。
-

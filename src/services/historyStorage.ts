@@ -100,4 +100,3 @@ export const saveHistory = (history: StudyHistory[]): void => {
 };
 
 export const clearHistory = (): void => removeStorageValue(STORAGE_KEY);
-

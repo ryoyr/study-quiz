@@ -39,4 +39,3 @@ export const applyTheme = (
       ?.setAttribute("content", themeColor);
   }
 };
-

@@ -17,4 +17,3 @@ export interface QuestionState {
   fsrsStability: number;
   fsrsDifficulty: number;
 }
-

@@ -200,3 +200,31 @@ JSON契約、提案状態、適用トランザクション、初期データ反�
 ## 10. PWA資材
 
 `generate_pwa_icons.py`は180、192、512、maskable 512のRGBA PNGを生成する。通常アイコンは角丸透過、maskableは全面背景と中央安全領域を持つ。
+
+## 4.7.0 問題マスター同期・PR詳細
+
+### 同期判定
+
+- 前回配布フィンガープリント = 端末 = 最新配布: 維持
+- 前回配布 = 端末、最新配布だけ変更: 安全更新
+- 前回配布 = 最新配布、端末だけ変更: 端末編集を維持しPR差分
+- 端末と最新配布の両方が変更: 競合として保留
+- 配布元削除かつ端末未変更: `archivedAt`を付与
+- 配布元削除かつ端末変更: 競合として端末を維持
+
+### PRトランザクション
+
+1. Access JWT／利用者／Origin／Rate Limit／入力を検証。
+2. 冪等ブランチと既存PRを確認。
+3. main refのcommit SHAとtree SHAを取得。
+4. commit SHA固定でmanifest／datasetを読込・再検証。
+5. base content version、dataset version、問題フィンガープリントを照合。
+6. 変更済みdatasetとmanifestをblob化。
+7. base treeから1つのtreeとcommitを作成。
+8. `refs/heads/quiz-content/*`を作成。
+9. main向けPRを作成。merge APIは呼ばない。
+10. 途中失敗後の再送は同じbranchを使い、PRだけを回収する。
+
+### キャッシュ
+
+`public/content/**`はService Worker v23でnetwork-first。HTTP非2xx、タイムアウト、オフライン時のみ直近キャッシュへ戻す。JSON検証失敗時は端末データへ適用しない。

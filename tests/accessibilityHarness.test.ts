@@ -160,4 +160,3 @@ test("狭幅画面では固定ヘッダーとバックアップ差分一覧を�
   assert.match(css, /\.backup-preview-list\s*\{\s*display: block !important;/s);
   assert.doesNotMatch(css, /\.backup-preview > div\s*\{/);
 });
-

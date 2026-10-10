@@ -60,4 +60,3 @@ export const saveQuestions = (items: Question[]): void => {
     { key: QUESTION_SEED_VERSION_KEY, value: QUESTION_SEED_VERSION },
   ]);
 };
-

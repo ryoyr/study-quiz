@@ -26,4 +26,3 @@ export const studyRangeLabel = (categories: string[]): string => {
   if (normalized.length <= 2) return normalized.join("、");
   return `${normalized.length}トピック`;
 };
-

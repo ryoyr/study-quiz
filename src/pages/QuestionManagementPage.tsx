@@ -656,4 +656,3 @@ export default function QuestionManagementPage({
     </main>
   );
 }
-

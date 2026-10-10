@@ -496,4 +496,3 @@ test("未完了トランザクションが残る間は不整合なバックア�
   assert.throws(() => createFullBackup(storage), /未完了の保存処理/);
   assert.equal(auditStorage(storage).ok, false);
 });
-

@@ -29,10 +29,10 @@ jobs:
       - run: npm run check
         env:
           CHROME_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
+          VITE_QUIZ_CONTENT_API_URL: ${{ vars.QUIZ_CONTENT_API_URL }}
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:
           path: ./dist
       - id: deployment
         uses: actions/deploy-pages@v4
-

@@ -29,3 +29,20 @@
 |認証・同期|範囲外|未|未|未|
 |暗号化・署名バックアップ|候補|未|未|未|
 |3方式の実ブラウザーE2E|P1|済|済|Chromeで2回連続成功|
+
+## 4.7.0 問題マスターGitHub連携
+
+|要件|設計・実装|検証|
+|---|---|---|
+|現行問題形式・ID・学習データ互換|`public/content/**`, `questionMasterService`, storage schema 9 / backup 10維持|`questionMasterService.test.ts`, 既存questionStorage/history/PWA試験|
+|送信前の追加・更新・アーカイブ差分|`questionMasterChangeService`, `QuestionMasterPage`|`questionMasterChangeService.test.ts`, `questionMasterUi.test.ts`|
+|明示操作時だけPR作成|`QuestionMasterPage` + `ConfirmDialog`|`questionMasterUi.test.ts`|
+|秘密情報をクライアントへ置かない|`contentPullRequestApi`, Workers Secrets|`questionMasterUi.test.ts`, `workerAccessAuth.test.ts`|
+|Access認証・利用者認可・CORS・Rate Limit|Worker `auth.ts`, `http.ts`, `index.ts`|`workerAccessAuth.test.ts`, `workerQuizContent.test.ts`|
+|許可リポジトリ・ブランチ・パス固定|Worker env + command strict validation|`workerQuizContent.test.ts`, `questionMasterUi.test.ts`|
+|最新版・問題単位競合検出|manifest version、base SHA、question fingerprint|`questionMasterService.test.ts`, `workerQuizContent.test.ts`|
+|複数ファイルを1コミット|GitHub blobs/tree/commit/ref|`workerQuizContent.test.ts`|
+|main直接更新・自動マージ禁止|専用`quiz-content/*` ref、PR createのみ|`questionMasterUi.test.ts`|
+|再送の重複防止|SHA-256冪等キー、決定的ブランチ、既存PR回収|`questionMasterChangeService.test.ts`, `workerQuizContent.test.ts`|
+|マージ後の安全同期・オフライン維持|安全マージ、SW network-first→cache fallback|`questionMasterService.test.ts`, `pwaAssets.test.ts`|
+|設定・運用・費用|`github-cloudflare-setup.md`|文書レビュー、本番接続は設定後|

@@ -75,4 +75,3 @@ test("類似問題生成を管理画面へ統合している", () => {
   assert.match(app, /SimilarQuestionGeneratorPage/);
   assert.match(app, /setScreen\("similarQuestion"\)/);
 });
-

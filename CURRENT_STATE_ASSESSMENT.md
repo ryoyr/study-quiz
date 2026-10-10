@@ -1,7 +1,13 @@
-# 現状評価 — Study Quiz 4.6.0
+# 現状評価 — Study Quiz 4.7.0
 
-評価基準日時: 2026-10-10  
-基準入力: `project_dump_full.txt`（生成 2026-10-10 23:16:58、FILE COUNT 169）
+評価基準日時: 2026-10-11  
+基準入力: `project_dump_full.txt`（生成 2026-10-11 01:54:20、FILE COUNT 175）と`依頼内容.txt`
+
+## 4.7.0追補
+
+問題マスターを現行`Question`形式のまま`public/content`へ分離し、端末編集保護付き同期、送信前差分、Cloudflare Workers／GitHub App経由の専用ブランチ・Pull Request作成を追加しました。リポジトリ、ベースブランチ、管理パスはWorkers側で固定し、Cloudflare Access JWT、許可メール、CORS、Rate Limiting、版・問題競合を再検証します。main直接更新と自動マージは実装していません。
+
+storage schema 9、IndexedDB version 2、完全バックアップversion 10、既存問題ID、回答履歴・FSRS参照は維持しています。詳細は`docs/github-integration-assessment.md`を参照してください。
 
 ## 1. 総合判定
 
@@ -15,11 +21,11 @@
 
 |項目|結果|
 |---|---:|
-|ダンプ記載ファイル|169テキストファイル|
-|安全抽出|169/169、重複0、空0|
+|ダンプ記載ファイル|175テキストファイル|
+|安全抽出|175/175、重複0、空0|
 |技術構成|React 19.3.0 / TypeScript 5.9.3 / Vite 7.3.6 / ts-fsrs 5.4.1|
 |Node.js要件|20.19以上|
-|localStorage schema|8|
+|localStorage schema|9|
 |IndexedDB version|2|
 |完全バックアップ|version 10出力、version 2～10読込み|
 |アプリソース到達性|最新ダンプの`src` 104ファイル中、型宣言を除きmainから未到達0|

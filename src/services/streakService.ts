@@ -113,4 +113,3 @@ export const calculateStudyStreak = (
     lastStudyDate: dayNumberToDate(sortedStudyDays[sortedStudyDays.length - 1]),
   };
 };
-

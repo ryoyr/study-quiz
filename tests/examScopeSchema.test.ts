@@ -22,4 +22,3 @@ test("IndexedDB v2にexamScopesストアと試験コード索引を定義する"
   assert.match(source, /createIndex\("examCode"/);
   assert.match(source, /LEGACY_EXAM_ID = "linuc101"/);
 });
-

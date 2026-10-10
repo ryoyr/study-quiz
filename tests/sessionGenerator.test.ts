@@ -99,4 +99,3 @@ test("候補0件のセッションは0問・0分で返す", () => {
   assert.equal(session.totalCount, 0);
   assert.equal(session.estimatedMinutes, 0);
 });
-
