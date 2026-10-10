@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "contentVersion": "2026.10.11.1",
-  "updatedAt": "2026-10-11T00:00:00.000Z",
+  "contentVersion": "2026.10.10.1791666928439",
+  "updatedAt": "2026-10-10T21:15:28.439Z",
   "datasets": [
     {
       "id": "lpic-101",
-      "version": 1,
+      "version": 2,
       "path": "questions/lpic-101.json",
-      "questionCount": 100
+      "questionCount": 101
     }
   ]
 }
