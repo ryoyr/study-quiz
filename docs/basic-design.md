@@ -126,14 +126,14 @@ Gemini APIへ自動送信する機能と、他のAIへ手動コピーする機�
 
 ## 8. 問題・解説品質向上
 
-- `questionQualityService`: 入力JSON、品質確認プロンプト、提案JSON、初期データ更新パック。
+- `questionQualityService`: 複合選択計画、5～15問分割、品質重視・再生成プロンプト、入力JSON、提案JSON、初期データ更新パック。
 - `questionQualityProposalStorage`: 提案保存、レビュー状態、競合検知、問題との同時適用。
-- `QuestionQualityGeneratorPage`: JSON出力・取込、登録前プレビュー。
-- `QuestionQualityReviewPage`: 適用前後比較、適用・却下、初期データ更新JSON出力。
+- `QuestionQualityGeneratorPage`: 選択ロジック説明、条件・件数・対象問題の調整、ページ、分割、重点、JSON出力・取込、登録前プレビュー。
+- `QuestionQualityReviewPage`: 問題文・回答定義・選択肢・解説・出典・難易度の前後比較、適用・却下・再生成、初期データ更新JSON出力。
 - `questionQualityOverrides.ts`: 新規環境の初期問題上書き。
 - `apply_question_seed_updates.mjs`: 更新パック検証と初期データ上書き生成。
 
-提案生成と適用を別画面・別操作にし、`pending`提案だけを明示確認後に適用する。問題と提案状態は同一トランザクションで保存する。
+提案生成と適用を別画面・別操作にし、`pending`提案だけを明示確認後に適用する。大量対象は推奨8問ずつ処理し、選択全体を重複比較コンテキストとして利用する。再生成時は前回案を却下して現在問題を基準に作り直す。問題と提案状態は同一トランザクションで保存する。
 
 ## 9. PWA
 

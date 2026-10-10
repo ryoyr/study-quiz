@@ -237,3 +237,40 @@ JSON契約、提案状態、適用トランザクション、初期データ反�
 ### キャッシュ
 
 `public/content/**`はService Worker v23でnetwork-first。HTTP非2xx、タイムアウト、オフライン時のみ直近キャッシュへ戻す。JSON検証失敗時は端末データへ適用しない。
+
+
+## 4.7.0 品質向上の選択・分割・再生成
+
+### 選択計画
+
+`planQuestionQualitySelection`は次を純粋関数として実行する。
+
+1. `archivedAt`のない問題だけを対象にする。
+2. category、difficulty、`questionTypeOf`、source、NFKC検索を適用する。
+3. `excludePending=true`ならpending提案のquestionIdを除外する。
+4. 入力配列順を維持し、offsetと1～100件のlimitでページ化する。
+5. UIのチェック状態はページ内IDのSetで保持する。
+
+`createQuestionQualityBatches`は選択済み問題を入力順のまま最大15問、既定8問へ分割する。JSON取込時は現在の分割内問題だけを問題マップへ渡し、別分割IDを拒否する。
+
+### 品質プロンプト
+
+`buildQuestionQualityPrompt`はversion 1入力JSONを維持し、プロンプト側へ次を追加する。
+
+- single／multiple／text別の正答確認
+- 誤答選択肢のもっともらしさ、相互排他、粒度・文法・長さ
+- 正答と各誤答の理由を含む解説
+- 一次資料、根拠捏造禁止、事実・正答変更時のreference
+- 1～5の難易度基準
+- 選択全体のID・カテゴリ・問題文による重複比較
+- 過剰修正防止と出力前セルフチェック
+
+重点はcomprehensive、facts、distractors、explanationから選択する。
+
+### 再生成
+
+`buildQuestionQualityRegenerationPrompt`は現在問題と前回提案の要約、理由、参考情報、提案問題文・解説を入力し、前回案の単純反復を禁止する。pending案はプロンプトコピー成功後にrejectedへ遷移させ、新しいversion 1提案を登録可能にする。
+
+### 互換境界
+
+`QuestionQualityProposal`、localStorage key、品質提案JSON version 1、seed update version 1、backup version 10、共通Question検証、適用トランザクションは変更しない。ファクトチェック、問題マスター、Cloudflare Worker、GitHub PRサービスは変更しない。

@@ -12,7 +12,7 @@
 |FR-08 保存|`storageTransaction.ts`, `verifiedStorage.ts`, `storageSynchronization.ts`|`storageTransaction.test.ts`, `storageSynchronization.test.ts`|実装済み|
 |FR-09 完全バックアップ|`fullBackupService.ts`, `BackupCenterPage.tsx`|`resilience.test.ts`, `importAndBackup.test.ts`|実装済み|
 |FR-10 PWA|manifest、`sw.js`、PNG 4件、生成ツール|`pwaAssets.test.ts`, `verify-project.mjs`|4.6.0 cache v22|
-|FR-11 問題・解説品質向上|`questionQualityService.ts`, `questionQualityProposalStorage.ts`, 品質生成・レビュー画面, seed update tool|`questionQualityService.test.ts`, `questionSeedUpdateTool.test.ts`, Chrome E2E|4.6.0実装|
+|FR-11 問題・解説品質向上|`questionQualityService.ts`, `questionQualityProposalStorage.ts`, 品質生成・レビュー画面, seed update tool|`questionQualityService.test.ts`, `questionQualityPlanningService.test.ts`, `questionQualityPlanningUi.test.ts`, `questionSeedUpdateTool.test.ts`, Chrome E2E|4.7.0で選択・分割・品質プロンプト・再生成を拡張|
 |NFR-01 互換性|回答アダプター、migration schema 9、backup 10|`configurationContract.test.ts`, `resilience.test.ts`, `questionQualityService.test.ts`|version 2～10読込み|
 |NFR-02 品質|package scripts、CI、構成/E2E scripts|全単体、構文変換、型検査|通常CI最終ゲートあり|
 |NFR-03 アクセシビリティ|`ConfirmDialog.tsx`, `App.css`, E2E script|`accessibilityHarness.test.ts`, `themeAccessibility.test.ts`|自動試験実装済み|
