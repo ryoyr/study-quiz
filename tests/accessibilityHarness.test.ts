@@ -58,6 +58,8 @@ test("E2E試験は3回答方式を登録・回答・履歴表示・バックア�
     "E2E 複数選択問題",
     "E2E 入力問題",
     "study-quiz-answer-history-v1",
+    "questionSnapshot",
+    "問題編集後に回答時点スナップショットを表示できません",
     "study-quiz-full-backup-",
     "answer-modes-backup.json",
     "Browser.setDownloadBehavior",

@@ -19,6 +19,7 @@ import type { Setup } from "../types/Setup";
 import type { StudyHistory } from "../types/StudyHistory";
 import { isQuestion } from "./questionValidation.ts";
 import { isQuestionState } from "./questionStateService.ts";
+import { isStudyHistoryQuestionSnapshot } from "./questionAnswerModel.ts";
 
 export type BackupStorageFormat = "json" | "number";
 
@@ -99,7 +100,7 @@ export const BACKUP_ENTRIES: BackupEntryDefinition[] =
     storageFormat: toBackupStorageFormat(format),
   }));
 
-const APP_VERSION = "4.5.0";
+const APP_VERSION = "4.5.1";
 const CURRENT_BACKUP_VERSION = 9 as const;
 const SUPPORTED_BACKUP_VERSIONS = [2, 3, 4, 5, 6, 7, 8, 9] as const;
 const LEGACY_HISTORY_KEY = STORAGE_KEYS.legacyHistory;
@@ -214,6 +215,8 @@ const isStudyHistory = (value: unknown): value is StudyHistory => {
     (value.textAnswer === undefined || isString(value.textAnswer)) &&
     (value.answerType === undefined ||
       ["single", "multiple", "text"].includes(String(value.answerType))) &&
+    (value.questionSnapshot === undefined ||
+      isStudyHistoryQuestionSnapshot(value.questionSnapshot)) &&
     (value.fsrsRating === undefined ||
       ["AGAIN", "HARD", "GOOD", "EASY"].includes(String(value.fsrsRating)))
   );

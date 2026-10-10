@@ -202,3 +202,50 @@ test("完全バックアップは複数選択・入力回答の問題を復元�
   assert.deepEqual(JSON.parse(backup.entries["study-quiz-questions-v1"]), questions);
 });
 
+test("完全バックアップは回答時点スナップショットを保持し、不正形式を拒否する", () => {
+  const history = {
+    id: "H-1",
+    questionId: "Q-1",
+    category: "Linux",
+    selectedIndex: 0,
+    answerType: "single",
+    questionSnapshot: {
+      questionText: "回答時点の問題",
+      answerType: "single",
+      responseText: "選択肢1: A",
+      correctAnswerText: "選択肢1: A",
+    },
+    correct: true,
+    answeredAt: "2026-10-11T00:00:00.000Z",
+    responseTimeSeconds: 5,
+    instantScore: 0.8,
+  };
+  const create = (item: unknown) =>
+    JSON.stringify({
+      format: "study-quiz-full-backup",
+      version: 8,
+      appVersion: "4.5.1",
+      exportedAt: "2026-10-11T00:00:00.000Z",
+      entries: {
+        "study-quiz-answer-history-v1": JSON.stringify([item]),
+      },
+    });
+
+  const parsed = parseFullBackup(create(history));
+  assert.deepEqual(
+    JSON.parse(parsed.entries["study-quiz-answer-history-v1"])[0]
+      .questionSnapshot,
+    history.questionSnapshot,
+  );
+  assert.throws(
+    () =>
+      parseFullBackup(
+        create({
+          ...history,
+          questionSnapshot: { ...history.questionSnapshot, questionText: "" },
+        }),
+      ),
+    /回答履歴が不正/,
+  );
+});
+

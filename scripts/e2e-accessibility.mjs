@@ -532,16 +532,55 @@ const runAnswerModeJourney = async (client, downloadDirectory) => {
   );
   const historyState = await evaluate(
     client,
-    `(() => { const raw = localStorage.getItem("study-quiz-answer-history-v1"); const items = raw ? JSON.parse(raw) : []; const targets = items.filter((item) => ${JSON.stringify(ids)}.includes(item.questionId)); return { count: targets.length, types: [...new Set(targets.map((item) => item.answerType))].sort(), selectedIndices: targets.find((item) => item.questionId === "E2E-MULTIPLE")?.selectedIndices, textAnswer: targets.find((item) => item.questionId === "E2E-TEXT")?.textAnswer, visible: [...document.querySelectorAll(".history-item")].map((item) => item.textContent) }; })()`,
+    `(() => { const raw = localStorage.getItem("study-quiz-answer-history-v1"); const items = raw ? JSON.parse(raw) : []; const targets = items.filter((item) => ${JSON.stringify(ids)}.includes(item.questionId)); return { count: targets.length, types: [...new Set(targets.map((item) => item.answerType))].sort(), selectedIndices: targets.find((item) => item.questionId === "E2E-MULTIPLE")?.selectedIndices, textAnswer: targets.find((item) => item.questionId === "E2E-TEXT")?.textAnswer, snapshots: targets.map((item) => item.questionSnapshot), visible: [...document.querySelectorAll(".history-item")].map((item) => item.textContent) }; })()`,
   );
   if (
     historyState.count !== 3 ||
     JSON.stringify(historyState.types) !== JSON.stringify(["multiple", "single", "text"]) ||
     JSON.stringify(historyState.selectedIndices) !== JSON.stringify([0, 2]) ||
     historyState.textAnswer !== "  ｌｖｍ  " ||
+    historyState.snapshots.length !== 3 ||
+    historyState.snapshots.some(
+      (snapshot) =>
+        !snapshot?.questionText ||
+        !snapshot?.responseText ||
+        !snapshot?.correctAnswerText,
+    ) ||
     !ids.every((_id, index) => historyState.visible.some((text) => text?.includes(["E2E 択一問題", "E2E 複数選択問題", "E2E 入力問題"][index])))
   ) {
     throw new Error(`3方式の履歴保存・表示が不正です。${JSON.stringify(historyState)}`);
+  }
+
+  await evaluate(
+    client,
+    `(() => { const ids = new Set(${JSON.stringify(ids)}); const questions = JSON.parse(localStorage.getItem("study-quiz-questions-v1") ?? "[]").map((item) => ids.has(item.id) ? { ...item, text: "編集後 " + item.id, choices: item.choices.map((choice, index) => "編集後選択肢" + (index + 1)) } : item); localStorage.setItem("study-quiz-questions-v1", JSON.stringify(questions)); return true; })()`,
+  );
+  await client.send("Page.reload", { ignoreCache: true });
+  await waitFor(
+    client,
+    `document.querySelector("main h1")?.textContent?.trim() === "LinuC 101"`,
+    "問題編集後のホーム画面",
+  );
+  await clickNavigation(client, "記録");
+  await clickButton(client, "学習履歴");
+  await waitFor(
+    client,
+    `document.querySelector("main h1")?.textContent?.trim() === "学習履歴"`,
+    "問題編集後の学習履歴",
+  );
+  const snapshotDisplay = await evaluate(
+    client,
+    `(() => [...document.querySelectorAll(".history-item")].map((item) => item.textContent))()`,
+  );
+  if (
+    !["E2E 択一問題", "E2E 複数選択問題", "E2E 入力問題", "Single-B", "Multiple-A", "Multiple-C", "LVM"].every(
+      (text) => snapshotDisplay.some((item) => item?.includes(text)),
+    ) ||
+    snapshotDisplay.some((item) => item?.includes("編集後"))
+  ) {
+    throw new Error(
+      `問題編集後に回答時点スナップショットを表示できません。${JSON.stringify(snapshotDisplay)}`,
+    );
   }
 
   await clickNavigation(client, "その他");

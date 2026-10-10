@@ -4,6 +4,11 @@ import {
   answerDefinitionForExternalUse,
   answerDefinitionOf,
   formatCorrectAnswer,
+  createStudyHistoryQuestionSnapshot,
+  formatHistoryCorrectAnswer,
+  formatHistoryQuestionResponse,
+  historyQuestionText,
+  isStudyHistoryQuestionSnapshot,
   formatQuestionResponse,
   isQuestionResponseCorrect,
   normalizeTextAnswer,
@@ -12,6 +17,7 @@ import {
   validateQuestionAnswer,
 } from "../src/services/questionAnswerService.ts";
 import type { Question } from "../src/types/Question.ts";
+import type { StudyHistory } from "../src/types/StudyHistory.ts";
 
 const base: Question = {
   id: "q",
@@ -114,4 +120,60 @@ test("外部連携用回答定義は方式ごとに判別可能な形式を返�
     }) as { kind: string }).kind,
     "text",
   );
+});
+
+test("回答時点スナップショットは後日の問題編集から履歴表示を独立させる", () => {
+  const answeredQuestion: Question = {
+    ...base,
+    text: "回答時点の問題",
+    questionType: "multiple",
+    choices: ["旧A", "旧B", "旧C"],
+    answerIndices: [0, 2],
+  };
+  const snapshot = createStudyHistoryQuestionSnapshot(answeredQuestion, [2, 0]);
+  const history: StudyHistory = {
+    id: "H-1",
+    questionId: answeredQuestion.id,
+    category: answeredQuestion.category,
+    selectedIndex: -1,
+    selectedIndices: [0, 2],
+    answerType: "multiple",
+    questionSnapshot: snapshot,
+    correct: true,
+    answeredAt: "2026-10-11T00:00:00.000Z",
+    responseTimeSeconds: 5,
+    instantScore: 0.8,
+  };
+  const editedQuestion: Question = {
+    ...answeredQuestion,
+    text: "編集後の問題",
+    choices: ["新A", "新B", "新C"],
+  };
+
+  assert.equal(isStudyHistoryQuestionSnapshot(snapshot), true);
+  assert.equal(historyQuestionText(history, editedQuestion), "回答時点の問題");
+  assert.equal(
+    formatHistoryQuestionResponse(history, editedQuestion),
+    "選択肢1: 旧A / 選択肢3: 旧C",
+  );
+  assert.equal(
+    formatHistoryCorrectAnswer(history, editedQuestion),
+    "選択肢1: 旧A / 選択肢3: 旧C",
+  );
+});
+
+test("旧履歴は現行問題を使うフォールバック表示を維持する", () => {
+  const history: StudyHistory = {
+    id: "H-old",
+    questionId: base.id,
+    category: base.category,
+    selectedIndex: 1,
+    correct: false,
+    answeredAt: "2026-10-10T00:00:00.000Z",
+    responseTimeSeconds: 5,
+    instantScore: 0.5,
+  };
+  assert.equal(historyQuestionText(history, base), base.text);
+  assert.equal(formatHistoryQuestionResponse(history, base), "選択肢2: b");
+  assert.equal(formatHistoryCorrectAnswer(history, base), "選択肢1: a");
 });

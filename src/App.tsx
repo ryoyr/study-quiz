@@ -112,6 +112,7 @@ import type { MistakeNote } from "./types/MistakeNote";
 import type { Question } from "./types/Question";
 import {
   correctIndicesOf,
+  createStudyHistoryQuestionSnapshot,
   formatCorrectAnswer,
   formatQuestionResponse,
   isQuestionResponseCorrect,
@@ -671,6 +672,10 @@ export default function App() {
       questionId: question.id,
       category: question.category,
       answerType: questionTypeOf(question),
+      questionSnapshot: createStudyHistoryQuestionSnapshot(
+        question,
+        selectedAnswer,
+      ),
       ...responseToHistoryFields(selectedAnswer),
       correct,
       answeredAt: new Date().toISOString(),

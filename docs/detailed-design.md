@@ -1,4 +1,4 @@
-# Study Quiz 4.5.0 詳細設計 — 回答方式拡張
+# Study Quiz 4.5.1 詳細設計 — 回答方式・履歴スナップショット
 
 ## 1. 回答モデルAPI
 
@@ -38,6 +38,26 @@ Unicode NFKC
 |入力|`selectedIndex = -1`, `textAnswer = raw text`|
 
 新規履歴には`answerType`を追加する。旧履歴は同フィールドなしでも有効とする。
+
+### 回答時点スナップショット
+
+新規履歴には次の任意フィールドを保存する。
+
+```ts
+interface StudyHistoryQuestionSnapshot {
+  questionText: string;
+  answerType: "single" | "multiple" | "text";
+  responseText: string;
+  correctAnswerText: string;
+}
+```
+
+- `questionText`: 回答時点の問題文。
+- `responseText`: 回答時点の選択肢文言または入力文字列を含む表示文字列。
+- `correctAnswerText`: 回答時点の正答表示。
+- 各文字列は20,000文字以内とし、問題文と正答は空白だけを許可しない。
+- 履歴表示はスナップショットを優先し、旧履歴だけ現行問題へフォールバックする。
+- 問題の編集・アーカイブ・削除時に既存スナップショットは変更しない。
 
 ## 3. 問題検証
 
@@ -169,6 +189,7 @@ CSV固有検証後に共通問題検証を実行する。
 
 - 新しい回答モデルは非永続のためbackup version 9を維持。
 - `answerType`は任意フィールドとして許容。
+- `questionSnapshot`は任意フィールドとして検証・保持。
 - version 9はFNV-1aを検証してから正規化。
 - version 2～8は現行形式へ変換後、新しい整合性情報を付ける。
 

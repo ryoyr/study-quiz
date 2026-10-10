@@ -107,3 +107,46 @@ test("回答時点の問題方式と方式別回答を再読込できる", () =>
   assert.equal(history[1]?.answerType, "text");
 });
 
+test("有効な回答時点スナップショットを保持し、不正なものだけ除外する", () => {
+  const storage = installStorage();
+  const base = {
+    id: "H-S",
+    questionId: "Q-S",
+    category: "Linux",
+    selectedIndex: 0,
+    answerType: "single",
+    correct: true,
+    answeredAt: "2026-10-11T00:00:00.000Z",
+    responseTimeSeconds: 5,
+    instantScore: 0.8,
+  };
+  storage.setItem(
+    "study-quiz-answer-history-v1",
+    JSON.stringify([
+      {
+        ...base,
+        questionSnapshot: {
+          questionText: "回答時点の問題",
+          answerType: "single",
+          responseText: "選択肢1: A",
+          correctAnswerText: "選択肢1: A",
+        },
+      },
+      {
+        ...base,
+        id: "H-invalid",
+        questionSnapshot: {
+          questionText: "",
+          answerType: "single",
+          responseText: "A",
+          correctAnswerText: "A",
+        },
+      },
+    ]),
+  );
+
+  const history = loadHistory();
+  assert.equal(history[0].questionSnapshot?.questionText, "回答時点の問題");
+  assert.equal(history[1].questionSnapshot, undefined);
+});
+

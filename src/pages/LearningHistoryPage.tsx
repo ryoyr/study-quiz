@@ -3,8 +3,9 @@ import type { Question } from "../types/Question";
 import type { StudyHistory } from "../types/StudyHistory";
 import { fsrsRatingLabel } from "../services/fsrsAdapter";
 import {
-  formatQuestionResponse,
-  responseFromHistory,
+  formatHistoryCorrectAnswer,
+  formatHistoryQuestionResponse,
+  historyQuestionText,
 } from "../services/questionAnswerModel";
 type Props = {
   history: StudyHistory[];
@@ -127,20 +128,22 @@ export default function LearningHistoryPage({
                       {item.category}
                     </span>
                     <strong>
-                      {q?.text ?? `削除済み問題（${item.questionId}）`}
+                       {historyQuestionText(item, q)}
                     </strong>
                   </div>
                   <b>{item.correct ? "正解" : "不正解"}</b>
                 </div>
                 <div className="history-values">
-                  {q && (
-                    <span>
-                      回答 {" "}
-                      <strong>
-                        {formatQuestionResponse(q, responseFromHistory(item))}
-                      </strong>
-                    </span>
-                  )}
+                   <span>
+                     回答 {" "}
+                     <strong>{formatHistoryQuestionResponse(item, q)}</strong>
+                   </span>
+                   {formatHistoryCorrectAnswer(item, q) && (
+                     <span>
+                       正答 {" "}
+                       <strong>{formatHistoryCorrectAnswer(item, q)}</strong>
+                     </span>
+                   )}
                   <span>
                     回答時間{" "}
                     <strong>{item.responseTimeSeconds.toFixed(1)}秒</strong>

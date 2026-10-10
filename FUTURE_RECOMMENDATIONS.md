@@ -25,14 +25,16 @@ npm ci --no-audit --no-fund && npm run check
 
 ## 短期: データ精度と運用性
 
-### 3. 問題改訂履歴を導入
+### 3. 回答時点スナップショット（実装済み）と問題改訂履歴
 
-現行履歴は問題IDを参照するため、問題文や選択肢を後から変更すると過去回答の表示が現行内容に影響されます。次のいずれかを推奨します。
+4.5.1では、新規回答へ問題文・方式・回答表示・正答表示の最小スナップショットを保存し、問題編集・削除後も過去表示を維持します。旧履歴は従来どおり現行問題を参照します。
+
+次段階で改訂理由や版間差分の監査が必要な場合は、次を追加します。
 
 - `QuestionRevision`を追加し、履歴へrevision IDを保存する。
-- 履歴へ問題文・選択肢・正答表示の最小スナップショットを保存する。
+- 改訂者、改訂日時、変更理由、旧版との比較を管理する。
 
-前者は正規化と監査に優れ、後者は実装が軽量です。
+スナップショットは表示の安定性、`QuestionRevision`は正規化と監査に適します。
 
 ### 4. CSVの往復機能
 
@@ -42,7 +44,7 @@ npm ci --no-audit --no-fund && npm run check
 
 ### 5. 次期スキーマで回答定義を正本化
 
-4.5.0では互換性のため、永続化型`Question`に`answerIndex`、`answerIndices`、`acceptedAnswers`を残し、内部で`QuestionAnswerDefinition`へ変換します。次のメジャーな保存形式更新では以下を正本候補とします。
+4.5.1では互換性のため、永続化型`Question`に`answerIndex`、`answerIndices`、`acceptedAnswers`を残し、内部で`QuestionAnswerDefinition`へ変換します。次のメジャーな保存形式更新では以下を正本候補とします。
 
 ```ts
 type AnswerDefinition =

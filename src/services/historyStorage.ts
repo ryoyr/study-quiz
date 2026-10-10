@@ -1,6 +1,7 @@
 import type { StudyHistory } from "../types/StudyHistory";
 import { STORAGE_KEYS } from "./storageKeyRegistry.ts";
 import { removeStorageValue, writeStorageValue } from "./verifiedStorage.ts";
+import { isStudyHistoryQuestionSnapshot } from "./questionAnswerModel.ts";
 
 const STORAGE_KEY = STORAGE_KEYS.answerHistory;
 const FSRS_RATINGS = new Set<NonNullable<StudyHistory["fsrsRating"]>>([
@@ -57,6 +58,11 @@ const normalize = (value: Record<string, unknown>): StudyHistory | null => {
   )
     ? (value.answerType as StudyHistory["answerType"])
     : undefined;
+  const questionSnapshot = isStudyHistoryQuestionSnapshot(
+    value.questionSnapshot,
+  )
+    ? value.questionSnapshot
+    : undefined;
 
   return {
     id: value.id,
@@ -66,6 +72,7 @@ const normalize = (value: Record<string, unknown>): StudyHistory | null => {
     ...(selectedIndices ? { selectedIndices } : {}),
     ...(textAnswer !== undefined ? { textAnswer } : {}),
     ...(answerType ? { answerType } : {}),
+    ...(questionSnapshot ? { questionSnapshot } : {}),
     correct: value.correct,
     answeredAt: value.answeredAt,
     responseTimeSeconds,

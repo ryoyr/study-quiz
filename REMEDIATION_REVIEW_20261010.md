@@ -117,5 +117,12 @@
 
 - Implemented the remaining P1 browser E2E for single-choice, multiple-choice, and text-answer questions.
 - The scenario performs CSV registration, answers all three modes, checks the displayed response/correct answer, verifies persisted history fields, downloads a full backup, removes the target data, restores the downloaded file, and verifies the round trip.
-- Added an E2E contract unit test; the full unit set is now 147/147 passing.
+- Added E2E contract and history-snapshot tests; the full unit set is now 151/151 passing.
 - Chrome E2E passed twice consecutively using a temporary browser build of the product source. Because the locked Vite package remained HTTP 403, the temporary verification build used the available React 19.2.1 runtime and a test-only `ts-fsrs` adapter; neither is included in the deliverable.
+
+## 8. 4.5.1 history snapshot
+
+- New history records store an optional snapshot of the question text, answer type, rendered response, and rendered correct answer.
+- History rendering prefers the snapshot, so later question edits or deletion do not change the display of new past answers.
+- Old history without a snapshot remains valid and falls back to the current question.
+- Snapshot validation is shared by normal loading and full-backup validation; physical keys, storage schema 8, IndexedDB 2, and backup version 9 remain unchanged.

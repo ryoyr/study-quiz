@@ -1,5 +1,8 @@
 import type { Question, QuestionType } from "../types/Question";
-import type { StudyHistory } from "../types/StudyHistory";
+import type {
+  StudyHistory,
+  StudyHistoryQuestionSnapshot,
+} from "../types/StudyHistory";
 
 export type QuestionResponse = number | number[] | string;
 
@@ -149,6 +152,60 @@ export const formatQuestionResponse = (
   }
   return choiceLabel(question, response);
 };
+
+const SNAPSHOT_TEXT_LIMIT = 20_000;
+
+export const isStudyHistoryQuestionSnapshot = (
+  value: unknown,
+): value is StudyHistoryQuestionSnapshot => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const snapshot = value as Partial<StudyHistoryQuestionSnapshot>;
+  return (
+    typeof snapshot.questionText === "string" &&
+    snapshot.questionText.trim().length > 0 &&
+    snapshot.questionText.length <= SNAPSHOT_TEXT_LIMIT &&
+    ["single", "multiple", "text"].includes(String(snapshot.answerType)) &&
+    typeof snapshot.responseText === "string" &&
+    snapshot.responseText.length <= SNAPSHOT_TEXT_LIMIT &&
+    typeof snapshot.correctAnswerText === "string" &&
+    snapshot.correctAnswerText.trim().length > 0 &&
+    snapshot.correctAnswerText.length <= SNAPSHOT_TEXT_LIMIT
+  );
+};
+
+export const createStudyHistoryQuestionSnapshot = (
+  question: Question,
+  response: QuestionResponse,
+): StudyHistoryQuestionSnapshot => ({
+  questionText: question.text,
+  answerType: questionTypeOf(question),
+  responseText: formatQuestionResponse(question, response),
+  correctAnswerText: formatCorrectAnswer(question),
+});
+
+export const historyQuestionText = (
+  history: StudyHistory,
+  currentQuestion?: Question,
+): string =>
+  history.questionSnapshot?.questionText ??
+  currentQuestion?.text ??
+  `削除済み問題（${history.questionId}）`;
+
+export const formatHistoryQuestionResponse = (
+  history: StudyHistory,
+  currentQuestion?: Question,
+): string =>
+  history.questionSnapshot?.responseText ??
+  (currentQuestion
+    ? formatQuestionResponse(currentQuestion, responseFromHistory(history))
+    : "回答内容を表示できません");
+
+export const formatHistoryCorrectAnswer = (
+  history: StudyHistory,
+  currentQuestion?: Question,
+): string | null =>
+  history.questionSnapshot?.correctAnswerText ??
+  (currentQuestion ? formatCorrectAnswer(currentQuestion) : null);
 
 export const responseToHistoryFields = (
   response: QuestionResponse,

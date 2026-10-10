@@ -1,14 +1,14 @@
-# Release Manifest — Study Quiz 4.5.0 remediation + answer-mode E2E
+# Release Manifest — Study Quiz 4.5.1 history snapshot
 
 ## Identification
 
-- Release: `study-quiz-v4.5.0-remediated-e2e-20261011`
+- Release: `study-quiz-v4.5.1-history-snapshot-20261011`
 - Baseline dump: generated 2026-10-11 00:12:36, 165 text files
-- Application version: 4.5.0
+- Application version: 4.5.1
 - Storage schema: 8
 - IndexedDB version: 2
 - Full backup format: 9（reads 2–9）
-- Service Worker cache generation: v20
+- Service Worker cache generation: v21
 
 ## Package contents
 
