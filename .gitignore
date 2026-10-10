@@ -7,24 +7,91 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Dependencies / Build
 node_modules
 dist
 dist-ssr
 coverage
 *.tsbuildinfo
-*.local
+
+# Environment
 .env
 .env.*
 !.env.example
 .dev.vars
 
+# Cloudflare
+.wrangler
+.wrangler/*
+.cloudflare
+
+# Secrets / Certificates
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+*.csr
+secrets/
+private/
+credentials/
+
+# Backups / Dumps
+*.bak
+*.backup
+*.dump
+*.sql
+*.sqlite
+*.sqlite3
+
+# Compress
+*.zip
+*.7z
+*.rar
+*.tar
+*.gz
+
+# Test Artifacts
+playwright-report
+test-results
+e2e-results
+screenshots
+*.snap
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
 .idea
-.DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+
+# Temporary files
+tmp/
+temp/
+.cache/
+*.tmp
+
+# Local configuration
+*.local
+
+# Generated reports
+SHA256SUMS*
+VALIDATION_REPORT*
+TASK_MANAGEMENT*
+RELEASE_MANIFEST*
+
+VALIDATION_REPORT*
+TASK_MANAGEMENT*
+RELEASE_MANIFEST*
+CHANGE_SUMMARY*
+REMEDIATION*
+SHA256SUMS*
