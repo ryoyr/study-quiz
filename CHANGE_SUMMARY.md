@@ -1,5 +1,13 @@
 # 変更内容一覧 — 4.4.0 → 4.7.0
 
+## 4.7.0 Cloudflare Access 302/CORS修正
+
+- `https://ryoyr.github.io/study-quiz/`から`https://study-quiz-content-pr.forxdevelop.workers.dev`への直接POSTでAccessログイン302がCORS失敗になる経路を解消。
+- Access保護`/api/quiz-content/access-session`をtop-level popupで開き、Google等の認証後にpopupから`/api/quiz-content/pull-requests`へ同一オリジンPOST。
+- Access無効化、OPTIONS以外のBypass、Service Token／JWT／GitHub App秘密情報のフロント埋込みは行わない。
+- WorkerはJWT署名・issuer・AUD・iat・nbf・exp・許可メール、Origin、同一オリジンrelay、Rate Limit、入力を検証。
+- `ryoyr/study-quiz`、main、`public/content`、GitHub App `study-quiz-content-manager`を維持し、実PR・main変更・問題データ変更は実施しない。
+
 ## 4.7.0 問題マスターGitHub連携
 
 - 既存Question形式・問題ID・端末保存を維持し、配布元を`public/content`のmanifest／dataset JSONへ分離。

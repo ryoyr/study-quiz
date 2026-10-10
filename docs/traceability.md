@@ -39,6 +39,7 @@
 |明示操作時だけPR作成|`QuestionMasterPage` + `ConfirmDialog`|`questionMasterUi.test.ts`|
 |秘密情報をクライアントへ置かない|`contentPullRequestApi`, Workers Secrets|`questionMasterUi.test.ts`, `workerAccessAuth.test.ts`|
 |Access認証・利用者認可・CORS・Rate Limit|Worker `auth.ts`, `http.ts`, `index.ts`|`workerAccessAuth.test.ts`, `workerQuizContent.test.ts`|
+|クロスサイトCookie非依存のAccess連携|`contentPullRequestApi.ts`、`QuestionMasterPage.tsx`、Worker access-session relay|`contentPullRequestApi.test.ts`, `questionMasterUi.test.ts`, `workerQuizContent.test.ts`|
 |許可リポジトリ・ブランチ・パス固定|Worker env + command strict validation|`workerQuizContent.test.ts`, `questionMasterUi.test.ts`|
 |最新版・問題単位競合検出|manifest version、base SHA、question fingerprint|`questionMasterService.test.ts`, `workerQuizContent.test.ts`|
 |複数ファイルを1コミット|GitHub blobs/tree/commit/ref|`workerQuizContent.test.ts`|

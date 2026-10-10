@@ -17,6 +17,9 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      # 公開URLのみ。GitHub App秘密情報やAccess認証情報は設定しない。
+      VITE_QUIZ_CONTENT_API_URL: https://study-quiz-content-pr.forxdevelop.workers.dev/
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -24,12 +27,13 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci --no-audit --no-fund
+      - name: Verify Worker TypeScript
+        run: npx --no-install tsc -p workers/quiz-content-pr/tsconfig.json
       - id: setup-chrome
         uses: browser-actions/setup-chrome@v2
       - run: npm run check
         env:
           CHROME_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
-          VITE_QUIZ_CONTENT_API_URL: ${{ vars.QUIZ_CONTENT_API_URL }}
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:

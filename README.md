@@ -24,7 +24,7 @@ LPIC-1 Exam 101向けのローカルファースト学習PWAです。問題管�
 - 削除・アーカイブ時のキーボード対応確認ダイアログとフォーカス復帰
 - 問題編集の入力長・タグ件数制約と保存失敗通知
 - 問題マスターJSON・マニフェストの版管理と、端末編集を保護する安全同期
-- Cloudflare Workers／GitHub App経由の変更確認・専用ブランチ・Pull Request作成
+- Cloudflare Access認証popupの同一オリジンrelayと、GitHub App経由の専用ブランチ・Pull Request作成
 
 ## 動作環境
 
@@ -48,8 +48,10 @@ VITE_BASE_PATH=/ npm run build
 GitHub連携を有効にする場合は、公開Workers URLだけを設定します。GitHubの秘密鍵やトークンを`VITE_*`へ設定してはいけません。
 
 ```bash
-VITE_QUIZ_CONTENT_API_URL=https://quiz-content-api.example.com/ npm run build
+VITE_QUIZ_CONTENT_API_URL=https://study-quiz-content-pr.forxdevelop.workers.dev/ npm run build
 ```
+
+GitHub Pages `https://ryoyr.github.io/study-quiz/`からのPR作成では、Cloudflare Access保護下の認証popupを開き、popupからWorker APIへ同一オリジンで送信します。Google等の外部IdP、Access JWT検証、許可メール検証を維持しつつ、GitHub PagesからWorkerへのクロスサイトCookieには依存しません。
 
 ## 品質確認
 

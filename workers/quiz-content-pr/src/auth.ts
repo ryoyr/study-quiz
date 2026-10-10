@@ -145,8 +145,11 @@ export const verifyAccessIdentity = async (
     !verified ||
     payload.iss !== `https://${domain}` ||
     !audienceMatches(payload.aud, env.ACCESS_AUD) ||
+    typeof payload.iat !== "number" ||
+    payload.iat > now + 30 ||
     typeof payload.exp !== "number" ||
     payload.exp <= now ||
+    payload.exp <= payload.iat ||
     (typeof payload.nbf === "number" && payload.nbf > now + 30) ||
     typeof payload.email !== "string" ||
     typeof payload.sub !== "string"

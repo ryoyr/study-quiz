@@ -1,10 +1,13 @@
 import { verifyAccessIdentity } from "./auth";
 import { createGitHubClient, GitHubApiError } from "./github";
 import {
+  ACCESS_SESSION_PATH,
+  accessSessionResponse,
   ApiError,
   corsHeaders,
   errorResponse,
   jsonResponse,
+  PULL_REQUESTS_PATH,
   requireAllowedOrigin,
 } from "./http";
 import {
@@ -13,8 +16,6 @@ import {
 } from "./pullRequestService";
 import type { WorkerDependencies, WorkerEnv } from "./types";
 import { MAX_REQUEST_BYTES, parseCommand } from "./validation";
-
-const BASE_PATH = "/api/quiz-content/pull-requests";
 
 const defaultDependencies: WorkerDependencies = {
   authenticate: verifyAccessIdentity,
@@ -61,6 +62,17 @@ const ensureConfiguration = (env: WorkerEnv): void => {
       "ALLOWED_ORIGINはHTTPSのオリジンだけを指定してください。",
     );
   }
+  if (
+    !env.ACCESS_TEAM_DOMAIN?.trim() ||
+    !env.ACCESS_AUD?.trim() ||
+    !env.ALLOWED_EMAILS?.trim()
+  ) {
+    throw new ApiError(
+      503,
+      "ACCESS_NOT_CONFIGURED",
+      "Cloudflare Accessのteam domain、AUD、許可利用者を設定してください。",
+    );
+  }
   if (!env.RATE_LIMITER) {
     throw new ApiError(
       503,
@@ -74,7 +86,8 @@ const applyRateLimit = async (
   env: WorkerEnv,
   key: string,
 ): Promise<void> => {
-  const result = await (env.RATE_LIMITER as NonNullable<WorkerEnv["RATE_LIMITER"]>).limit({ key });
+  const limiter = env.RATE_LIMITER as NonNullable<WorkerEnv["RATE_LIMITER"]>;
+  const result = await limiter.limit({ key });
   if (!result.success) {
     throw new ApiError(
       429,
@@ -85,6 +98,10 @@ const applyRateLimit = async (
   }
 };
 
+const isPullRequestPath = (pathname: string): boolean =>
+  pathname === PULL_REQUESTS_PATH ||
+  new RegExp(`^${PULL_REQUESTS_PATH}/[1-9]\\d*$`, "u").test(pathname);
+
 export const handleRequest = async (
   request: Request,
   env: WorkerEnv,
@@ -93,20 +110,37 @@ export const handleRequest = async (
   try {
     ensureConfiguration(env);
     const url = new URL(request.url);
+
+    if (request.method === "GET" && url.pathname === ACCESS_SESSION_PATH) {
+      const identity = await dependencies.authenticate(request, env);
+      await applyRateLimit(env, `${identity.subject}:${ACCESS_SESSION_PATH}:GET`);
+      return accessSessionResponse(env, url.origin);
+    }
+
     if (request.method === "OPTIONS") {
+      if (!isPullRequestPath(url.pathname))
+        throw new ApiError(404, "NOT_FOUND", "指定されたAPIは存在しません。");
       requireAllowedOrigin(request, env);
       return new Response(null, { status: 204, headers: corsHeaders(env) });
     }
+
     requireAllowedOrigin(request, env);
-    const statusMatch = new RegExp(`^${BASE_PATH}/([1-9]\\d*)$`, "u").exec(url.pathname);
-    const isCreate = request.method === "POST" && url.pathname === BASE_PATH;
+    const statusMatch = new RegExp(
+      `^${PULL_REQUESTS_PATH}/([1-9]\\d*)$`,
+      "u",
+    ).exec(url.pathname);
+    const isCreate =
+      request.method === "POST" && url.pathname === PULL_REQUESTS_PATH;
     const isStatus = request.method === "GET" && statusMatch !== null;
     if (!isCreate && !isStatus) {
       throw new ApiError(404, "NOT_FOUND", "指定されたAPIは存在しません。");
     }
 
     const identity = await dependencies.authenticate(request, env);
-    await applyRateLimit(env, `${identity.subject}:${url.pathname}:${request.method}`);
+    await applyRateLimit(
+      env,
+      `${identity.subject}:${url.pathname}:${request.method}`,
+    );
     const github = await dependencies.createGitHubClient(env);
 
     if (isStatus && statusMatch) {

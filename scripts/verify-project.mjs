@@ -36,6 +36,7 @@ const requiredFiles = [
   "REMOVAL_CANDIDATES.md",
   "VALIDATION_REPORT_4.5.0.md",
   "VALIDATION_REPORT_4.6.0.md",
+  "VALIDATION_REPORT_CLOUDFLARE_ACCESS_20261011.md",
   "RELEASE_MANIFEST.md",
   "docs/requirements.md",
   "docs/basic-design.md",
@@ -55,6 +56,7 @@ const requiredFiles = [
   "workers/quiz-content-pr/src/index.ts",
   "workers/quiz-content-pr/src/auth.ts",
   "workers/quiz-content-pr/src/github.ts",
+  "workers/quiz-content-pr/wrangler.toml",
   "workers/quiz-content-pr/wrangler.toml.example",
   "tsconfig.json",
   "tsconfig.app.json",
@@ -172,8 +174,28 @@ assert(contentManifest.datasets?.[0]?.questionCount === contentDataset.questions
 const clientSources = [
   "src/services/contentPullRequestApi.ts",
   "src/pages/QuestionMasterPage.tsx",
+  ".github/workflows/deploy.yml",
 ].map((path) => readFileSync(path, "utf8")).join("\n");
 assert(!/GITHUB_PRIVATE_KEY|GITHUB_INSTALLATION_ID|BEGIN RSA PRIVATE KEY/u.test(clientSources), "GitHub秘密情報をクライアントへ含めてはいけません");
+const deployWorkflow = readFileSync(".github/workflows/deploy.yml", "utf8");
+assert(
+  deployWorkflow.includes("VITE_QUIZ_CONTENT_API_URL: https://study-quiz-content-pr.forxdevelop.workers.dev/"),
+  "GitHub Pagesへ公開Worker URLが設定されていません",
+);
+const workerConfig = readFileSync("workers/quiz-content-pr/wrangler.toml", "utf8");
+for (const token of [
+  'GITHUB_OWNER = "ryoyr"',
+  'GITHUB_REPO = "study-quiz"',
+  'GITHUB_BASE_BRANCH = "main"',
+  'ALLOWED_ORIGIN = "https://ryoyr.github.io"',
+  'ACCESS_TEAM_DOMAIN = "abrsb.cloudflareaccess.com"',
+]) {
+  assert(workerConfig.includes(token), `wrangler.toml に ${token} がありません`);
+}
+assert(
+  !/GITHUB_PRIVATE_KEY\s*=|GITHUB_INSTALLATION_ID\s*=|GITHUB_APP_ID\s*=/u.test(workerConfig),
+  "wrangler.tomlへGitHub App秘密情報を書いてはいけません",
+);
 for (const [path, tokens] of [
   ["src/main.tsx", ["<ErrorBoundary>", "<ConcurrentUpdateNotice />", "<PwaUpdatePrompt />"]],
   ["public/sw.js", ["CACHE_PREFIX}v23", "SKIP_WAITING", "matchAll", "Promise.allSettled", "navigationPreload", "networkFirstContent", "content/", "pwa-maskable-512x512.png", "Cache Storageへの保存はベストエフォート"]],
@@ -186,6 +208,9 @@ for (const [path, tokens] of [
   ["src/services/questionAnswerModel.ts", ["QuestionAnswerDefinition", "answerDefinitionOf", "responseToHistoryFields", "answerDefinitionForExternalUse", "createStudyHistoryQuestionSnapshot", "historyQuestionText"]],
   ["src/services/similarQuestionService.ts", ["answerNumbers", "acceptedAnswers", "questionTypeLabel"]],
   ["src/services/questionQualityService.ts", ["study-quiz-question-quality-input", "study-quiz-question-quality-proposals", "study-quiz-question-seed-updates"]],
+  ["src/services/contentPullRequestApi.ts", ["credentials: \"include\"", "api/quiz-content/access-session", "requestThroughContentAccessSession", "createContentPullRequestWithAccessSession"]],
+  ["workers/quiz-content-pr/src/index.ts", ["ACCESS_SESSION_PATH", "PULL_REQUESTS_PATH", "accessSessionResponse", "verifyAccessIdentity"]],
+  ["workers/quiz-content-pr/src/http.ts", ["study-quiz-content-access-session-ready", "credentials: \"same-origin\"", "x-study-quiz-access-relay", "content-security-policy"]],
   ["src/pages/QuestionQualityReviewPage.tsx", ["変更前の問題文", "提案後の問題文", "適用済みの初期データ更新JSONを出力"]],
   ["src/App.css", ["overflow-x: auto", "scroll-snap-type: x proximity"]],
 ]) {

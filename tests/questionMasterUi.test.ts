@@ -34,7 +34,11 @@ test("クライアントはWorkers URL以外のGitHub秘密情報を保持しな
   assert.match(api, /import\.meta\s+as\s+ContentApiImportMeta/);
   assert.doesNotMatch(api, /interface\s+ViteImportMeta\s+extends\s+ImportMeta/);
   assert.match(api, /credentials: "include"/);
-  assert.doesNotMatch(api, /localStorage|indexedDB/iu);
+  assert.match(api, /requestThroughContentAccessSession/);
+  assert.match(api, /window\.open/);
+  assert.match(api, /postMessage/);
+  assert.doesNotMatch(api, /CF-Access-Client-Secret|GITHUB_PRIVATE_KEY|GITHUB_INSTALLATION_ID/);
+  assert.doesNotMatch(api, /localStorage|sessionStorage|indexedDB/iu);
 });
 
 test("Workersは固定設定の専用ブランチとPRだけを作りmain更新・自動マージを行わない", () => {

@@ -53,12 +53,12 @@ const env = (): WorkerEnv => ({
   GITHUB_APP_ID: "1",
   GITHUB_INSTALLATION_ID: "2",
   GITHUB_PRIVATE_KEY: "unused",
-  GITHUB_OWNER: "example",
+  GITHUB_OWNER: "ryoyr",
   GITHUB_REPO: "study-quiz",
   GITHUB_BASE_BRANCH: "main",
   GITHUB_CONTENT_ROOT: "public/content",
-  ALLOWED_ORIGIN: "https://example.github.io",
-  ACCESS_TEAM_DOMAIN: "example.cloudflareaccess.com",
+  ALLOWED_ORIGIN: "https://ryoyr.github.io",
+  ACCESS_TEAM_DOMAIN: "abrsb.cloudflareaccess.com",
   ACCESS_AUD: "access-audience",
   ALLOWED_EMAILS: "editor@example.com",
 });
@@ -103,5 +103,74 @@ test("Access audience不一致と未許可メールを拒否する", async () =>
       disallowed.fetcher,
     ),
     /書込み権限/u,
+  );
+});
+
+
+test("Access JWTの改ざん署名・期限切れ・未来iat・未認証を拒否する", async () => {
+  const tamperedDomain = "auth4.cloudflareaccess.com";
+  const environment = env();
+  environment.ACCESS_TEAM_DOMAIN = tamperedDomain;
+
+  const signed = await fixture(tamperedDomain);
+  const tokenParts = signed.token.split(".");
+  const firstSignatureCharacter = tokenParts[2][0] === "A" ? "B" : "A";
+  tokenParts[2] = `${firstSignatureCharacter}${tokenParts[2].slice(1)}`;
+  const tampered = tokenParts.join(".");
+  await assert.rejects(
+    verifyAccessIdentity(
+      new Request("https://study-quiz-content-pr.forxdevelop.workers.dev", {
+        headers: { "cf-access-jwt-assertion": tampered },
+      }),
+      environment,
+      signed.fetcher,
+    ),
+    /検証できません/u,
+  );
+
+  const now = Math.floor(Date.now() / 1000);
+  const expiredDomain = "auth5.cloudflareaccess.com";
+  const expired = await fixture(expiredDomain, {
+    iat: now - 600,
+    exp: now - 1,
+  });
+  const expiredEnvironment = env();
+  expiredEnvironment.ACCESS_TEAM_DOMAIN = expiredDomain;
+  await assert.rejects(
+    verifyAccessIdentity(
+      new Request("https://study-quiz-content-pr.forxdevelop.workers.dev", {
+        headers: { "cf-access-jwt-assertion": expired.token },
+      }),
+      expiredEnvironment,
+      expired.fetcher,
+    ),
+    /検証できません/u,
+  );
+
+  const futureDomain = "auth6.cloudflareaccess.com";
+  const future = await fixture(futureDomain, {
+    iat: now + 120,
+    exp: now + 600,
+  });
+  const futureEnvironment = env();
+  futureEnvironment.ACCESS_TEAM_DOMAIN = futureDomain;
+  await assert.rejects(
+    verifyAccessIdentity(
+      new Request("https://study-quiz-content-pr.forxdevelop.workers.dev", {
+        headers: { "cf-access-jwt-assertion": future.token },
+      }),
+      futureEnvironment,
+      future.fetcher,
+    ),
+    /検証できません/u,
+  );
+
+  await assert.rejects(
+    verifyAccessIdentity(
+      new Request("https://study-quiz-content-pr.forxdevelop.workers.dev"),
+      environment,
+      signed.fetcher,
+    ),
+    /サインイン/u,
   );
 });

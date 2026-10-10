@@ -17,7 +17,6 @@ coverage
 .env.*
 !.env.example
 .dev.vars
-workers/quiz-content-pr/wrangler.toml
 
 # Editor directories and files
 .vscode/*

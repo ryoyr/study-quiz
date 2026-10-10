@@ -212,9 +212,18 @@ JSON契約、提案状態、適用トランザクション、初期データ反�
 - 配布元削除かつ端末未変更: `archivedAt`を付与
 - 配布元削除かつ端末変更: 競合として端末を維持
 
+### Accessセッションrelay
+
+1. 利用者の明示確定イベント内で`/api/quiz-content/access-session`をpopupのtop-level navigationとして開く。
+2. Accessの302を通常ナビゲーションとしてGoogle等の外部IdPへ進める。
+3. Workerは`Cf-Access-Jwt-Assertion`のRS256署名、issuer、AUD、iat、nbf、exp、メール許可を検証する。
+4. 認証済みHTMLは厳格CSP、no-store、no-referrerを返し、`https://ryoyr.github.io`だけへreadyを`postMessage`する。
+5. popupは固定形式のcreate/statusだけを受け、同一Workerオリジンへ`credentials: same-origin`で要求する。
+6. Workerは`Sec-Fetch-Site: same-origin`と非CORS許可ヘッダーを確認し、応答JSONだけを固定Originへ返す。Access JWTは返さない。
+
 ### PRトランザクション
 
-1. Access JWT／利用者／Origin／Rate Limit／入力を検証。
+1. Access JWT／利用者／Originまたは同一オリジンrelay／Rate Limit／入力を検証。
 2. 冪等ブランチと既存PRを確認。
 3. main refのcommit SHAとtree SHAを取得。
 4. commit SHA固定でmanifest／datasetを読込・再検証。

@@ -2,6 +2,12 @@
 
 ## 4.7.0 - 2026-10-11
 
+- GitHub PagesからAccess保護WorkerへのPOSTがログイン302/CORSで失敗する問題を、Access認証popup内の同一オリジンrelayで修正しました。
+- `CF_Authorization`をWorker popupのfirst-party contextで使用し、Access JWTやGitHub App秘密情報をフロントエンドへ渡さず、クロスサイトCookie依存を除去しました。
+- Workerへ認証セッション画面、固定Origin `postMessage`、厳格CSP、同一オリジンrelay検証を追加しました。
+- Access JWTのRS256署名、issuer、AUD、iat、nbf、exp、許可メール検証、Origin制限、Rate Limit、冪等PR作成を維持・強化しました。
+- Pages URL、Worker URL、`ryoyr/study-quiz`、GitHub App `study-quiz-content-manager`に合わせてworkflow、Wrangler設定、手順書、モック試験を更新しました。
+
 - 初期問題更新ツールのURLパス復号を修正し、空白を含む配置先でも動作するようにしました。
 - 初期問題更新時に既存overrideを保持してマージし、3回答方式を含む共通Question制約と更新パックメタデータを検証するよう強化しました。
 - seed更新ツールの回帰試験を、空白パス、CWD分離、既存保持、未知ID、重複、不正Question、ID不一致へ拡張しました。

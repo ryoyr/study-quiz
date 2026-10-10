@@ -154,8 +154,10 @@ QuestionManagementPage / CSV
 localStorage study-quiz-questions-v1
         ↓ 差分・明示確認
 QuestionMasterPage → contentPullRequestApi
-        ↓ HTTPS + Access
-Cloudflare Worker
+        ↓ Access保護popupをtop-levelで開く
+Cloudflare Access + 外部IdP
+        ↓ popup内からfirst-party Cookieで同一オリジンPOST
+Cloudflare Worker（JWT再検証・固定Origin relay）
         ↓ GitHub App installation token
 GitHub Git Data API → quiz-content/* → Pull Request → 人がmainへマージ
         ↓ GitHub Pages deploy
@@ -164,4 +166,4 @@ public/content manifest + datasets
 既存questions + 履歴・FSRS参照を維持
 ```
 
-境界は、配布原本、端末正本、GitHub書込みの3つに分ける。端末編集はGitHub通信の成否に依存せず、Workers未設定でも学習機能を継続する。
+境界は、配布原本、端末正本、GitHub書込みの3つに分ける。端末編集はGitHub通信の成否に依存せず、Workers未設定でも学習機能を継続する。Access JWTはWorker内でのみ扱い、popupからPWAへはAPI結果だけを固定Originの`postMessage`で返す。

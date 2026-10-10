@@ -127,7 +127,10 @@ HTML直接挿入、動的コード実行、認証情報同梱を行わないこ�
 - 端末編集と配布元更新を区別し、競合を自動上書きしない。
 - GitHub送信前に追加・更新・アーカイブとフィールド前後値を表示する。
 - 利用者が明示確定した場合だけWorkersへ送信する。
-- WorkersはAccess JWT、許可利用者、Origin、Rate Limit、入力、対象datasetを検証する。
+- WorkersはAccess JWTの署名・issuer・AUD・iat・nbf・exp、許可利用者、Origin、Rate Limit、入力、対象datasetを検証する。
+- GitHub PagesからAccess保護Workerへの送信は、Access認証popup内の同一オリジンrelayを使用し、クロスサイトCookieへ依存しないこと。
+- Access、Google等の外部IdP、OPTIONSバイパス以外のAccess enforcementを維持すること。
+- Access JWT、Access Service Token、GitHub App秘密情報をフロントエンドへ保存・埋込み・返却しないこと。
 - GitHub App秘密情報はWorkers Secretsにのみ保存する。
 - リポジトリ、main、`public/content`はWorkers設定で固定し、クライアント指定を受け付けない。
 - 変更は専用ブランチの1コミットとし、mainへ直接コミット・自動マージしない。

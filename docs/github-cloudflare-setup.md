@@ -3,29 +3,35 @@
 ## 1. アーキテクチャ
 
 ```text
-Study Quiz PWA (GitHub Pages)
+Study Quiz PWA
+https://ryoyr.github.io/study-quiz/
   ├─ 問題編集・端末内保存（既存localStorage）
   ├─ public/content の最新版取得
-  └─ 明示送信
-       ↓ HTTPS + Cloudflare Access cookie
-Cloudflare Workers
-  ├─ Access JWT署名/AUD/利用者、CORS、Rate Limit、入力を検証
-  ├─ 許可リポジトリ・main・public/contentを固定
-  └─ GitHub App installation token（短命）
+  └─ PR作成の明示確認
+       ↓ top-level popup（CORS fetchではない）
+Cloudflare Access + Google等の外部IdP
+https://study-quiz-content-pr.forxdevelop.workers.dev/api/quiz-content/access-session
+       ↓ 認証後、同一オリジンpopup内からPOST
+Cloudflare Worker
+/api/quiz-content/pull-requests
+  ├─ Access JWT署名/issuer/AUD/iat/nbf/exp/許可メールを再検証
+  ├─ Origin、同一オリジンrelay、Rate Limit、入力を検証
+  ├─ ryoyr/study-quiz、main、public/contentを固定
+  └─ GitHub App study-quiz-content-managerのinstallation token（短命）
        ↓ GitHub REST API
-GitHub
+GitHub ryoyr/study-quiz
   ├─ blobs → tree → commit → refs/heads/quiz-content/...
   └─ Pull Request → 人が確認してmainへマージ
 ```
 
-アプリやWorkersからmainを更新するAPI、自動マージAPIは呼び出さない。
+Access認証用popupはWorkerをtop-level siteとして開く。このため`CF_Authorization`はfirst-party contextで使用され、GitHub PagesからWorkerへのクロスサイトXHR Cookieに依存しない。Access JWTやGitHub App秘密情報をPWAへ返さず、popupとPWAの通信は固定Originへの`postMessage`だけに限定する。アプリやWorkersからmainを更新するAPI、自動マージAPIは呼び出さない。
 
 ## 2. GitHub App
 
 ### 2.1 作成
 
 1. GitHubの **Settings > Developer settings > GitHub Apps > New GitHub App** を開く。
-2. GitHub App name、Homepage URLを設定する。
+2. GitHub App nameを`study-quiz-content-manager`、Homepage URLを`https://ryoyr.github.io/study-quiz/`に設定する。
 3. Webhookを使わない場合は **Active** を解除する。
 4. Repository permissionsを次だけ設定する。
    - **Contents: Read and write** — 問題JSON、manifest、ブランチ、コミット
@@ -33,7 +39,7 @@ GitHub
    - **Metadata: Read-only** — 既定の必須権限
 5. `Where can this GitHub App be installed?` は運用主体に限定する。
 6. 作成後にprivate keyを1つ生成し、安全な端末へ一時保存する。
-7. **Install App** から `Only select repositories` を選び、対象リポジトリだけへインストールする。
+7. **Install App** から `Only select repositories` を選び、`ryoyr/study-quiz`だけへインストールする。
 8. App IDとinstallation IDを控える。installation IDはインストール設定URLの数値部分で確認する。
 
 付与しない権限: Administration、Actions write、Members、Secrets、Workflows。実装はこれらを使用しない。
@@ -53,30 +59,74 @@ GitHub Appにruleset bypassを付けない。
 
 ## 3. Cloudflare Access
 
-1. Workers用のカスタムホスト名（例 `quiz-content-api.example.com`）を用意する。
-2. Zero Trust > Access controls > ApplicationsでSelf-hosted applicationを作成し、Workersのホスト名／APIパスを保護する。
-3. 許可するIdP・利用者だけをAccess policyのAllowへ追加する。
-4. Application Audience (AUD) Tagを控える。
-5. Workersの`ACCESS_TEAM_DOMAIN`へ `<team>.cloudflareaccess.com`、`ACCESS_AUD`へAUDを設定する。
-6. `ALLOWED_EMAILS`にも書込み可能なメールを列挙する。Accessへログインできても、この一覧にない利用者は403となる。
+### 3.1 現行値
+
+|項目|設定値|
+|---|---|
+|Worker|`https://study-quiz-content-pr.forxdevelop.workers.dev`|
+|Access team domain|`abrsb.cloudflareaccess.com`|
+|認証対象|`study-quiz-content-pr.forxdevelop.workers.dev/api/quiz-content/*`|
+|認証方式|Google等の既存外部IdP|
+|API|`/api/quiz-content/pull-requests`|
+|認証セッション画面|`/api/quiz-content/access-session`|
+|許可Origin|`https://ryoyr.github.io`|
+
+### 3.2 Access Application
+
+1. Zero Trust > Access controls > Applicationsで、既存Self-hosted applicationを開く。
+2. Application domain/pathを`study-quiz-content-pr.forxdevelop.workers.dev/api/quiz-content/*`へ変更する。同じ既存Applicationを編集し、AUDを変えない。
+3. Allow policyはGoogle等の既存IdPで認証した許可利用者だけを対象にする。**Bypass Everyoneを追加しない**。
+4. **Advanced settings > Cross-Origin Resource Sharing (CORS) settings > Bypass OPTIONS requests to origin** は既存どおり有効にする。WorkerのOPTIONS検証も維持する。
+5. Application Audience (AUD) TagをCloudflare DashboardのWorker変数`ACCESS_AUD`へ設定する。
+6. `ALLOWED_EMAILS`へ書込み可能なメールだけをカンマ区切りで設定する。Accessへログインできても、この一覧にない利用者はWorkerが403で拒否する。
+7. Worker変数`ACCESS_TEAM_DOMAIN`は`abrsb.cloudflareaccess.com`、`ALLOWED_ORIGIN`は`https://ryoyr.github.io`とする。後者に`/study-quiz/`や末尾スラッシュを付けない。
+
+### 3.3 302/CORSの根本原因
+
+Cloudflare公式CORS仕様では、Access保護先へ到達するCORS要求には有効な`CF_Authorization` Cookieが必要である。未ログインのXHR/fetchはAccessログインへ302となるが、ブラウザーはXHR内で外部IdP画面を処理できず、ログイン応答にもAPI用CORSヘッダーがないためCORSエラーになる。さらにOPTIONSには設計上Cookieが付かない。今回はOPTIONSバイパスとWorkerのOPTIONS応答は既に正しく、実POSTの認証Cookie欠落が原因である。
+
+`credentials: "include"`は既存Cookieを送る指定であり、XHR内でAccessログインを完了させたり、第三者Cookie制限を解除したりしない。Cloudflare公式も、クロスオリジンAccessでは対象ドメインへ先にログインする必要があり、プライベートモード等で`CF_Authorization`が第三者Cookieとしてブロックされると失敗すると説明している。
+
+### 3.4 採用方式
+
+PWAの明示確認ボタンからAccess保護された`/api/quiz-content/access-session`をpopupのtop-level navigationで開く。302は通常の画面遷移としてGoogle等のIdPへ進み、認証後にWorkerが署名・issuer・AUD・期限・許可メールを検証してrelayページを返す。relayページは同じWorkerオリジンからAPIへPOSTするため、Access Cookieはfirst-party contextで送られる。
+
+- Accessは無効化しない。
+- OPTIONS以外をAccessで無条件Bypassしない。
+- Access JWTをPWAへ渡さない。
+- Service TokenやGitHub App秘密情報をPWAへ渡さない。
+- popupは固定`https://ryoyr.github.io`との`postMessage`だけを許可する。
+- Workerは同一オリジンrelayについて`Sec-Fetch-Site: same-origin`と専用ヘッダーを検証する。
+- 既存の直接CORS APIと`credentials: "include"`は互換用に維持するが、画面操作はrelay方式を使う。
+
+### 3.5 比較した方式
+
+|方式|クロスサイトCookie依存|安全性・互換性|判定|
+|---|---:|---|---|
+|`credentials: include`だけ|あり|未ログイン302と第三者Cookie制限を解消しない|不採用|
+|対象Workerへ事前ログインしてXHR再試行|あり|Cloudflare公式の手動方式だが、プライベートモード等では失敗|補助策|
+|ブラウザーへAccess Service Tokenを埋込|なし|Client Secret漏えいとなり、利用者単位メール認可も失う|禁止|
+|APIパスをAccess Bypassし、独自Bearerだけで保護|なし|Access enforcement/logを失い、現行要件に反する|不採用|
+|PagesとAPIを同一siteのカスタムドメインへ移行|なし|長期的に単純だがDNS・配信URL・Access Application変更が大きい|将来候補|
+|Access認証popup内の同一オリジンrelay|なし（API実行時）|Access、外部IdP、HttpOnly Cookie、JWT再検証を維持し変更範囲が小さい|**採用**|
 
 重要:
 
-- `workers_dev = false`を維持し、Accessを迂回できる`*.workers.dev`公開URLを残さない。
+- Worker URL全体または`/api/quiz-content/*`をAccessで保護する。
 - Workers自身も`Cf-Access-Jwt-Assertion`を外部公開JWKで検証する。
-- CORSは認証の代わりではない。`ALLOWED_ORIGIN`はGitHub Pagesのオリジンと完全一致させる（末尾パス・スラッシュなし）。
+- CORSは認証の代わりではない。
 
 ## 4. Workersデプロイ
 
 ### 4.1 準備
 
-`workers/quiz-content-pr/wrangler.toml.example`を`wrangler.toml`へコピーし、秘密でない固定値を置換する。
+`workers/quiz-content-pr/wrangler.toml`には公開可能な固定値だけを記録済み。`ACCESS_AUD`と`ALLOWED_EMAILS`はCloudflare DashboardのVariablesで設定し、`keep_vars = true`でデプロイ時に維持する。`namespace_id`は現在デプロイ済みRate Limiting bindingの値と一致することをDashboardで確認する。
 
 ```bash
-cd workers/quiz-content-pr && cp wrangler.toml.example wrangler.toml && npm install
+cd workers/quiz-content-pr && npm install
 ```
 
-初回`npm install`で作成された`package-lock.json`はレビューしてコミットし、以後は`npm ci`を使用する。
+初回`npm install`で作成されたWorker用`package-lock.json`はレビューしてコミットし、以後は`npm ci`を使用する。現時点の成果物にはWorker用lockがないため、通常CIへ組み込む前に生成が必要。
 
 ### 4.2 Secrets
 
@@ -102,24 +152,21 @@ private keyは`-----BEGIN RSA PRIVATE KEY-----`または`-----BEGIN PRIVATE KEY-
 cd workers/quiz-content-pr && npm run typecheck && npm run deploy
 ```
 
-デプロイ後、Cloudflare Access保護下のカスタムURLであることを確認する。
+デプロイ後、`https://study-quiz-content-pr.forxdevelop.workers.dev/api/quiz-content/*`がCloudflare Access保護下であることを確認する。
 
 ### 4.4 Rate Limiting
 
-例は利用者・API・HTTPメソッドごとに1分10回。`namespace_id`はCloudflareアカウント内で一意な整数へ置換する。bindingがない場合、Workersは安全側に停止して503を返す。
+利用者・API・HTTPメソッドごとに1分10回。`namespace_id`はCloudflareアカウント内で一意な既存デプロイ値と一致させる。bindingがない場合、Workersは安全側に停止して503を返す。
 
 ## 5. アプリ／GitHub Pages
 
-GitHubリポジトリの **Settings > Secrets and variables > Actions > Variables** に追加する。
+`.github/workflows/deploy.yml`は公開エンドポイントだけを次の値でビルドへ渡す。
 
 ```text
-Name: QUIZ_CONTENT_API_URL
-Value: https://quiz-content-api.example.com/
+VITE_QUIZ_CONTENT_API_URL=https://study-quiz-content-pr.forxdevelop.workers.dev/
 ```
 
-これは公開エンドポイントであり秘密ではない。private key、App token、installation tokenを`VITE_*`へ設定してはいけない。
-
-`.github/workflows/deploy.yml`はこのRepository variableを`VITE_QUIZ_CONTENT_API_URL`としてビルドへ渡す。設定後にPagesを再デプロイする。
+これは公開URLであり秘密ではない。GitHub App `study-quiz-content-manager`のprivate key、App ID、installation ID、installation token、Cloudflare Access Service Token、Access JWTを`VITE_*`へ設定してはいけない。Pages再デプロイ後、成果物へ公開Worker URLだけが入り、秘密情報がないことを検査する。
 
 ## 6. 利用手順
 
@@ -130,9 +177,10 @@ Value: https://quiz-content-api.example.com/
 5. 追加・更新・アーカイブの前後差分を開いて確認する。
 6. PRタイトル、説明、コミットメッセージを入力する。
 7. **送信内容を確定してPull Requestを作成**を押し、確認ダイアログで確定する。
-8. 返されたGitHub URLを開き、CI、差分、レビュー結果を確認する。
-9. GitHub上で手動マージする。
-10. Pagesデプロイ完了後、アプリで最新版を確認し、安全な更新だけを端末へ適用する。
+8. Cloudflare Access認証popupが開く。未認証ならGoogle等の既存IdPでログインする。popupは同一オリジンPOSTの完了後に閉じる。
+9. 返されたGitHub URLを開き、CI、差分、レビュー結果を確認する。
+10. GitHub上で手動マージする。
+11. Pagesデプロイ完了後、アプリで最新版を確認し、安全な更新だけを端末へ適用する。
 
 「PR作成成功」は「マージ済み」ではない。画面の**GitHub上の状態を再確認**でopen／closed／mergedを区別する。
 
@@ -150,16 +198,27 @@ cd workers/quiz-content-pr && npm run typecheck
 
 モック試験は実GitHubへ書き込まない。
 
-### 7.2 本番接続
+### 7.2 Cloudflare設定後の確認
 
-- 未認証ブラウザー: Accessサインインへ誘導または401
-- 許可外メール: 403
-- GitHub App未設定／権限不足: 安全な503/502。秘密情報は応答に出ない
-- テスト問題1件: `quiz-content/...`ブランチとPRができ、main SHAが変わらない
-- 同じ送信の再実行: 同じPRを返し、コミットを増やさない
-- mainを別更新後に古い画面から送信: 409競合
-- PRマージ後: manifestとdatasetのversionが進み、Pagesから取得できる
-- オフライン: 既存問題で学習でき、送信失敗でも端末編集が残る
+実PRを作成しない段階では、次までを確認する。
+
+```bash
+curl -i -X OPTIONS "https://study-quiz-content-pr.forxdevelop.workers.dev/api/quiz-content/pull-requests" -H "Origin: https://ryoyr.github.io" -H "Access-Control-Request-Method: POST" -H "Access-Control-Request-Headers: content-type,x-idempotency-key"
+```
+
+期待値: 204、`Access-Control-Allow-Origin: https://ryoyr.github.io`、GET/POST/OPTIONS、`content-type,x-idempotency-key`。
+
+ブラウザーでは`https://ryoyr.github.io/study-quiz/`から認証popupを開き、Google等でログイン後、popup内の同一オリジンPOSTが302にならないことをNetworkで確認する。未認証でAPIを直接呼ぶとAccessログイン302になるのは正常である。
+
+- 未認証セッション: Accessサインインへ誘導。Workerへ未認証で到達した場合は401。
+- 不許可Origin: 403。
+- Access許可済みでも`ALLOWED_EMAILS`外: 403。
+- GitHub App未設定／権限不足: 安全な503/502。秘密情報は応答に出ない。
+- モックで同じ送信を再実行: 同じPRを返し、コミットを増やさない。
+- モックでmain競合: 409。
+- オフライン／認証失敗: 既存問題で学習でき、端末編集が残る。
+
+実PR試験は別途明示承認後に限定問題1件で行う。本作業では実行しない。実施時も`quiz-content/...`ブランチとPRだけが作られ、main SHAが変わらないことを確認し、手動レビュー前にマージしない。
 
 ## 8. 障害対応
 
@@ -188,7 +247,11 @@ cd workers/quiz-content-pr && npm run typecheck
 - GitHub REST Git commits: https://docs.github.com/en/rest/git/commits
 - GitHub App installation token: https://docs.github.com/en/rest/apps/apps#create-an-installation-access-token-for-an-app
 - GitHub Pull Requests: https://docs.github.com/en/rest/pulls/pulls#create-a-pull-request
+- Cloudflare Access CORS: https://developers.cloudflare.com/cloudflare-one/access-controls/applications/http-apps/authorization-cookie/cors/
+- Cloudflare Access authorization cookie: https://developers.cloudflare.com/cloudflare-one/access-controls/applications/http-apps/authorization-cookie/
 - Cloudflare Access JWT validation: https://developers.cloudflare.com/cloudflare-one/access-controls/applications/http-apps/authorization-cookie/validating-json/
+- Cloudflare Access application paths: https://developers.cloudflare.com/cloudflare-one/access-controls/policies/app-paths/
+- Cloudflare Access policies and Bypass behavior: https://developers.cloudflare.com/cloudflare-one/access-controls/policies/
 - Workers Rate Limiting binding: https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/
 - Workers limits: https://developers.cloudflare.com/workers/platform/limits/
 - Workers pricing: https://developers.cloudflare.com/workers/platform/pricing/

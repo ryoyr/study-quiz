@@ -3,8 +3,8 @@ import ConfirmDialog from "../components/ConfirmDialog";
 import {
   configuredContentApiBaseUrl,
   ContentPullRequestApiError,
-  createContentPullRequest,
-  getContentPullRequestStatus,
+  createContentPullRequestWithAccessSession,
+  getContentPullRequestStatusWithAccessSession,
 } from "../services/contentPullRequestApi";
 import {
   buildQuestionMasterChanges,
@@ -204,7 +204,10 @@ export default function QuestionMasterPage({
     setError("");
     setMessage("Pull Requestを作成しています。画面を閉じずにお待ちください。");
     try {
-      const result = await createContentPullRequest(command, apiBaseUrl);
+      const result = await createContentPullRequestWithAccessSession(
+        command,
+        apiBaseUrl,
+      );
       setPullRequest(result);
       setPageState("success");
       setMessage(
@@ -248,7 +251,10 @@ export default function QuestionMasterPage({
     setPageState("loading");
     setError("");
     try {
-      const result = await getContentPullRequestStatus(pullRequest.number, apiBaseUrl);
+      const result = await getContentPullRequestStatusWithAccessSession(
+        pullRequest.number,
+        apiBaseUrl,
+      );
       setPullRequest(result);
       setPageState("success");
       setMessage(`Pull Request #${result.number}: ${statusLabel(result.state)}`);
@@ -383,7 +389,7 @@ export default function QuestionMasterPage({
               送信内容を確定してPull Requestを作成
             </button>
             <p className="master-security-note">
-              この操作はメインブランチへ直接コミットせず、自動マージもしません。GitHubの秘密鍵・トークンはブラウザーへ保存しません。
+              確定後にCloudflare Access認証ウィンドウを開き、認証済みウィンドウから同一オリジンで送信します。この操作はメインブランチへ直接コミットせず、自動マージもしません。Access JWTやGitHubの秘密鍵・トークンはブラウザーへ保存しません。
             </p>
           </section>
         )}

@@ -7,7 +7,12 @@ import {
 } from "../src/services/questionMasterChangeService.ts";
 import type { Question } from "../src/types/Question.ts";
 import type { QuestionMasterSnapshot } from "../src/types/QuestionMaster.ts";
-import { ApiError } from "../workers/quiz-content-pr/src/http.ts";
+import {
+  ACCESS_RELAY_HEADER,
+  ACCESS_SESSION_PATH,
+  ApiError,
+  PULL_REQUESTS_PATH,
+} from "../workers/quiz-content-pr/src/http.ts";
 import { GitHubApiError } from "../workers/quiz-content-pr/src/github.ts";
 import { handleRequest } from "../workers/quiz-content-pr/src/index.ts";
 import {
@@ -58,12 +63,12 @@ const env = (): WorkerEnv => ({
   GITHUB_APP_ID: "12345",
   GITHUB_INSTALLATION_ID: "67890",
   GITHUB_PRIVATE_KEY: "test-only",
-  GITHUB_OWNER: "example",
+  GITHUB_OWNER: "ryoyr",
   GITHUB_REPO: "study-quiz",
   GITHUB_BASE_BRANCH: "main",
   GITHUB_CONTENT_ROOT: "public/content",
-  ALLOWED_ORIGIN: "https://example.github.io",
-  ACCESS_TEAM_DOMAIN: "example.cloudflareaccess.com",
+  ALLOWED_ORIGIN: "https://ryoyr.github.io",
+  ACCESS_TEAM_DOMAIN: "abrsb.cloudflareaccess.com",
   ACCESS_AUD: "audience",
   ALLOWED_EMAILS: "editor@example.com",
   RATE_LIMITER: { limit: async () => ({ success: true }) },
@@ -103,7 +108,7 @@ class FakeGitHub implements GitHubRepositoryClient {
   async createPullRequest(input: { branch: string }): Promise<GitHubPullRequest> {
     this.pullRequest = {
       number: 42,
-      html_url: "https://github.com/example/study-quiz/pull/42",
+      html_url: "https://github.com/ryoyr/study-quiz/pull/42",
       state: "open",
       merged_at: null,
       head: { ref: input.branch },
@@ -247,7 +252,7 @@ test("HTTP境界はオリジン・認証・レート制限を適用してからG
     new Request("https://worker.example.com/api/quiz-content/pull-requests", {
       method: "POST",
       headers: {
-        origin: "https://example.github.io",
+        origin: "https://ryoyr.github.io",
         "content-type": "application/json",
         "x-idempotency-key": cmd.idempotencyKey,
       },
@@ -257,7 +262,7 @@ test("HTTP境界はオリジン・認証・レート制限を適用してからG
     dependencies,
   );
   assert.equal(response.status, 201);
-  assert.equal(response.headers.get("access-control-allow-origin"), "https://example.github.io");
+  assert.equal(response.headers.get("access-control-allow-origin"), "https://ryoyr.github.io");
 });
 
 test("未認証、未許可オリジン、レート超過を拒否する", async () => {
@@ -276,7 +281,7 @@ test("未認証、未許可オリジン、レート超過を拒否する", async
       headers: { origin, "x-idempotency-key": cmd.idempotencyKey },
       body: JSON.stringify(cmd),
     });
-  assert.equal((await handleRequest(request("https://example.github.io"), env(), unauthorized)).status, 401);
+  assert.equal((await handleRequest(request("https://ryoyr.github.io"), env(), unauthorized)).status, 401);
   assert.equal((await handleRequest(request("https://evil.example"), env(), unauthorized)).status, 403);
 
   const limitedEnv = env();
@@ -287,7 +292,7 @@ test("未認証、未許可オリジン、レート超過を拒否する", async
     now: () => new Date(),
   };
   assert.equal(
-    (await handleRequest(request("https://example.github.io"), limitedEnv, authenticated)).status,
+    (await handleRequest(request("https://ryoyr.github.io"), limitedEnv, authenticated)).status,
     429,
   );
 
@@ -300,7 +305,7 @@ test("未認証、未許可オリジン、レート超過を拒否する", async
     new Request("https://worker.example.com/api/quiz-content/pull-requests", {
       method: "POST",
       headers: {
-        origin: "https://example.github.io",
+        origin: "https://ryoyr.github.io",
         "x-idempotency-key": cmd.idempotencyKey,
       },
       body: JSON.stringify(arbitraryTarget),
@@ -309,4 +314,141 @@ test("未認証、未許可オリジン、レート超過を拒否する", async
     authenticated,
   );
   assert.equal(arbitraryResponse.status, 400);
+});
+
+
+test("OPTIONSは許可Originだけに204を返し、認証やGitHub処理を呼ばない", async () => {
+  let authenticateCalls = 0;
+  let githubCalls = 0;
+  const dependencies: WorkerDependencies = {
+    authenticate: async () => {
+      authenticateCalls += 1;
+      return { email: "editor@example.com", subject: "user-1" };
+    },
+    createGitHubClient: async () => {
+      githubCalls += 1;
+      return new FakeGitHub();
+    },
+    now: () => new Date(),
+  };
+  const response = await handleRequest(
+    new Request(
+      `https://study-quiz-content-pr.forxdevelop.workers.dev${PULL_REQUESTS_PATH}`,
+      {
+        method: "OPTIONS",
+        headers: {
+          origin: "https://ryoyr.github.io",
+          "access-control-request-method": "POST",
+          "access-control-request-headers": "content-type,x-idempotency-key",
+        },
+      },
+    ),
+    env(),
+    dependencies,
+  );
+  assert.equal(response.status, 204);
+  assert.equal(
+    response.headers.get("access-control-allow-origin"),
+    "https://ryoyr.github.io",
+  );
+  assert.match(
+    response.headers.get("access-control-allow-headers") ?? "",
+    /x-idempotency-key/u,
+  );
+  assert.equal(authenticateCalls, 0);
+  assert.equal(githubCalls, 0);
+
+  const denied = await handleRequest(
+    new Request(
+      `https://study-quiz-content-pr.forxdevelop.workers.dev${PULL_REQUESTS_PATH}`,
+      { method: "OPTIONS", headers: { origin: "https://evil.example" } },
+    ),
+    env(),
+    dependencies,
+  );
+  assert.equal(denied.status, 403);
+});
+
+test("Accessセッション画面は認証済み利用者だけに返し、秘密情報を含めない", async () => {
+  const environment = env();
+  environment.GITHUB_PRIVATE_KEY = "DO-NOT-EXPOSE-PRIVATE-KEY";
+  const authenticated: WorkerDependencies = {
+    authenticate: async () => ({
+      email: "editor@example.com",
+      subject: "access-user-1",
+    }),
+    createGitHubClient: async () => new FakeGitHub(),
+    now: () => new Date(),
+  };
+  const response = await handleRequest(
+    new Request(
+      `https://study-quiz-content-pr.forxdevelop.workers.dev${ACCESS_SESSION_PATH}`,
+    ),
+    environment,
+    authenticated,
+  );
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get("content-type") ?? "", /^text\/html/u);
+  assert.match(
+    response.headers.get("content-security-policy") ?? "",
+    /default-src 'none'/u,
+  );
+  const html = await response.text();
+  assert.match(html, /https:\/\/ryoyr\.github\.io/u);
+  assert.match(html, /credentials: "same-origin"/u);
+  assert.match(html, /x-study-quiz-access-relay/u);
+  assert.doesNotMatch(html, /DO-NOT-EXPOSE-PRIVATE-KEY/u);
+  assert.doesNotMatch(html, /GITHUB_INSTALLATION_ID/u);
+
+  const unauthorized: WorkerDependencies = {
+    ...authenticated,
+    authenticate: async () => {
+      throw new ApiError(401, "AUTHENTICATION_REQUIRED", "サインインが必要です。");
+    },
+  };
+  const denied = await handleRequest(
+    new Request(
+      `https://study-quiz-content-pr.forxdevelop.workers.dev${ACCESS_SESSION_PATH}`,
+    ),
+    env(),
+    unauthorized,
+  );
+  assert.equal(denied.status, 401);
+});
+
+test("同一オリジンAccessリレーだけをGitHub Pages Originと同等に受け付ける", async () => {
+  const github = new FakeGitHub();
+  const cmd = await command();
+  const dependencies: WorkerDependencies = {
+    authenticate: async () => ({ email: "editor@example.com", subject: "user-1" }),
+    createGitHubClient: async () => github,
+    now: () => new Date("2026-10-11T02:00:00.000Z"),
+  };
+  const relayRequest = (site: string, relay = "1") =>
+    new Request(
+      `https://study-quiz-content-pr.forxdevelop.workers.dev${PULL_REQUESTS_PATH}`,
+      {
+        method: "POST",
+        headers: {
+          origin: "https://study-quiz-content-pr.forxdevelop.workers.dev",
+          "sec-fetch-site": site,
+          [ACCESS_RELAY_HEADER]: relay,
+          "content-type": "application/json",
+          "x-idempotency-key": cmd.idempotencyKey,
+        },
+        body: JSON.stringify(cmd),
+      },
+    );
+
+  const accepted = await handleRequest(relayRequest("same-origin"), env(), dependencies);
+  assert.equal(accepted.status, 201);
+
+  const crossSite = await handleRequest(relayRequest("cross-site"), env(), dependencies);
+  assert.equal(crossSite.status, 403);
+  const missingMarker = await handleRequest(
+    relayRequest("same-origin", "0"),
+    env(),
+    dependencies,
+  );
+  assert.equal(missingMarker.status, 403);
 });

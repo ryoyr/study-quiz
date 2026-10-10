@@ -6,7 +6,7 @@ preview_urls = false
 keep_vars = true
 
 [vars]
-# 公開してよい固定値。別環境へ複製する場合だけ置換する。
+# 公開してよい固定値だけをGit管理する。
 GITHUB_OWNER = "ryoyr"
 GITHUB_REPO = "study-quiz"
 GITHUB_BASE_BRANCH = "main"
@@ -14,18 +14,14 @@ GITHUB_CONTENT_ROOT = "public/content"
 ALLOWED_ORIGIN = "https://ryoyr.github.io"
 ACCESS_TEAM_DOMAIN = "abrsb.cloudflareaccess.com"
 
-# 次の非秘密変数はCloudflare Dashboardで設定する。値はリポジトリへ記録しない。
-# ACCESS_AUD: 既存Access Application Audience (AUD) Tag
-# ALLOWED_EMAILS: 書込みを許可するメールアドレスのカンマ区切り
-
-# GitHub App "study-quiz-content-manager" の次の値はファイルへ書かず、
-# wrangler secret putで登録する。
+# ACCESS_AUDとALLOWED_EMAILSはCloudflare Dashboardで設定し、keep_varsで維持する。
+# GitHub App "study-quiz-content-manager" の次の値はwrangler secret putで登録する。
 # GITHUB_APP_ID
 # GITHUB_INSTALLATION_ID
 # GITHUB_PRIVATE_KEY
 
 # GitHub連携は頻度が低いため、利用者・API単位で1分10回に制限する。
-# namespace_idはCloudflareアカウント内で一意な既存値を維持する。
+# namespace_idは既存デプロイと同じアカウント内一意値を維持する。
 [[ratelimits]]
 name = "RATE_LIMITER"
 namespace_id = "1001"

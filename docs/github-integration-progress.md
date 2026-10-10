@@ -69,7 +69,7 @@
 
 1. 問題ID単位で追加・更新・アーカイブを分類する。
 2. 変更フィールドの前後値、件数、タイトル、説明、コミットメッセージを送信前に表示する。
-3. 利用者の明示確認後だけPOSTし、CookieベースのCloudflare Access認証を利用する。
+3. 利用者の明示確認後だけAccess認証popupを開き、認証済みpopup内から同一オリジンでPOSTする。GitHub PagesからWorkerへのクロスサイトCookieには依存しない。
 4. 同じ送信内容から決定的なSHA-256冪等キーを生成する。
 
 ### 実施内容
@@ -172,3 +172,13 @@
 - 通常CIで公式`npm run check`を完走する。
 - GitHub App／Cloudflare Access／Workersを設定して本番前接続試験を行う。
 - iPhone実機のPWA・VoiceOver・文字拡大・オフライン受入を行う。
+
+
+## 2026-10-11 Cloudflare Access 302/CORS追補
+
+- GitHub PagesからAccess保護Workerへの直接POSTが、未認証時にAccessログイン302となりCORSで停止する問題を確認した。
+- `credentials: include`、Worker OPTIONS、Access OPTIONSバイパスだけでは実POSTの第三者Cookie欠落を解消できない。
+- Access保護popupをtop-levelで開き、認証後のpopupから同一WorkerオリジンでAPIを実行するrelayへ変更した。
+- Access、Google等の外部IdP、JWT署名・AUD・期限・許可メール、Origin、Rate Limit、固定リポジトリ、冪等PRを維持した。
+- 関連モック21/21、Worker strict型検査、フロントAPI境界型検査、秘密非混入検査に成功した。
+- 実Cloudflare設定・デプロイ・実IdP・実PRは未実施。詳細は`VALIDATION_REPORT_CLOUDFLARE_ACCESS_20261011.md`。

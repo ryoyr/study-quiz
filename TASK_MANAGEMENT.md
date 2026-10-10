@@ -134,3 +134,21 @@ P0完了
 |S-06|P1|公式検証コマンドを試行|環境制約|`npm ci`がVite 7.3.6取得HTTP 403。typecheck/test/build/checkは依存不足で未完走|
 |S-07|P1|補助全テストを実行|条件付き完了|共有tsxで139/145成功、6スイートは`ts-fsrs`未取得で起動失敗|
 |S-08|P0|文書・SHA-256・修正版ZIPを更新|完了|検証報告、manifest、全ファイルhash、ZIP展開照合を更新|
+
+
+## 4.7.0 Cloudflare Access 302/CORS修正（2026-10-11）
+
+|ID|優先度|タスク|状態|完了条件・結果|
+|---|---:|---|---|---|
+|CF-01|P0|指定URL・GitHub App・リポジトリ・必須ファイルを確認|完了|Pages、Worker、API、`study-quiz-content-manager`、`ryoyr/study-quiz`を文書・設定・試験へ固定|
+|CF-02|P0|302/CORS根本原因をCloudflare公式仕様で確認|完了|未ログインXHRと第三者Cookie制限、OPTIONS Cookie非送信を確認。既存OPTIONS対応は原因外|
+|CF-03|P0|安全な方式を比較|完了|credentialsのみ、手動ログイン、Service Token埋込、Access Bypass、同一site移行、popup relayを比較|
+|CF-04|P0|クロスサイトCookie非依存のAccess relayを実装|完了|Access保護popup内からfirst-party Cookieで同一オリジンPOST。Access/JWT/外部IdPを維持|
+|CF-05|P0|Worker認証・Origin境界を強化|完了|RS256、issuer、AUD、iat、nbf、exp、許可メール、固定Origin、same-origin relayを検証|
+|CF-06|P1|workflow・Wrangler・設定手順を実環境値へ更新|完了|ryoyr、study-quiz、GitHub Pages、workers.dev、abrsb team domainを反映。秘密値は未記録|
+|CF-07|P0|関連モック回帰|完了|21/21成功。OPTIONS、未認証、Origin拒否、許可利用者、JWT、秘密非混入、冪等PRを確認|
+|CF-08|P1|Worker strict型検査・フロント境界型検査|完了|Worker TypeScript成功、content API隔離strict型検査成功|
+|CF-09|P1|公式npmゲート試行|環境制約|Vite 7.3.6取得HTTP 403。typecheck/test/build/checkはロック依存不足で未完走|
+|CF-10|P1|本番Worker・Pages疎通確認|未確認|実行環境のURLポリシーで外部URLが403。Cloudflare側設定・デプロイ後に実ブラウザー確認が必要|
+|CF-11|P0|実PRを作成せず問題データとmainを保全|完了|GitHub APIはFakeのみ。`public/content`と`questions.ts`のSHA-256が作業前後一致|
+|CF-12|P0|検証資料・SHA-256・修正版ZIP|完了|専用検証報告、manifest、全ファイルハッシュ、展開後再検証を更新|
