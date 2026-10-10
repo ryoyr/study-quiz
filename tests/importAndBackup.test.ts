@@ -84,7 +84,7 @@ test("旧バックアップの回答履歴キーを現行キーへ移行する",
       entries: { "study-quiz-history-v1": "[]" },
     }),
   );
-  assert.equal(backup.version, 9);
+  assert.equal(backup.version, 10);
   assert.equal(backup.entries["study-quiz-answer-history-v1"], "[]");
   assert.equal(backup.entries["study-quiz-history-v1"], undefined);
 });
@@ -155,7 +155,7 @@ test("旧バックアップの問題と設定へLPIC試験枠を補完する", (
   }));
   const restoredSetup = JSON.parse(backup.entries["study-quiz-setup-v1"]);
   const restoredQuestions = JSON.parse(backup.entries["study-quiz-questions-v1"]);
-  assert.equal(backup.version, 9);
+  assert.equal(backup.version, 10);
   assert.equal(restoredSetup.examScopeId, "lpic101");
   assert.equal(restoredSetup.defaultQuestionMode, "ADAPTIVE");
   assert.deepEqual(restoredSetup.defaultMasteryFilters, ["ALL"]);

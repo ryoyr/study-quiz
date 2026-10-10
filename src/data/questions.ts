@@ -1,5 +1,6 @@
 import type { Question } from "../types/Question";
 import { LPIC101_EXAM_SCOPE_ID } from "../types/ExamScope";
+import { questionQualityOverrides } from "./questionQualityOverrides";
 
 const source = "LPI Learning Materials LPIC-1 Exam 101 (101-500) Version 5.0 日本語版の学習範囲を参考にしたオリジナル問題 https://learning.lpi.org/ja/learning-materials/101-500/";
 const q = (
@@ -27,7 +28,7 @@ const q = (
   tags: ["LPIC-1", "101", subcategory.split(" ")[0]],
 });
 
-export const questions: Question[] = [
+const baseQuestions: Question[] = [
   q("LPIC101-001", "101 システムアーキテクチャ", "101.1 ハードウェア設定", "PCIデバイスを一覧表示し、ベンダーやデバイスIDを確認したい。最も適切なコマンドはどれか。", ["lsusb", "lspci", "lsblk", "lscpu"], 1, "lspciはPCIバス上のデバイス情報を表示する。lsusbはUSB、lsblkはブロックデバイス、lscpuはCPU情報を扱う。"),
   q("LPIC101-002", "101 システムアーキテクチャ", "101.1 ハードウェア設定", "カーネルが認識したCPUの詳細情報を、仮想ファイルから確認する場合に参照するものはどれか。", ["/proc/cpuinfo", "/etc/fstab", "/var/log/wtmp", "/boot/grub/grub.cfg"], 0, "/proc/cpuinfoにはカーネルが認識したCPU情報が公開される。"),
   q("LPIC101-003", "101 システムアーキテクチャ", "101.1 ハードウェア設定", "USBデバイスを接続した直後に、カーネルが出力した最新メッセージを確認するコマンドはどれか。", ["dmesg", "passwd", "ldd", "free"], 0, "dmesgはカーネルリングバッファを表示し、デバイス認識時のメッセージ確認に使える。"),
@@ -135,4 +136,13 @@ export const questions: Question[] = [
   q("LPIC101-099", "104 デバイスとファイルシステム", "104.7 FHSとファイル検索", "ホスト固有のシステム設定ファイルを置くFHS上のディレクトリはどれか。", ["/etc", "/usr/share", "/var/tmp", "/proc"], 0, "/etcにはホスト固有のシステム設定を配置する。"),
   q("LPIC101-100", "104 デバイスとファイルシステム", "104.7 FHSとファイル検索", "一般利用者向けのローカルインストール済み実行ファイルを置く代表的なディレクトリはどれか。", ["/usr/local/bin", "/var/lib/bin", "/etc/bin", "/proc/local"], 0, "/usr/local/binはローカル管理者が導入した一般利用者向けコマンドの代表的な配置先である。"),
 ];
+
+const qualityOverridesById = new Map(
+  questionQualityOverrides.map((question) => [question.id, question]),
+);
+
+/** 新規環境では、レビュー・適用済みの品質更新を初期問題へ上書きする。 */
+export const questions: Question[] = baseQuestions.map(
+  (question) => qualityOverridesById.get(question.id) ?? question,
+);
 

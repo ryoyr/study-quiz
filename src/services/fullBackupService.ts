@@ -20,16 +20,18 @@ import type { StudyHistory } from "../types/StudyHistory";
 import { isQuestion } from "./questionValidation.ts";
 import { isQuestionState } from "./questionStateService.ts";
 import { isStudyHistoryQuestionSnapshot } from "./questionAnswerModel.ts";
+import { isQuestionQualityProposal } from "./questionQualityService.ts";
+import type { QuestionQualityProposal } from "../types/QuestionQualityProposal";
 
 export type BackupStorageFormat = "json" | "number";
 
 export interface FullBackupFile {
   format: "study-quiz-full-backup";
-  version: 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
+  version: 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
   appVersion: string;
   exportedAt: string;
   entries: Record<string, string>;
-  sourceVersion?: 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
+  sourceVersion?: 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
   integrity?: BackupIntegrity;
 }
 
@@ -100,9 +102,9 @@ export const BACKUP_ENTRIES: BackupEntryDefinition[] =
     storageFormat: toBackupStorageFormat(format),
   }));
 
-const APP_VERSION = "4.5.1";
-const CURRENT_BACKUP_VERSION = 9 as const;
-const SUPPORTED_BACKUP_VERSIONS = [2, 3, 4, 5, 6, 7, 8, 9] as const;
+const APP_VERSION = "4.6.0";
+const CURRENT_BACKUP_VERSION = 10 as const;
+const SUPPORTED_BACKUP_VERSIONS = [2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
 const LEGACY_HISTORY_KEY = STORAGE_KEYS.legacyHistory;
 const API_KEY = STORAGE_KEYS.geminiApiKey;
 const LEGACY_MODEL_KEY = STORAGE_KEYS.geminiModel;
@@ -338,6 +340,16 @@ const validateJsonEntry = (key: string, value: unknown): void => {
       );
       return;
     }
+    case STORAGE_KEYS.questionQualityProposals: {
+      const items = assertArray(value, "問題・解説品質提案");
+      if (!items.every(isQuestionQualityProposal))
+        throw new Error("問題・解説品質提案が不正です。");
+      assertUnique(
+        items.map((item) => (item as QuestionQualityProposal).id),
+        "問題・解説品質提案",
+      );
+      return;
+    }
     case STORAGE_KEYS.aiPromptTemplates: {
       const items = assertArray(value, "AI質問テンプレート");
       if (
@@ -394,7 +406,11 @@ const validateStoredEntry = (
 
 const validateReferences = (entries: Record<string, string>): void => {
   const rawQuestions = entries[STORAGE_KEYS.questions];
-  if (!rawQuestions) return;
+  if (!rawQuestions) {
+    if (entries[STORAGE_KEYS.questionQualityProposals])
+      throw new Error("問題・解説品質提案に対応する問題データがありません。");
+    return;
+  }
   const questionIds = new Set(
     (JSON.parse(rawQuestions) as Question[]).map((item) => item.id),
   );
@@ -425,6 +441,11 @@ const validateReferences = (entries: Record<string, string>): void => {
   check(
     STORAGE_KEYS.correctionSuggestions,
     "問題修正提案",
+    (item) => item.questionId,
+  );
+  check(
+    STORAGE_KEYS.questionQualityProposals,
+    "問題・解説品質提案",
     (item) => item.questionId,
   );
 
@@ -523,7 +544,7 @@ export const parseFullBackup = (text: string): FullBackupFile => {
     if (typeof entry !== "string")
       throw new Error(`${key} のデータ形式が不正です。`);
   }
-  if (sourceVersion === CURRENT_BACKUP_VERSION) {
+  if (sourceVersion >= 9) {
     verifyIntegrity(
       {
         format: "study-quiz-full-backup",
@@ -584,7 +605,7 @@ export const restoreFullBackup = (
   backup: FullBackupFile,
   storage: StorageLike = localStorage,
 ): void => {
-  if (backup.version === CURRENT_BACKUP_VERSION) {
+  if (backup.version >= 9) {
     verifyIntegrity(backup, backup.integrity);
   }
   for (const [key, raw] of Object.entries(backup.entries)) {

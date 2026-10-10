@@ -28,6 +28,8 @@ import InitialSetupPage from "./pages/InitialSetupPage";
 import LearningHistoryPage from "./pages/LearningHistoryPage";
 import MistakeNotesPage from "./pages/MistakeNotesPage";
 import QuestionManagementPage from "./pages/QuestionManagementPage";
+import QuestionQualityGeneratorPage from "./pages/QuestionQualityGeneratorPage";
+import QuestionQualityReviewPage from "./pages/QuestionQualityReviewPage";
 import SimilarQuestionGeneratorPage from "./pages/SimilarQuestionGeneratorPage";
 import ResponseSpeedAnalysisPage from "./pages/ResponseSpeedAnalysisPage";
 import ResultPage from "./pages/ResultPage";
@@ -90,6 +92,11 @@ import {
   saveCorrectionSuggestions,
 } from "./services/correctionSuggestionStorage";
 import {
+  applyQuestionQualityProposal,
+  loadQuestionQualityProposals,
+  saveQuestionQualityProposals,
+} from "./services/questionQualityProposalStorage";
+import {
   getRemainingDays,
   loadSetup,
   saveSetup,
@@ -123,6 +130,7 @@ import {
 import { QUESTION_LIMITS } from "./services/questionValidation";
 import type { QuestionAnnotation } from "./types/QuestionAnnotation";
 import type { QuestionState } from "./types/QuestionState";
+import type { QuestionQualityProposal } from "./types/QuestionQualityProposal";
 import { createDefaultSetup, type Setup } from "./types/Setup";
 import type { StudyHistory } from "./types/StudyHistory";
 import type { GeneratedStudySession } from "./types/StudySession";
@@ -148,6 +156,8 @@ type Screen =
   | "aiTemplates"
   | "speedAnalysis"
   | "factCheck"
+  | "qualityGenerate"
+  | "qualityReview"
   | "similarQuestion";
 
 const PWA_SHORTCUT_SCREENS = new Set<Screen>([
@@ -196,6 +206,8 @@ const sectionForScreen = (screen: Screen): NavigationSection => {
       "annotations",
       "corrections",
       "factCheck",
+      "qualityGenerate",
+      "qualityReview",
       "similarQuestion",
     ].includes(screen)
   )
@@ -221,6 +233,9 @@ export default function App() {
   const [annotations, setAnnotations] = useState<QuestionAnnotation[]>([]);
   const [correctionSuggestions, setCorrectionSuggestions] = useState<
     CorrectionSuggestion[]
+  >([]);
+  const [qualityProposals, setQualityProposals] = useState<
+    QuestionQualityProposal[]
   >([]);
   const [aiPromptTemplates, setAiPromptTemplates] = useState<
     AiPromptTemplate[]
@@ -319,6 +334,7 @@ export default function App() {
       setMistakeNotes(safeLoad(loadMistakeNotes, []));
       setAnnotations(safeLoad(loadQuestionAnnotations, []));
       setCorrectionSuggestions(safeLoad(loadCorrectionSuggestions, []));
+      setQualityProposals(safeLoad(loadQuestionQualityProposals, []));
       setAiPromptTemplates(safeLoad(loadAiPromptTemplates, []));
       setDailyTimeLimit(safeLoad(loadDailyTimeLimit, 0));
       setQuestionStates(safeLoad(() => loadQuestionStates(loadedHistory), []));
@@ -480,10 +496,8 @@ export default function App() {
     ? Math.round((correctCount / history.length) * 100)
     : 0;
 
-  const commitQuestions = (items: Question[]): boolean => {
-    try {
-      saveQuestions(items);
-      setStoredQuestions(items);
+  const applyQuestionsToState = (items: Question[]) => {
+    setStoredQuestions(items);
       setStudySelection((current) => {
         const validIds = new Set(items.filter((question) => !question.archivedAt).map((question) => question.id));
         const availableCategories = new Set(items.filter((question) => !question.archivedAt && question.examScopeId === current.examScopeId).map((question) => question.category));
@@ -497,6 +511,12 @@ export default function App() {
           questionIds: current.questionIds.filter((id) => validIds.has(id)),
         };
       });
+  };
+
+  const commitQuestions = (items: Question[]): boolean => {
+    try {
+      saveQuestions(items);
+      applyQuestionsToState(items);
       setStorageError("");
       return true;
     } catch (error) {
@@ -504,6 +524,27 @@ export default function App() {
         error instanceof Error
           ? error.message
           : "問題データを保存できませんでした。",
+      );
+      return false;
+    }
+  };
+
+  const applyQualityProposal = (proposalId: string): boolean => {
+    try {
+      const result = applyQuestionQualityProposal(
+        storedQuestions,
+        qualityProposals,
+        proposalId,
+      );
+      applyQuestionsToState(result.questions);
+      setQualityProposals(result.proposals);
+      setStorageError("");
+      return true;
+    } catch (error) {
+      setStorageError(
+        error instanceof Error
+          ? error.message
+          : "問題・解説品質提案を適用できませんでした。",
       );
       return false;
     }
@@ -882,6 +923,43 @@ export default function App() {
             "修正提案",
           )
         }
+        onBack={() => setScreen("manage")}
+      />,
+    );
+  }
+  if (screen === "qualityGenerate") {
+    return withChrome(
+      <QuestionQualityGeneratorPage
+        questions={availableQuestions}
+        proposals={qualityProposals}
+        onChange={(items) =>
+          commitLocalData(
+            items,
+            saveQuestionQualityProposals,
+            setQualityProposals,
+            "問題・解説品質提案",
+          )
+        }
+        onOpenReview={() => setScreen("qualityReview")}
+        onBack={() => setScreen("manage")}
+      />,
+    );
+  }
+  if (screen === "qualityReview") {
+    return withChrome(
+      <QuestionQualityReviewPage
+        questions={storedQuestions}
+        proposals={qualityProposals}
+        onChange={(items) =>
+          commitLocalData(
+            items,
+            saveQuestionQualityProposals,
+            setQualityProposals,
+            "問題・解説品質提案",
+          )
+        }
+        onApply={applyQualityProposal}
+        onOpenGenerator={() => setScreen("qualityGenerate")}
         onBack={() => setScreen("manage")}
       />,
     );
@@ -1439,6 +1517,9 @@ export default function App() {
     const pendingCorrections = correctionSuggestions.filter(
       (item) => item.status === "pending",
     ).length;
+    const pendingQualityProposals = qualityProposals.filter(
+      (item) => item.status === "pending",
+    ).length;
     return withChrome(
       <main className="app-shell">
         <section className="home-card feature-hub-card">
@@ -1491,6 +1572,24 @@ export default function App() {
               description="複数問題の確認結果を取り込む"
               tone="green"
               onClick={() => setScreen("factCheck")}
+            />
+            <FeatureLink
+              icon="sparkles"
+              title="問題・解説の品質向上"
+              description="JSON提案を生成し、適用前後をレビュー"
+              badge={
+                pendingQualityProposals > 0
+                  ? `未確認 ${pendingQualityProposals}`
+                  : undefined
+              }
+              tone="violet"
+              onClick={() =>
+                setScreen(
+                  pendingQualityProposals > 0
+                    ? "qualityReview"
+                    : "qualityGenerate",
+                )
+              }
             />
           </div>
           <section className="hub-footnote-card" aria-label="教材カバレッジ">

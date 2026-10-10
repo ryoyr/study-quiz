@@ -1,4 +1,4 @@
-# Study Quiz 4.5.1 基本設計
+# Study Quiz 4.6.0 基本設計
 
 ## 1. システム構成
 
@@ -124,13 +124,24 @@ Gemini APIへ自動送信する機能と、他のAIへ手動コピーする機�
 - 旧履歴はスナップショットなしで引き続き読込み、現在の問題データから表示する。
 - スナップショットは回答履歴配列内の任意フィールドであり、保存キー・storage schema・backup versionは変更しない。
 
-## 8. PWA
+## 8. 問題・解説品質向上
+
+- `questionQualityService`: 入力JSON、品質確認プロンプト、提案JSON、初期データ更新パック。
+- `questionQualityProposalStorage`: 提案保存、レビュー状態、競合検知、問題との同時適用。
+- `QuestionQualityGeneratorPage`: JSON出力・取込、登録前プレビュー。
+- `QuestionQualityReviewPage`: 適用前後比較、適用・却下、初期データ更新JSON出力。
+- `questionQualityOverrides.ts`: 新規環境の初期問題上書き。
+- `apply_question_seed_updates.mjs`: 更新パック検証と初期データ上書き生成。
+
+提案生成と適用を別画面・別操作にし、`pending`提案だけを明示確認後に適用する。問題と提案状態は同一トランザクションで保存する。
+
+## 9. PWA
 
 - manifestは相対URLと3アイコン、3ショートカットを持つ。
 - Service Workerはnavigationをnetwork-first、静的資材をcache-firstとする。
-- 4.5.1のキャッシュ世代はv21。
+- 4.6.0のキャッシュ世代はv22。
 - PNGは`tools/generate_pwa_icons.py`で再生成可能。
 
-## 9. 互換性方針
+## 10. 互換性方針
 
-4.5.1では保存キー、schema 8、IndexedDB version 2、backup version 9を変更しない。回答時点スナップショットは任意フィールドとして追加し、旧履歴・旧バックアップをそのまま読めるようにする。
+4.6.0では品質提案キー追加に伴いschema 9、backup version 10へ更新する。IndexedDB version 2は維持し、旧バックアップversion 2～10を読込可能とする。version 9以降はチェックサム検証後に現行形式へ正規化する。

@@ -5,9 +5,9 @@ import { isQuestion } from "./questionValidation.ts";
 import { STORAGE_KEYS } from "./storageKeyRegistry.ts";
 import { executeStorageTransaction } from "./storageTransaction.ts";
 
-const STORAGE_KEY = STORAGE_KEYS.questions;
-const SEED_VERSION_KEY = STORAGE_KEYS.questionSeedVersion;
-const CURRENT_SEED_VERSION = "3";
+export const QUESTIONS_STORAGE_KEY = STORAGE_KEYS.questions;
+export const QUESTION_SEED_VERSION_KEY = STORAGE_KEYS.questionSeedVersion;
+export const QUESTION_SEED_VERSION = "4";
 
 const normalizeQuestion = (value: Partial<Question>): Partial<Question> => ({
   ...value,
@@ -19,7 +19,7 @@ const normalizeQuestion = (value: Partial<Question>): Partial<Question> => ({
 
 export const loadQuestions = (): Question[] => {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(QUESTIONS_STORAGE_KEY);
     if (!raw) {
       saveQuestions(seedQuestions);
       return [...seedQuestions];
@@ -33,7 +33,7 @@ export const loadQuestions = (): Question[] => {
     const unique = [...new Map(valid.map((item) => [item.id, item])).values()];
     if (unique.length === 0) return [...seedQuestions];
 
-    if (localStorage.getItem(SEED_VERSION_KEY) !== CURRENT_SEED_VERSION) {
+    if (localStorage.getItem(QUESTION_SEED_VERSION_KEY) !== QUESTION_SEED_VERSION) {
       const ids = new Set(unique.map((item) => item.id));
       const upgraded = [
         ...unique,
@@ -56,8 +56,8 @@ export const saveQuestions = (items: Question[]): void => {
     throw new Error("問題IDが重複しているため保存できません。");
   }
   executeStorageTransaction([
-    { key: STORAGE_KEY, value: JSON.stringify(items) },
-    { key: SEED_VERSION_KEY, value: CURRENT_SEED_VERSION },
+    { key: QUESTIONS_STORAGE_KEY, value: JSON.stringify(items) },
+    { key: QUESTION_SEED_VERSION_KEY, value: QUESTION_SEED_VERSION },
   ]);
 };
 

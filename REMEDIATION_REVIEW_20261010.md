@@ -126,3 +126,11 @@
 - History rendering prefers the snapshot, so later question edits or deletion do not change the display of new past answers.
 - Old history without a snapshot remains valid and falls back to the current question.
 - Snapshot validation is shared by normal loading and full-backup validation; physical keys, storage schema 8, IndexedDB 2, and backup version 9 remain unchanged.
+
+## 9. 4.6.0 question quality
+
+- Added JSON export and copy-based external review prompts for question and explanation quality.
+- Added structured correction/supplement proposals with before/after question snapshots and pending/applied/rejected states.
+- Applying a proposal detects stale source data and updates the question, seed version, and proposal state in one storage transaction.
+- Applied proposals can be exported as a seed-update pack and validated into `questionQualityOverrides.ts` for future new environments.
+- Added schema 9 and backup version 10 while retaining backup input versions 2～10.

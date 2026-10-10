@@ -35,11 +35,13 @@ const requiredFiles = [
   "FUTURE_RECOMMENDATIONS.md",
   "REMOVAL_CANDIDATES.md",
   "VALIDATION_REPORT_4.5.0.md",
+  "VALIDATION_REPORT_4.6.0.md",
   "RELEASE_MANIFEST.md",
   "docs/requirements.md",
   "docs/basic-design.md",
   "docs/detailed-design.md",
   "docs/traceability.md",
+  "docs/question-quality-design.md",
   "tsconfig.json",
   "tsconfig.app.json",
   "tsconfig.node.json",
@@ -53,6 +55,12 @@ const requiredFiles = [
   "src/services/storagePersistenceService.ts",
   "src/services/questionValidation.ts",
   "src/services/questionAnswerModel.ts",
+  "src/services/questionQualityService.ts",
+  "src/services/questionQualityProposalStorage.ts",
+  "src/types/QuestionQualityProposal.ts",
+  "src/pages/QuestionQualityGeneratorPage.tsx",
+  "src/pages/QuestionQualityReviewPage.tsx",
+  "src/data/questionQualityOverrides.ts",
   "src/services/verifiedStorage.ts",
   "src/components/ConcurrentUpdateNotice.tsx",
   "src/components/ConfirmDialog.tsx",
@@ -61,11 +69,12 @@ const requiredFiles = [
   "tests/studyOptionService.test.ts",
   "scripts/e2e-accessibility.mjs",
   "tools/generate_pwa_icons.py",
+  "tools/apply_question_seed_updates.mjs",
   "tests/accessibilityHarness.test.ts",
 ];
 for (const path of requiredFiles) assert(existsSync(path), `${path} がありません`);
 const packageJson = readJson("package.json");
-assert(packageJson.version === "4.5.1", "package.jsonの版は4.5.1である必要があります");
+assert(packageJson.version === "4.6.0", "package.jsonの版は4.6.0である必要があります");
 for (const script of ["verify:structure", "test", "test:e2e", "typecheck", "build", "check"]) {
   assert(typeof packageJson.scripts?.[script] === "string", `scripts.${script} がありません`);
 }
@@ -141,8 +150,8 @@ const appleIcon = readPngSize("public/apple-touch-icon.png");
 assert(appleIcon.width === 180 && appleIcon.height === 180, "apple-touch-icon.png は180x180である必要があります");
 for (const [path, tokens] of [
   ["src/main.tsx", ["<ErrorBoundary>", "<ConcurrentUpdateNotice />", "<PwaUpdatePrompt />"]],
-  ["public/sw.js", ["CACHE_PREFIX}v21", "SKIP_WAITING", "matchAll", "Promise.allSettled", "navigationPreload", "pwa-maskable-512x512.png", "Cache Storageへの保存はベストエフォート"]],
-  ["src/services/fullBackupService.ts", ["CURRENT_BACKUP_VERSION = 9", "FNV-1A-32", "auditStorage", "compareFullBackup", "downloadBackupFile"]],
+  ["public/sw.js", ["CACHE_PREFIX}v22", "SKIP_WAITING", "matchAll", "Promise.allSettled", "navigationPreload", "pwa-maskable-512x512.png", "Cache Storageへの保存はベストエフォート"]],
+  ["src/services/fullBackupService.ts", ["CURRENT_BACKUP_VERSION = 10", "FNV-1A-32", "auditStorage", "compareFullBackup", "downloadBackupFile", "questionQualityProposals"]],
   ["src/pages/BackupCenterPage.tsx", ["storage-health-badge", "整合性チェック済み", "端末データの保持を強化", "現在データとの差分集計", "study-quiz-pre-restore"]],
   ["src/components/StudyFilterPanel.tsx", ["masteryFilters", "questionModes", "horizontal-option-scroller"]],
   ["src/components/ConfirmDialog.tsx", ["role=\"alertdialog\"", "aria-modal=\"true\"", "createPortal", "previousFocusRef", "FOCUSABLE_SELECTOR"]],
@@ -150,6 +159,8 @@ for (const [path, tokens] of [
   ["src/services/questionValidation.ts", ["longText: 20_000", "maxTags: 30", "maxAcceptedAnswers: 100"]],
   ["src/services/questionAnswerModel.ts", ["QuestionAnswerDefinition", "answerDefinitionOf", "responseToHistoryFields", "answerDefinitionForExternalUse", "createStudyHistoryQuestionSnapshot", "historyQuestionText"]],
   ["src/services/similarQuestionService.ts", ["answerNumbers", "acceptedAnswers", "questionTypeLabel"]],
+  ["src/services/questionQualityService.ts", ["study-quiz-question-quality-input", "study-quiz-question-quality-proposals", "study-quiz-question-seed-updates"]],
+  ["src/pages/QuestionQualityReviewPage.tsx", ["変更前の問題文", "提案後の問題文", "適用済みの初期データ更新JSONを出力"]],
   ["src/App.css", ["overflow-x: auto", "scroll-snap-type: x proximity"]],
 ]) {
   try {

@@ -82,6 +82,25 @@ test("E2E試験は3回答方式を登録・回答・履歴表示・バックア�
   );
 });
 
+test("E2E試験は品質提案のJSON取込・レビュー適用・初期データ出力を行う", () => {
+  const source = readFileSync("scripts/e2e-accessibility.mjs", "utf8");
+  for (const token of [
+    "runQuestionQualityJourney",
+    "study-quiz-question-quality-proposals",
+    "変更前の解説",
+    "提案後の解説",
+    "レビュー済みとして適用",
+    "study-quiz-question-quality-proposals-v1",
+    "study-quiz-question-seed-updates-",
+    "適用済み品質提案を初期データ更新JSONへ出力できません",
+  ]) {
+    assert.match(
+      source,
+      new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")),
+    );
+  }
+});
+
 test("デプロイ前にChromeを準備して全チェックを実行する", () => {
   const workflow = readFileSync(".github/workflows/deploy.yml", "utf8");
   assert.match(workflow, /browser-actions\/setup-chrome@v2/);

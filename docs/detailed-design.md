@@ -1,4 +1,4 @@
-# Study Quiz 4.5.1 詳細設計 — 回答方式・履歴スナップショット
+# Study Quiz 4.6.0 詳細設計 — 回答方式・履歴スナップショット
 
 ## 1. 回答モデルAPI
 
@@ -187,12 +187,16 @@ CSV固有検証後に共通問題検証を実行する。
 
 ## 8. 完全バックアップ
 
-- 新しい回答モデルは非永続のためbackup version 9を維持。
+- 品質提案保存領域追加のためbackup version 10を使用。
 - `answerType`は任意フィールドとして許容。
 - `questionSnapshot`は任意フィールドとして検証・保持。
-- version 9はFNV-1aを検証してから正規化。
+- version 9～10はFNV-1aを検証してから正規化。
 - version 2～8は現行形式へ変換後、新しい整合性情報を付ける。
 
-## 9. PWA資材
+## 9. 問題・解説品質向上
+
+JSON契約、提案状態、適用トランザクション、初期データ反映は`docs/question-quality-design.md`を正本とする。
+
+## 10. PWA資材
 
 `generate_pwa_icons.py`は180、192、512、maskable 512のRGBA PNGを生成する。通常アイコンは角丸透過、maskableは全面背景と中央安全領域を持つ。

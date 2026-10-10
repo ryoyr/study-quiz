@@ -1,4 +1,4 @@
-# 要件トレーサビリティ — 4.5.1
+# 要件トレーサビリティ — 4.6.0
 
 |要件|主実装|主検証|状態|
 |---|---|---|---|
@@ -11,8 +11,9 @@
 |FR-07 教材・AI補助|`promptBuilder.ts`, `AiQuestionPanel.tsx`, `similarQuestionService.ts`, `batchFactCheckService.ts`|`answerTypeIntegration.test.ts`, `similarQuestionService.test.ts`, `projectStructure.test.ts`|4.5.0改良|
 |FR-08 保存|`storageTransaction.ts`, `verifiedStorage.ts`, `storageSynchronization.ts`|`storageTransaction.test.ts`, `storageSynchronization.test.ts`|実装済み|
 |FR-09 完全バックアップ|`fullBackupService.ts`, `BackupCenterPage.tsx`|`resilience.test.ts`, `importAndBackup.test.ts`|実装済み|
-|FR-10 PWA|manifest、`sw.js`、PNG 4件、生成ツール|`pwaAssets.test.ts`, `verify-project.mjs`|4.5.1 cache v21|
-|NFR-01 互換性|回答アダプター、migration、backup|`configurationContract.test.ts`, `resilience.test.ts`|維持|
+|FR-10 PWA|manifest、`sw.js`、PNG 4件、生成ツール|`pwaAssets.test.ts`, `verify-project.mjs`|4.6.0 cache v22|
+|FR-11 問題・解説品質向上|`questionQualityService.ts`, `questionQualityProposalStorage.ts`, 品質生成・レビュー画面, seed update tool|`questionQualityService.test.ts`, `questionSeedUpdateTool.test.ts`, Chrome E2E|4.6.0実装|
+|NFR-01 互換性|回答アダプター、migration schema 9、backup 10|`configurationContract.test.ts`, `resilience.test.ts`, `questionQualityService.test.ts`|version 2～10読込み|
 |NFR-02 品質|package scripts、CI、構成/E2E scripts|全単体、構文変換、型検査|通常CI最終ゲートあり|
 |NFR-03 アクセシビリティ|`ConfirmDialog.tsx`, `App.css`, E2E script|`accessibilityHarness.test.ts`, `themeAccessibility.test.ts`|自動試験実装済み|
 |NFR-04 セキュリティ|保存・外部連携境界|`projectStructure.test.ts`, 静的監査|新規自動外部送信なし|

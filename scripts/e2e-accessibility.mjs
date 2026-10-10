@@ -665,6 +665,121 @@ const runAnswerModeJourney = async (client, downloadDirectory) => {
     "3方式バックアップ復元後のホーム画面",
   );
 };
+const runQuestionQualityJourney = async (client, downloadDirectory) => {
+  const questionId = "LPIC101-001";
+  const improvedExplanation =
+    "lspciはPCIバス上のデバイス情報を表示する。-nnを付けるとベンダーIDとデバイスIDも確認できる。";
+  const proposalResult = {
+    format: "study-quiz-question-quality-proposals",
+    version: 1,
+    proposals: [
+      {
+        questionId,
+        kind: "supplement",
+        summary: "ID確認方法を補足",
+        reason: "問題文で求めるベンダーID・デバイスIDの確認方法を明確にするため",
+        reference: "lspci(8)",
+        proposed: { explanation: improvedExplanation },
+      },
+    ],
+  };
+
+  await clickNavigation(client, "管理");
+  await waitFor(
+    client,
+    `document.querySelector("main h1")?.textContent?.trim() === "問題・教材管理"`,
+    "品質向上前の管理画面",
+  );
+  await clickButton(client, "問題・解説の品質向上");
+  await waitFor(
+    client,
+    `document.querySelector("main h1")?.textContent?.trim() === "問題・解説の品質向上"`,
+    "問題・解説品質向上画面",
+  );
+  const qualityContract = await evaluate(
+    client,
+    `(() => ({ input: [...document.querySelectorAll("button")].some((button) => button.textContent?.includes("対象問題JSONを出力")), prompt: document.querySelector("textarea[readonly]")?.value.includes("study-quiz-question-quality-proposals") }))()`,
+  );
+  if (!qualityContract.input || !qualityContract.prompt)
+    throw new Error("問題品質のJSON入力・出力契約を画面で確認できません。");
+  await evaluate(
+    client,
+    `(() => { const input = document.querySelector('input[aria-label="取り込む問題品質提案JSON"]'); if (!input) return false; const transfer = new DataTransfer(); transfer.items.add(new File([${JSON.stringify(JSON.stringify(proposalResult))}], "quality-proposals.json", { type: "application/json" })); Object.defineProperty(input, "files", { value: transfer.files, configurable: true }); input.dispatchEvent(new Event("change", { bubbles: true })); return true; })()`,
+  );
+  await waitFor(
+    client,
+    `document.querySelector("textarea:not([readonly])")?.value.includes("study-quiz-question-quality-proposals")`,
+    "品質提案JSONの読込み",
+  );
+  await clickButton(client, "JSONを検証・プレビュー");
+  await waitFor(
+    client,
+    `[...document.querySelectorAll("button")].some((button) => button.textContent?.includes("未確認の品質提案として登録（1件）"))`,
+    "品質提案の変更前後プレビュー",
+  );
+  await clickButton(client, "未確認の品質提案として登録（1件）");
+  await waitFor(
+    client,
+    `document.querySelector('[role="status"]')?.textContent?.includes("1件を未確認")`,
+    "品質提案の未確認登録",
+  );
+  await clickButton(client, "品質提案レビューを開く");
+  await waitFor(
+    client,
+    `document.querySelector("main h1")?.textContent?.trim() === "問題・解説品質提案レビュー"`,
+    "品質提案レビュー画面",
+  );
+  const beforeAfterVisible = await evaluate(
+    client,
+    `document.body.textContent.includes("変更前の解説") && document.body.textContent.includes("提案後の解説") && document.body.textContent.includes(${JSON.stringify(improvedExplanation)})`,
+  );
+  if (!beforeAfterVisible)
+    throw new Error("品質提案の適用前後を区別して表示できません。");
+  await clickButton(client, "レビュー済みとして適用");
+  await waitFor(
+    client,
+    `Boolean(document.querySelector('[role="alertdialog"]'))`,
+    "品質提案適用確認",
+  );
+  await clickButton(client, "提案を適用");
+  await waitFor(
+    client,
+    `(() => { const questions = JSON.parse(localStorage.getItem("study-quiz-questions-v1") ?? "[]"); const proposals = JSON.parse(localStorage.getItem("study-quiz-question-quality-proposals-v1") ?? "[]"); return questions.find((item) => item.id === ${JSON.stringify(questionId)})?.explanation === ${JSON.stringify(improvedExplanation)} && proposals.some((item) => item.questionId === ${JSON.stringify(questionId)} && item.status === "applied" && item.beforeQuestion.explanation !== item.proposedQuestion.explanation); })()`,
+    "品質提案の実行環境データ適用",
+  );
+
+  await evaluate(
+    client,
+    `(() => { const select = document.querySelector('.correction-filter select'); if (!select) return false; const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value")?.set; setter?.call(select, "applied"); select.dispatchEvent(new Event("change", { bubbles: true })); return true; })()`,
+  );
+  await waitFor(
+    client,
+    `document.body.textContent.includes("適用済み") && [...document.querySelectorAll("button")].some((button) => button.textContent?.includes("初期データ更新JSONを出力") && !button.disabled)`,
+    "適用済み品質提案と初期データ出力",
+  );
+  await rm(downloadDirectory, { force: true, recursive: true });
+  await mkdir(downloadDirectory, { recursive: true });
+  await client.send("Browser.setDownloadBehavior", {
+    behavior: "allow",
+    downloadPath: downloadDirectory,
+    eventsEnabled: true,
+  });
+  await clickButton(client, "適用済みの初期データ更新JSONを出力");
+  const packPath = await waitForDownloadedJson(
+    downloadDirectory,
+    "study-quiz-question-seed-updates-",
+  );
+  const pack = JSON.parse(await readFile(packPath, "utf8"));
+  const update = pack.updates?.find((item) => item.questionId === questionId);
+  if (
+    pack.format !== "study-quiz-question-seed-updates" ||
+    !update ||
+    update.beforeQuestion.explanation === update.question.explanation ||
+    update.question.explanation !== improvedExplanation
+  ) {
+    throw new Error("適用済み品質提案を初期データ更新JSONへ出力できません。");
+  }
+};
 const run = async () => {
   const failures = [];
   const reports = [];
@@ -749,6 +864,7 @@ const run = async () => {
     reports.push(await evaluate(client, auditExpression("ホーム")));
 
     await runAnswerModeJourney(client, downloadDirectory);
+    await runQuestionQualityJourney(client, downloadDirectory);
 
     const themeReports = [];
     for (const theme of ["aurora", "focus", "forest", "sunset", "mono"]) {
@@ -959,7 +1075,7 @@ const run = async () => {
     if (failures.length) {
       throw new Error(`E2Eアクセシビリティ試験で${failures.length}件の問題を検出しました。\n${failures.map((item) => `- ${item}`).join("\n")}`);
     }
-    console.log(`E2E試験に成功しました（3回答方式の登録・回答・履歴・バックアップ往復、${reports.length}画面、${themeReports.length}テーマ組合せ、320x568・393x852、主要ナビゲーション、確認ダイアログ、コントラスト、横スクロール複数選択、固定表示、入力エラー、キーボード、AXツリー）。`);
+    console.log(`E2E試験に成功しました（3回答方式の登録・回答・履歴・バックアップ往復、品質提案JSON取込・レビュー適用・初期データ更新出力、${reports.length}画面、${themeReports.length}テーマ組合せ、320x568・393x852、主要ナビゲーション、確認ダイアログ、コントラスト、横スクロール複数選択、固定表示、入力エラー、キーボード、AXツリー）。`);
   } finally {
     try {
       await client?.send("Browser.close");

@@ -71,6 +71,13 @@ export const STORAGE_KEY_REGISTRY = {
     backup: true,
     legacy: false,
   },
+  questionQualityProposals: {
+    key: "study-quiz-question-quality-proposals-v1",
+    label: "問題・解説品質提案",
+    format: "json",
+    backup: true,
+    legacy: false,
+  },
   aiPromptTemplates: {
     key: "study-quiz-ai-prompt-templates-v1",
     label: "AI質問テンプレート",
@@ -145,6 +152,8 @@ export const STORAGE_KEYS = {
   mistakeNotes: STORAGE_KEY_REGISTRY.mistakeNotes.key,
   questionAnnotations: STORAGE_KEY_REGISTRY.questionAnnotations.key,
   correctionSuggestions: STORAGE_KEY_REGISTRY.correctionSuggestions.key,
+  questionQualityProposals:
+    STORAGE_KEY_REGISTRY.questionQualityProposals.key,
   aiPromptTemplates: STORAGE_KEY_REGISTRY.aiPromptTemplates.key,
   dailyTimeBudget: STORAGE_KEY_REGISTRY.dailyTimeBudget.key,
   activeSession: STORAGE_KEY_REGISTRY.activeSession.key,

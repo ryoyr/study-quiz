@@ -55,6 +55,32 @@ const installStorage = () => {
   return storage;
 };
 
+const backupChecksum = (backup: {
+  format: string;
+  version: number;
+  appVersion: string;
+  exportedAt: string;
+  entries: Record<string, string>;
+}) => {
+  const canonical = JSON.stringify({
+    format: backup.format,
+    version: backup.version,
+    appVersion: backup.appVersion,
+    exportedAt: backup.exportedAt,
+    entries: Object.fromEntries(
+      Object.entries(backup.entries).sort(([left], [right]) =>
+        left.localeCompare(right),
+      ),
+    ),
+  });
+  let hash = 0x811c9dc5;
+  for (const byte of new TextEncoder().encode(canonical)) {
+    hash ^= byte;
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  return hash.toString(16).padStart(8, "0");
+};
+
 test("完全バックアップは中断セッションを含み廃止済みAI設定とAPIキーを除外する", () => {
   const storage = installStorage();
   storage.setItem(
@@ -70,34 +96,34 @@ test("完全バックアップは中断セッションを含み廃止済みAI設
   storage.setItem("study-quiz-gemini-api-key-v1", "secret");
 
   const backup = createFullBackup();
-  assert.equal(backup.version, 9);
+  assert.equal(backup.version, 10);
   assert.equal(backup.integrity?.algorithm, "FNV-1A-32");
   assert.ok(backup.entries["study-quiz-active-session-v1"]);
   assert.equal(backup.entries["study-quiz-gemini-model-v1"], undefined);
   assert.equal(backup.entries["study-quiz-gemini-api-key-v1"], undefined);
 });
 
-test("現行ストレージ版8を含むバックアップを出力後に再検証できる", () => {
+test("現行ストレージ版9を含むバックアップを出力後に再検証できる", () => {
   const storage = installStorage();
-  storage.setItem("study-quiz-schema-version", "8");
+  storage.setItem("study-quiz-schema-version", "9");
   storage.setItem("study-quiz-answer-history-v1", "[]");
 
   const backup = createFullBackup(storage);
   const parsed = parseFullBackup(JSON.stringify(backup));
 
-  assert.equal(parsed.version, 9);
-  assert.equal(parsed.sourceVersion, 9);
-  assert.equal(parsed.entries["study-quiz-schema-version"], "8");
+  assert.equal(parsed.version, 10);
+  assert.equal(parsed.sourceVersion, 10);
+  assert.equal(parsed.entries["study-quiz-schema-version"], "9");
 });
 
 test("復元前比較は追加・削除・置換・変更なしを保存領域単位で集計する", () => {
   const current = new MemoryStorage();
-  current.setItem("study-quiz-schema-version", "8");
+  current.setItem("study-quiz-schema-version", "9");
   current.setItem("study-quiz-answer-history-v1", "[]");
   current.setItem("study-quiz-daily-time-budget-v1", "15");
 
   const incomingStorage = new MemoryStorage();
-  incomingStorage.setItem("study-quiz-schema-version", "8");
+  incomingStorage.setItem("study-quiz-schema-version", "9");
   incomingStorage.setItem("study-quiz-questions-v1", "[]");
   incomingStorage.setItem("study-quiz-daily-time-budget-v1", "30");
   const report = compareFullBackup(createFullBackup(incomingStorage), current);
@@ -120,7 +146,7 @@ test("復元前比較は破損した現在データを差分として扱わな�
   const current = new MemoryStorage();
   current.setItem("study-quiz-answer-history-v1", "not-json");
   const incoming = new MemoryStorage();
-  incoming.setItem("study-quiz-schema-version", "8");
+  incoming.setItem("study-quiz-schema-version", "9");
 
   assert.throws(
     () => compareFullBackup(createFullBackup(incoming), current),
@@ -130,7 +156,7 @@ test("復元前比較は破損した現在データを差分として扱わな�
 
 test("整合性情報付きバックアップの出力後改変を拒否する", () => {
   const storage = installStorage();
-  storage.setItem("study-quiz-schema-version", "8");
+  storage.setItem("study-quiz-schema-version", "9");
   const backup = createFullBackup(storage);
   const tampered = structuredClone(backup);
   tampered.entries["study-quiz-schema-version"] = "7";
@@ -141,9 +167,34 @@ test("整合性情報付きバックアップの出力後改変を拒否する",
   );
 });
 
-test("端末内データ診断は正常データと破損JSONを識別する", () => {
+test("version 9バックアップの整合性を検証してversion 10へ移行する", () => {
   const storage = installStorage();
   storage.setItem("study-quiz-schema-version", "8");
+  const current = createFullBackup(storage);
+  const version9 = {
+    ...current,
+    version: 9 as const,
+    appVersion: "4.5.1",
+  };
+  version9.integrity = {
+    algorithm: "FNV-1A-32",
+    checksum: backupChecksum(version9),
+  };
+
+  const parsed = parseFullBackup(JSON.stringify(version9));
+  assert.equal(parsed.version, 10);
+  assert.equal(parsed.sourceVersion, 9);
+  const tampered = structuredClone(version9);
+  tampered.entries["study-quiz-schema-version"] = "7";
+  assert.throws(
+    () => parseFullBackup(JSON.stringify(tampered)),
+    /変更または破損/,
+  );
+});
+
+test("端末内データ診断は正常データと破損JSONを識別する", () => {
+  const storage = installStorage();
+  storage.setItem("study-quiz-schema-version", "9");
   storage.setItem("study-quiz-answer-history-v1", "[]");
   assert.equal(auditStorage(storage).ok, true);
 
@@ -175,7 +226,7 @@ test("復元途中の保存失敗時は元のデータへロールバックす�
   assert.equal(storage.getItem("study-quiz-daily-time-budget-v1"), "15");
 });
 
-test("旧形式をversion 9へ移行し、廃止済み設定を除外する", () => {
+test("旧形式をversion 10へ移行し、廃止済み設定を除外する", () => {
   const parsed = parseFullBackup(
     JSON.stringify({
       format: "study-quiz-full-backup",
@@ -187,7 +238,7 @@ test("旧形式をversion 9へ移行し、廃止済み設定を除外する", ()
       },
     }),
   );
-  assert.equal(parsed.version, 9);
+  assert.equal(parsed.version, 10);
   assert.equal(parsed.sourceVersion, 3);
   assert.equal(parsed.entries["study-quiz-answer-history-v1"], "[]");
   assert.equal(parsed.entries["study-quiz-history-v1"], undefined);
@@ -214,7 +265,7 @@ test("端末内の旧履歴キーを現行キーへ移行する", () => {
     `[${legacy}]`,
   );
   assert.equal(storage.getItem("study-quiz-history-v1"), null);
-  assert.equal(storage.getItem("study-quiz-schema-version"), "8");
+  assert.equal(storage.getItem("study-quiz-schema-version"), "9");
   assert.equal(migrateLegacyStorage(storage), false);
 });
 

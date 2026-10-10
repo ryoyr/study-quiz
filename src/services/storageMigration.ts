@@ -8,7 +8,7 @@ import type { StudyHistory } from "../types/StudyHistory.ts";
 const LEGACY_HISTORY_KEY = STORAGE_KEYS.legacyHistory;
 const HISTORY_KEY = STORAGE_KEYS.answerHistory;
 const SCHEMA_KEY = STORAGE_KEYS.schemaVersion;
-export const CURRENT_STORAGE_SCHEMA_VERSION = 8;
+export const CURRENT_STORAGE_SCHEMA_VERSION = 9;
 
 const defaultStorage = (): StorageLike => {
   if (!("localStorage" in globalThis)) {
