@@ -4,6 +4,10 @@ import type { QuestionState } from "../types/QuestionState";
 import { getMasteryLabel } from "../services/questionStateService";
 import { LPIC101_EXAM_SCOPE_ID, type ExamScope } from "../types/ExamScope";
 import ConfirmDialog from "../components/ConfirmDialog";
+import {
+  QUESTION_LIMITS,
+  questionValidationErrors,
+} from "../services/questionValidation";
 
 type Props = {
   questions: Question[];
@@ -18,10 +22,6 @@ type Props = {
 
 type WeightFilter = "ALL" | "HIGH" | "STANDARD";
 type ArchiveFilter = "ACTIVE" | "ARCHIVED" | "ALL";
-const MAX_ID_LENGTH = 200;
-const MAX_SHORT_TEXT_LENGTH = 500;
-const MAX_LONG_TEXT_LENGTH = 20_000;
-const MAX_TAGS = 30;
 
 const emptyQuestion = (): Question => ({
   id: "",
@@ -29,8 +29,11 @@ const emptyQuestion = (): Question => ({
   category: "",
   subcategory: "",
   text: "",
+  questionType: "single",
   choices: ["", "", "", ""],
   answerIndex: 0,
+  answerIndices: [0],
+  acceptedAnswers: [],
   explanation: "",
   source: "",
   tags: [],
@@ -152,42 +155,24 @@ export default function QuestionManagementPage({
   const save = () => {
     if (!editing) return;
     const id = editing.id.trim();
-    const choices = editing.choices.map((choice) => choice.trim());
+    const questionType = editing.questionType ?? "single";
+    const choices = questionType === "text"
+      ? []
+      : editing.choices.map((choice) => choice.trim());
+    const acceptedAnswers = [
+      ...new Set((editing.acceptedAnswers ?? []).map((answer) => answer.trim()).filter(Boolean)),
+    ];
+    const answerIndices = questionType === "multiple"
+      ? [...new Set(editing.answerIndices ?? [])].sort((left, right) => left - right)
+      : undefined;
+    const answerIndex = questionType === "multiple"
+      ? (answerIndices?.[0] ?? 0)
+      : questionType === "single"
+        ? editing.answerIndex
+        : 0;
     const tags = parseTags(tagText);
-    if (!id || !editing.examScopeId.trim() || !editing.category.trim() || !editing.text.trim()) {
-      setError("問題ID、試験枠、カテゴリ、問題文は必須です。");
-      return;
-    }
-    if (id.length > MAX_ID_LENGTH) {
-      setError(`問題IDは${MAX_ID_LENGTH}文字以内で指定してください。`);
-      return;
-    }
     if (!examScopes.some((item) => item.id === editing.examScopeId && item.active)) {
       setError("利用可能な試験枠を指定してください。");
-      return;
-    }
-    if (
-      editing.category.trim().length > MAX_SHORT_TEXT_LENGTH ||
-      (editing.subcategory?.trim().length ?? 0) > MAX_SHORT_TEXT_LENGTH
-    ) {
-      setError(`カテゴリとサブカテゴリは${MAX_SHORT_TEXT_LENGTH}文字以内で指定してください。`);
-      return;
-    }
-    if (
-      editing.text.trim().length > MAX_LONG_TEXT_LENGTH ||
-      choices.some((choice) => choice.length > MAX_LONG_TEXT_LENGTH) ||
-      editing.explanation.trim().length > MAX_LONG_TEXT_LENGTH ||
-      (editing.source?.trim().length ?? 0) > MAX_LONG_TEXT_LENGTH
-    ) {
-      setError(`問題文・選択肢・解説・出典は各${MAX_LONG_TEXT_LENGTH.toLocaleString()}文字以内で指定してください。`);
-      return;
-    }
-    if (tags.length > MAX_TAGS || tags.some((item) => item.length > MAX_SHORT_TEXT_LENGTH)) {
-      setError(`タグは${MAX_TAGS}件以下、各${MAX_SHORT_TEXT_LENGTH}文字以内で指定してください。`);
-      return;
-    }
-    if (choices.length < 2 || choices.some((choice) => !choice)) {
-      setError("選択肢は2件以上、すべて入力してください。");
       return;
     }
     if (
@@ -198,33 +183,27 @@ export default function QuestionManagementPage({
       setError("同じ問題IDが既に存在します。");
       return;
     }
-    if (editing.answerIndex < 0 || editing.answerIndex >= choices.length) {
-      setError("正解の選択肢を指定してください。");
-      return;
-    }
-    if (!Number.isFinite(editing.weight) || editing.weight <= 0) {
-      setError("出題ウェイトは0より大きい数値で指定してください。");
-      return;
-    }
-    if (
-      !Number.isInteger(editing.difficulty) ||
-      editing.difficulty < 1 ||
-      editing.difficulty > 5
-    ) {
-      setError("難易度は1～5の整数で指定してください。");
-      return;
-    }
     const next: Question = {
       ...editing,
       id,
+      examScopeId: editing.examScopeId.trim(),
       category: editing.category.trim(),
       subcategory: editing.subcategory?.trim() || undefined,
       text: editing.text.trim(),
+      questionType,
       choices,
+      answerIndex,
+      answerIndices,
+      acceptedAnswers: questionType === "text" ? acceptedAnswers : undefined,
       explanation: editing.explanation.trim(),
       source: editing.source?.trim() || undefined,
       tags,
     };
+    const validationErrors = questionValidationErrors(next);
+    if (validationErrors.length > 0) {
+      setError(validationErrors[0]);
+      return;
+    }
     const saved = onChange(
       originalId
         ? questions.map((question) =>
@@ -283,7 +262,7 @@ export default function QuestionManagementPage({
             <label className="form-item">
               <span>問題ID</span>
               <input
-                  maxLength={MAX_ID_LENGTH}
+                maxLength={QUESTION_LIMITS.id}
                 value={editing.id}
                 onChange={(event) =>
                   setEditing({ ...editing, id: event.target.value })
@@ -299,7 +278,7 @@ export default function QuestionManagementPage({
             <label className="form-item">
               <span>カテゴリ</span>
               <input
-                  maxLength={MAX_SHORT_TEXT_LENGTH}
+                maxLength={QUESTION_LIMITS.shortText}
                 value={editing.category}
                 onChange={(event) =>
                   setEditing({ ...editing, category: event.target.value })
@@ -309,7 +288,7 @@ export default function QuestionManagementPage({
             <label className="form-item">
               <span>サブカテゴリ（任意）</span>
               <input
-                  maxLength={MAX_SHORT_TEXT_LENGTH}
+                maxLength={QUESTION_LIMITS.shortText}
                 value={editing.subcategory ?? ""}
                 onChange={(event) =>
                   setEditing({ ...editing, subcategory: event.target.value })
@@ -319,7 +298,7 @@ export default function QuestionManagementPage({
             <label className="form-item">
               <span>問題文</span>
               <textarea
-                maxLength={MAX_LONG_TEXT_LENGTH}
+                maxLength={QUESTION_LIMITS.longText}
                 value={editing.text}
                 onChange={(event) =>
                   setEditing({ ...editing, text: event.target.value })
@@ -327,15 +306,60 @@ export default function QuestionManagementPage({
               />
             </label>
             <div className="choice-editor" role="group" aria-label="選択肢">
-              {editing.choices.map((choice, index) => (
+              <label>
+                回答方式
+                <select
+                  value={editing.questionType ?? "single"}
+                  onChange={(event) => {
+                    const questionType = event.target.value as NonNullable<Question["questionType"]>;
+                    const choices = questionType === "text" || editing.choices.length >= 2
+                      ? editing.choices
+                      : ["", ""];
+                    const answerIndex = questionType === "single"
+                      ? (editing.answerIndices?.[0] ?? editing.answerIndex ?? 0)
+                      : editing.answerIndex;
+                    const answerIndices = questionType === "multiple"
+                      ? (editing.answerIndices?.length ? editing.answerIndices : [answerIndex])
+                      : editing.answerIndices;
+                    setEditing({ ...editing, questionType, choices, answerIndex, answerIndices });
+                  }}
+                >
+                  <option value="single">択一</option><option value="multiple">複数選択</option><option value="text">入力</option>
+                </select>
+              </label>
+              {editing.questionType === "text" ? (
+                <label>
+                  許容回答（1行1回答）
+                  <textarea
+                    maxLength={
+                      QUESTION_LIMITS.longText *
+                      QUESTION_LIMITS.maxAcceptedAnswers
+                    }
+                    value={(editing.acceptedAnswers ?? []).join("\n")}
+                    onChange={(event) =>
+                      setEditing({
+                        ...editing,
+                        acceptedAnswers: event.target.value
+                          .split(/\r?\n/)
+                          .map((value) => value.trim())
+                          .filter(Boolean),
+                      })
+                    }
+                  />
+                </label>
+              ) : editing.choices.map((choice, index) => (
                 <label className="form-item" key={index}>
                   <span>
                     選択肢 {index + 1}
-                    {editing.answerIndex === index ? "（正解）" : ""}
+                    {(editing.questionType === "multiple"
+                      ? (editing.answerIndices ?? []).includes(index)
+                      : editing.answerIndex === index)
+                      ? "（正解）"
+                      : ""}
                   </span>
                   <div className="choice-edit-row">
                     <input
-                      maxLength={MAX_LONG_TEXT_LENGTH}
+                      maxLength={QUESTION_LIMITS.longText}
                       value={choice}
                       onChange={(event) => {
                         const choices = [...editing.choices];
@@ -345,12 +369,16 @@ export default function QuestionManagementPage({
                     />
                     <button
                       type="button"
-                      aria-pressed={editing.answerIndex === index}
-                      onClick={() =>
-                        setEditing({ ...editing, answerIndex: index })
-                      }
+                      aria-pressed={editing.questionType === "multiple" ? (editing.answerIndices ?? []).includes(index) : editing.answerIndex === index}
+                      onClick={() => {
+                        if (editing.questionType === "multiple") {
+                          const current = editing.answerIndices ?? [];
+                          const answerIndices = current.includes(index) ? current.filter((item) => item !== index) : [...current, index];
+                          setEditing({ ...editing, answerIndices, answerIndex: answerIndices[0] ?? 0 });
+                        } else setEditing({ ...editing, answerIndex: index, answerIndices: [index] });
+                      }}
                     >
-                      正解にする
+                      {editing.questionType === "multiple" ? "正解を切替" : "正解にする"}
                     </button>
                     {editing.choices.length > 2 && (
                       <button
@@ -360,13 +388,17 @@ export default function QuestionManagementPage({
                           const choices = editing.choices.filter(
                             (_, choiceIndex) => choiceIndex !== index,
                           );
-                          const answerIndex =
-                            editing.answerIndex === index
+                          const answerIndices = (editing.answerIndices ?? [])
+                            .filter((answer) => answer !== index)
+                            .map((answer) => (answer > index ? answer - 1 : answer));
+                          const answerIndex = editing.questionType === "multiple"
+                            ? (answerIndices[0] ?? 0)
+                            : editing.answerIndex === index
                               ? 0
                               : editing.answerIndex > index
                                 ? editing.answerIndex - 1
                                 : editing.answerIndex;
-                          setEditing({ ...editing, choices, answerIndex });
+                          setEditing({ ...editing, choices, answerIndex, answerIndices });
                         }}
                       >
                         削除
@@ -375,7 +407,7 @@ export default function QuestionManagementPage({
                   </div>
                 </label>
               ))}
-              {editing.choices.length < 8 && (
+              {editing.questionType !== "text" && editing.choices.length < QUESTION_LIMITS.maxChoices && (
                 <button
                   className="inline-add-button"
                   type="button"
@@ -393,7 +425,7 @@ export default function QuestionManagementPage({
             <label className="form-item">
               <span>解説</span>
               <textarea
-                maxLength={MAX_LONG_TEXT_LENGTH}
+                maxLength={QUESTION_LIMITS.longText}
                 value={editing.explanation}
                 onChange={(event) =>
                   setEditing({ ...editing, explanation: event.target.value })
@@ -403,7 +435,7 @@ export default function QuestionManagementPage({
             <label className="form-item">
               <span>出典（任意）</span>
               <input
-                maxLength={MAX_LONG_TEXT_LENGTH}
+                maxLength={QUESTION_LIMITS.longText}
                 value={editing.source ?? ""}
                 onChange={(event) =>
                   setEditing({ ...editing, source: event.target.value })
@@ -413,7 +445,7 @@ export default function QuestionManagementPage({
             <label className="form-item">
               <span>タグ（任意）</span>
               <input
-                maxLength={MAX_LONG_TEXT_LENGTH}
+                maxLength={QUESTION_LIMITS.longText}
                 value={tagText}
                 onChange={(event) => setTagText(event.target.value)}
                 placeholder="カンマ区切り"
@@ -624,6 +656,4 @@ export default function QuestionManagementPage({
     </main>
   );
 }
-
-
 

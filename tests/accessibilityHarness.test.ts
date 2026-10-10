@@ -45,6 +45,41 @@ test("E2E試験は主要画面・狭幅・フォーカス・AXツリーを検査
   );
 });
 
+test("E2E試験は3回答方式を登録・回答・履歴表示・バックアップ往復する", () => {
+  const source = readFileSync("scripts/e2e-accessibility.mjs", "utf8");
+  for (const token of [
+    "runAnswerModeJourney",
+    "answer-modes.csv",
+    "E2E-SINGLE",
+    "E2E-MULTIPLE",
+    "E2E-TEXT",
+    "正常・警告行を登録（3件）",
+    "E2E 択一問題",
+    "E2E 複数選択問題",
+    "E2E 入力問題",
+    "study-quiz-answer-history-v1",
+    "study-quiz-full-backup-",
+    "answer-modes-backup.json",
+    "Browser.setDownloadBehavior",
+    "3方式バックアップの復元完了",
+  ]) {
+    assert.match(
+      source,
+      new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")),
+    );
+  }
+  assert.ok(
+    source.indexOf('"CSVから一括登録"') <
+      source.indexOf('"学習計画を確認して開始"'),
+    "3方式の登録より先に学習を開始してはいけません",
+  );
+  assert.ok(
+    source.indexOf('"完全バックアップを出力"') <
+      source.indexOf('"確認した内容で復元"'),
+    "バックアップ出力より先に復元してはいけません",
+  );
+});
+
 test("デプロイ前にChromeを準備して全チェックを実行する", () => {
   const workflow = readFileSync(".github/workflows/deploy.yml", "utf8");
   assert.match(workflow, /browser-actions\/setup-chrome@v2/);
@@ -82,6 +117,21 @@ test("共通確認ダイアログはキーボード操作とフォーカス復�
   assert.match(source, /event\.key !== "Tab"/);
 });
 
+test("初期化失敗時は保存操作を止め、非同期読込後の破棄済み更新を防ぐ", () => {
+  const source = readFileSync("src/App.tsx", "utf8");
+  assert.match(source, /setStorageBlocked\(true\)/);
+  assert.match(source, /if \(storageBlocked\)/);
+  assert.match(source, /const loadedExamScopes = await readExamScopes\(\)/);
+  assert.match(source, /if \(cancelled\) return;\s*setExamScopes\(loadedExamScopes\)/s);
+});
+
+test("PWA更新確認とインストール失敗を未処理Promiseにしない", () => {
+  const source = readFileSync("src/components/PwaUpdatePrompt.tsx", "utf8");
+  assert.match(source, /registration\.update\(\)\.catch/);
+  assert.match(source, /await prompt\.prompt\(\)/);
+  assert.match(source, /catch \{\s*setNotice\("error"\)/s);
+});
+
 test("狭幅画面では固定ヘッダーとバックアップ差分一覧を画面幅内へ収める", () => {
   const css = readFileSync("src/App.css", "utf8");
   assert.match(css, /\.app-frame \.app-shell\s*\{[^}]*grid-template-columns: minmax\(0, 1fr\)/s);
@@ -89,5 +139,4 @@ test("狭幅画面では固定ヘッダーとバックアップ差分一覧を�
   assert.match(css, /\.backup-preview-list\s*\{\s*display: block !important;/s);
   assert.doesNotMatch(css, /\.backup-preview > div\s*\{/);
 });
-
 

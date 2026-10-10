@@ -67,6 +67,7 @@ export const filterStudyQuestions = (
   );
   return questions.filter(
     (question) =>
+      !question.archivedAt &&
       question.examScopeId === selection.examScopeId &&
       (selectedCategories.has("ALL") ||
         selectedCategories.has(question.category)) &&
@@ -84,6 +85,8 @@ const primarySource = (sourceTypes: readonly SourceType[]): SourceType => {
 };
 
 const sourceOrder: SourceType[] = ["REVIEW", "WEAK", "NEW", "CUSTOM"];
+const maximumWeight = (questions: Question[]): number =>
+  questions.reduce((maximum, question) => Math.max(maximum, question.weight), 1);
 
 const createSession = (
   items: StudySessionItem[],
@@ -129,7 +132,7 @@ const customSession = (
     setup,
     now,
   );
-  const maxWeight = Math.max(1, ...questions.map((question) => question.weight));
+  const maxWeight = maximumWeight(questions);
   const items = [...questions]
     .sort(
       (left, right) =>
@@ -167,7 +170,7 @@ const generateMultiModeSession = (
     setup,
     now,
   );
-  const maxWeight = Math.max(1, ...pool.map((question) => question.weight));
+  const maxWeight = maximumWeight(pool);
   const weakScores = new Map(
     analyzeWeakQuestions(pool, history)
       .filter((item) => item.weaknessScore >= 0.35)
@@ -177,6 +180,9 @@ const generateMultiModeSession = (
     string,
     { question: Question; sourceTypes: Set<SourceType>; priorityScore: number }
   >();
+  const statesByQuestion = new Map(
+    states.map((state) => [state.questionId, state]),
+  );
   const add = (
     question: Question,
     sources: readonly SourceType[],
@@ -204,13 +210,12 @@ const generateMultiModeSession = (
   }
   if (modes.includes("REVIEW")) {
     pool.forEach((question) => {
-      const due = states.find(
-        (state) => state.questionId === question.id,
-      )?.nextReviewAt;
-      if (due && new Date(due).getTime() <= now.getTime()) {
+      const due = statesByQuestion.get(question.id)?.nextReviewAt;
+      const dueAt = due ? Date.parse(due) : NaN;
+      if (Number.isFinite(dueAt) && dueAt <= now.getTime()) {
         const overdueDays = Math.max(
           0,
-          Math.floor((now.getTime() - new Date(due).getTime()) / 86_400_000),
+          Math.floor((now.getTime() - dueAt) / 86_400_000),
         );
         add(question, ["REVIEW"], Math.min(1, 0.8 + overdueDays / 100));
       }

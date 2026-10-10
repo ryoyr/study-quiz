@@ -3,18 +3,26 @@ import {
   generateGeminiContent,
   isGeminiConfigured,
 } from "../services/geminiService";
+import { buildQuestionContext } from "../services/promptBuilder";
+import {
+  formatQuestionResponse,
+  type QuestionResponse,
+} from "../services/questionAnswerModel";
 import type { Question } from "../types/Question";
 
-type Props = { question: Question; selectedIndex: number | null };
+type Props = {
+  question: Question;
+  response: QuestionResponse | null;
+};
 
 const templates = [
   "なぜこの答えになるか、根拠から説明してください。",
-  "各選択肢が正しいか誤りかを比較してください。",
+  "利用者の回答と正答を比較し、誤りや不足を説明してください。",
   "試験直前に思い出せる覚え方を作ってください。",
   "関連知識と、よくある引っかけを説明してください。",
 ];
 
-export default function AiQuestionPanel({ question, selectedIndex }: Props) {
+export default function AiQuestionPanel({ question, response: userResponse }: Props) {
   const [open, setOpen] = useState(false);
   const [request, setRequest] = useState(templates[0]);
   const [message, setMessage] = useState("");
@@ -26,19 +34,13 @@ export default function AiQuestionPanel({ question, selectedIndex }: Props) {
     () =>
       [
         "資格試験の学習支援として日本語で回答してください。根拠が不明な内容は断定せず、必要なら公式情報の確認を促してください。",
-        `カテゴリ: ${question.category}`,
-        question.subcategory ? `サブカテゴリ: ${question.subcategory}` : "",
-        `問題: ${question.text}`,
-        ...question.choices.map((choice, index) => `選択肢${index + 1}: ${choice}`),
-        `正解: 選択肢${question.answerIndex + 1} ${question.choices[question.answerIndex]}`,
-        `利用者の回答: ${selectedIndex === null ? "未回答" : `選択肢${selectedIndex + 1} ${question.choices[selectedIndex]}`}`,
-        `既存解説: ${question.explanation || "なし"}`,
-        question.source ? `出典情報: ${question.source}` : "",
+        buildQuestionContext(question),
+        `利用者の回答: ${formatQuestionResponse(question, userResponse)}`,
         `質問: ${request}`,
       ]
         .filter(Boolean)
         .join("\n"),
-    [question, request, selectedIndex],
+    [question, request, userResponse],
   );
 
   const copy = async () => {
@@ -77,7 +79,7 @@ export default function AiQuestionPanel({ question, selectedIndex }: Props) {
         <div className="ai-question-body">
           <p className="security-note">
             {configured
-              ? "問題・選択肢・解説と入力した質問をGemini APIへ送信します。"
+              ? "問題・回答方式・選択肢・正答・利用者の回答・解説と入力した質問をGemini APIへ送信します。"
               : "APIキーが未設定のため、質問文のコピーのみ利用できます。その他 → 設定からGeminiを設定できます。"}
           </p>
           <div className="ai-template-chips" aria-label="質問テンプレート">
@@ -93,7 +95,7 @@ export default function AiQuestionPanel({ question, selectedIndex }: Props) {
           </label>
           <details className="prompt-details">
             <summary>送信内容を確認</summary>
-            <textarea className="prompt-preview" aria-label="生成した質問文" rows={10} readOnly value={prompt} />
+            <textarea className="prompt-preview" aria-label="生成した質問文" rows={12} readOnly value={prompt} />
           </details>
           <div className="ai-question-actions">
             {configured && (
@@ -118,4 +120,3 @@ export default function AiQuestionPanel({ question, selectedIndex }: Props) {
     </section>
   );
 }
-

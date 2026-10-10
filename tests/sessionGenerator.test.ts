@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { calculateRequiredNewCount } from "../src/services/sessionGenerator.ts";
+import {
+  calculateRequiredNewCount,
+  generateStudySession,
+} from "../src/services/sessionGenerator.ts";
+import type { Question } from "../src/types/Question.ts";
 import type { Setup } from "../src/types/Setup.ts";
 
 const setup: Setup = {
@@ -43,5 +47,56 @@ test("必要新規数は1日の新規上限を超えない", () => {
     new Date("2026-10-04T13:10:04.000Z"),
   );
   assert.equal(result.requiredNewCount, 10);
+});
+
+test("未来履歴を未回答判定へ混ぜず、アーカイブ問題を出題しない", () => {
+  const active: Question = {
+    id: "Q-active",
+    examScopeId: "lpic101",
+    category: "Linux",
+    text: "active",
+    choices: ["A", "B"],
+    answerIndex: 0,
+    explanation: "",
+    weight: 1,
+    difficulty: 1,
+  };
+  const archived: Question = {
+    ...active,
+    id: "Q-archived",
+    archivedAt: "2026-10-09T00:00:00.000Z",
+  };
+  const session = generateStudySession(
+    [active, archived],
+    [
+      {
+        id: "H-future",
+        questionId: active.id,
+        category: "Linux",
+        selectedIndex: 0,
+        correct: true,
+        answeredAt: "2026-10-11T00:00:00.000Z",
+        responseTimeSeconds: 1,
+        instantScore: 1,
+      },
+    ],
+    setup,
+    [],
+    new Date("2026-10-10T12:00:00.000Z"),
+  );
+  assert.deepEqual(session.items.map((item) => item.question.id), [active.id]);
+  assert.equal(session.remainingNewQuestions, 1);
+});
+
+test("候補0件のセッションは0問・0分で返す", () => {
+  const session = generateStudySession(
+    [],
+    [],
+    setup,
+    [],
+    new Date("2026-10-10T12:00:00.000Z"),
+  );
+  assert.equal(session.totalCount, 0);
+  assert.equal(session.estimatedMinutes, 0);
 });
 

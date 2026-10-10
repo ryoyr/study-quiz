@@ -21,13 +21,17 @@ export const buildLearningTrend = (
   days = 14,
   now = new Date(),
 ): LearningTrendPoint[] => {
+  const periodDays = Number.isInteger(days)
+    ? Math.min(3660, Math.max(1, days))
+    : 14;
+  const nowTime = now.getTime();
   const activeIds = new Set(
     questions.filter((question) => !question.archivedAt).map((question) => question.id),
   );
-  const dates = Array.from({ length: Math.max(1, days) }, (_, offset) => {
+  const dates = Array.from({ length: periodDays }, (_, offset) => {
     const date = new Date(now);
     date.setHours(0, 0, 0, 0);
-    date.setDate(date.getDate() - (Math.max(1, days) - 1 - offset));
+    date.setDate(date.getDate() - (periodDays - 1 - offset));
     return localDate(date);
   });
   const dateSet = new Set(dates);
@@ -35,11 +39,17 @@ export const buildLearningTrend = (
   const answers = new Map(dates.map((date) => [date, 0]));
   const byDay = new Map<string, StudyHistory[]>();
 
-  [...history]
-    .filter((item) => activeIds.has(item.questionId))
-    .sort((left, right) => left.answeredAt.localeCompare(right.answeredAt))
-    .forEach((item) => {
-      const date = localDate(new Date(item.answeredAt));
+  history
+    .map((item, index) => ({ item, index, time: Date.parse(item.answeredAt) }))
+    .filter(
+      ({ item, time }) =>
+        activeIds.has(item.questionId) &&
+        Number.isFinite(time) &&
+        time <= nowTime,
+    )
+    .sort((left, right) => left.time - right.time || left.index - right.index)
+    .forEach(({ item, time }) => {
+      const date = localDate(new Date(time));
       if (!byDay.has(date)) byDay.set(date, []);
       byDay.get(date)?.push(item);
       if (dateSet.has(date)) answers.set(date, (answers.get(date) ?? 0) + 1);
@@ -49,7 +59,11 @@ export const buildLearningTrend = (
   [...byDay.entries()]
     .filter(([date]) => date < firstDate)
     .flatMap(([, items]) => items)
-    .sort((left, right) => left.answeredAt.localeCompare(right.answeredAt))
+    .sort(
+      (left, right) =>
+        Date.parse(left.answeredAt) - Date.parse(right.answeredAt) ||
+        left.id.localeCompare(right.id),
+    )
     .forEach((item) => states.set(item.questionId, applyHistoryToState(states.get(item.questionId), item)));
 
   return dates.map((date) => {

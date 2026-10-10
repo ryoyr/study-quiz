@@ -26,12 +26,22 @@ const accuracy = (items: StudyHistory[]): number =>
 export const detectForgettingCandidates = (
   questions: Question[],
   history: StudyHistory[],
-): ForgettingCandidate[] =>
-  questions
+  now = new Date(),
+): ForgettingCandidate[] => {
+  const nowTime = now.getTime();
+  return questions
+    .filter((question) => !question.archivedAt)
     .map((question): ForgettingCandidate | null => {
       const answers = history
-        .filter((item) => item.questionId === question.id)
-        .sort((a, b) => b.answeredAt.localeCompare(a.answeredAt));
+        .map((item, index) => ({ item, index, time: Date.parse(item.answeredAt) }))
+        .filter(
+          ({ item, time }) =>
+            item.questionId === question.id &&
+            Number.isFinite(time) &&
+            time <= nowTime,
+        )
+        .sort((left, right) => right.time - left.time || left.index - right.index)
+        .map(({ item }) => item);
       if (answers.length < 4) return null;
       const recentSize = Math.min(3, Math.floor(answers.length / 2));
       const recent = answers.slice(0, recentSize);
@@ -97,6 +107,7 @@ export const detectForgettingCandidates = (
         b.question.weight - a.question.weight ||
         a.question.id.localeCompare(b.question.id),
     );
+};
 
 export const selectForgettingQuestions = (
   questions: Question[],
@@ -104,6 +115,6 @@ export const selectForgettingQuestions = (
   limit: number,
 ): Question[] =>
   detectForgettingCandidates(questions, history)
-    .slice(0, Math.max(1, limit))
+    .slice(0, Math.max(0, Math.floor(limit)))
     .map((item) => item.question);
 

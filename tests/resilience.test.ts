@@ -196,16 +196,156 @@ test("旧形式をversion 9へ移行し、廃止済み設定を除外する", ()
 
 test("端末内の旧履歴キーを現行キーへ移行する", () => {
   const storage = new MemoryStorage();
-  storage.setItem("study-quiz-history-v1", '[{"id":"legacy"}]');
+  const legacy = JSON.stringify({
+    id: "legacy",
+    questionId: "Q-1",
+    category: "Linux",
+    selectedIndex: 0,
+    correct: true,
+    answeredAt: "2026-10-05T00:00:00.000Z",
+    responseTimeSeconds: 10,
+    instantScore: 0.8,
+  });
+  storage.setItem("study-quiz-history-v1", `[${legacy}]`);
 
   assert.equal(migrateLegacyStorage(storage), true);
   assert.equal(
     storage.getItem("study-quiz-answer-history-v1"),
-    '[{"id":"legacy"}]',
+    `[${legacy}]`,
   );
   assert.equal(storage.getItem("study-quiz-history-v1"), null);
   assert.equal(storage.getItem("study-quiz-schema-version"), "8");
   assert.equal(migrateLegacyStorage(storage), false);
+});
+
+test("破損した旧履歴は削除せず、空の現行履歴は有効な旧履歴で救済する", () => {
+  const broken = new MemoryStorage();
+  broken.setItem("study-quiz-history-v1", "{broken");
+  assert.throws(() => migrateLegacyStorage(broken), /自動移行を停止/);
+  assert.equal(broken.getItem("study-quiz-history-v1"), "{broken");
+  assert.equal(broken.getItem("study-quiz-answer-history-v1"), null);
+  assert.equal(broken.getItem("study-quiz-schema-version"), null);
+
+  const recoverable = new MemoryStorage();
+  recoverable.setItem("study-quiz-answer-history-v1", "[]");
+  const legacy = JSON.stringify({
+    id: "legacy",
+    questionId: "Q-1",
+    category: "Linux",
+    selectedIndex: 0,
+    correct: true,
+    answeredAt: "2026-10-05T00:00:00.000Z",
+    responseTimeSeconds: 10,
+    instantScore: 0.8,
+  });
+  recoverable.setItem("study-quiz-history-v1", `[${legacy}]`);
+  assert.equal(migrateLegacyStorage(recoverable), true);
+  assert.equal(
+    recoverable.getItem("study-quiz-answer-history-v1"),
+    `[${legacy}]`,
+  );
+  assert.equal(recoverable.getItem("study-quiz-history-v1"), null);
+});
+
+test("内容が競合する現行履歴と旧履歴はどちらも保持する", () => {
+  const storage = new MemoryStorage();
+  const item = (id: string) => JSON.stringify({
+    id,
+    questionId: "Q-1",
+    category: "Linux",
+    selectedIndex: 0,
+    correct: true,
+    answeredAt: "2026-10-05T00:00:00.000Z",
+    responseTimeSeconds: 10,
+    instantScore: 0.8,
+  });
+  storage.setItem("study-quiz-answer-history-v1", `[${item("current")}]`);
+  storage.setItem("study-quiz-history-v1", `[${item("legacy")}]`);
+
+  assert.throws(() => migrateLegacyStorage(storage), /内容が競合/);
+  assert.equal(
+    storage.getItem("study-quiz-answer-history-v1"),
+    `[${item("current")}]`,
+  );
+  assert.equal(
+    storage.getItem("study-quiz-history-v1"),
+    `[${item("legacy")}]`,
+  );
+});
+
+test("バックアップは空白・重複IDと問題状態の不変条件違反を拒否する", () => {
+  const create = (entries: Record<string, string>) =>
+    JSON.stringify({
+      format: "study-quiz-full-backup",
+      version: 6,
+      appVersion: "4.5.0",
+      exportedAt: "2026-10-10T00:00:00.000Z",
+      entries,
+    });
+
+  assert.throws(
+    () =>
+      parseFullBackup(
+        create({
+          "study-quiz-ai-prompt-templates-v1": JSON.stringify([
+            {
+              id: " ",
+              name: "template",
+              description: "",
+              template: "{{questionContext}}",
+              builtIn: false,
+              createdAt: "2026-10-10T00:00:00.000Z",
+              updatedAt: "2026-10-10T00:00:00.000Z",
+            },
+          ]),
+        }),
+      ),
+    /AI質問テンプレートが不正/,
+  );
+
+  const annotation = {
+    questionId: "Q-1",
+    favorite: true,
+    memo: "memo",
+    updatedAt: "2026-10-10T00:00:00.000Z",
+  };
+  assert.throws(
+    () =>
+      parseFullBackup(
+        create({
+          "study-quiz-question-annotations-v1": JSON.stringify([
+            annotation,
+            { ...annotation },
+          ]),
+        }),
+      ),
+    /重複ID/,
+  );
+
+  const state = {
+    questionId: "Q-1",
+    correctCount: 1,
+    incorrectCount: 1,
+    totalCount: 1,
+    averageResponseTimeSeconds: 1,
+    recentResponseTimeSeconds: 1,
+    averageInstantScore: 1,
+    recentInstantScore: 1,
+    recentIncorrect: false,
+    lastAnsweredAt: "2026-10-10T00:00:00.000Z",
+    masteryLevel: "LEARNING",
+    fsrsCard: null,
+    nextReviewAt: null,
+    fsrsStability: 0,
+    fsrsDifficulty: 0,
+  };
+  assert.throws(
+    () =>
+      parseFullBackup(
+        create({ "study-quiz-question-states-v1": JSON.stringify([state]) }),
+      ),
+    /問題状態・FSRSが不正/,
+  );
 });
 
 test("中断セッションは範囲外位置・重複ID・不正日時を拒否する", () => {
@@ -305,3 +445,4 @@ test("未完了トランザクションが残る間は不整合なバックア�
   assert.throws(() => createFullBackup(storage), /未完了の保存処理/);
   assert.equal(auditStorage(storage).ok, false);
 });
+

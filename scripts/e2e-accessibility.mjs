@@ -1,6 +1,14 @@
 import { spawn } from "node:child_process";
 import { createServer } from "node:http";
-import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
+import {
+  mkdir,
+  mkdtemp,
+  readFile,
+  readdir,
+  rm,
+  stat,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { extname, join, normalize, resolve } from "node:path";
 import { createServer as createNetServer } from "node:net";
@@ -12,6 +20,7 @@ const MIME_TYPES = {
   ".css": "text/css; charset=utf-8",
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
+  ".mjs": "text/javascript; charset=utf-8",
   ".json": "application/json; charset=utf-8",
   ".png": "image/png",
   ".webmanifest": "application/manifest+json; charset=utf-8",
@@ -312,6 +321,311 @@ const clickNavigation = async (client, label) => {
   );
   if (!clicked) throw new Error(`主要ナビゲーションの「${label}」ボタンが見つかりません。`);
 };
+const clickLabel = async (client, label) => {
+  const clicked = await evaluate(
+    client,
+    `(() => { const label = [...document.querySelectorAll("label")].find((item) => item.textContent?.trim() === ${JSON.stringify(label)}); const input = label?.querySelector("input"); if (!input) return false; input.click(); return true; })()`,
+  );
+  if (!clicked) throw new Error(`「${label}」の選択肢が見つかりません。`);
+};
+const waitForDownloadedJson = async (
+  directory,
+  prefix,
+  timeoutMilliseconds = 10000,
+) => {
+  const deadline = Date.now() + timeoutMilliseconds;
+  while (Date.now() < deadline) {
+    const names = await readdir(directory);
+    const name = names.find(
+      (item) =>
+        item.startsWith(prefix) &&
+        item.endsWith(".json") &&
+        !item.endsWith(".crdownload"),
+    );
+    if (name) return join(directory, name);
+    await delay(80);
+  }
+  throw new Error(`${prefix}から始まるダウンロードファイルを確認できませんでした。`);
+};
+const answerCurrentQuestion = async (
+  client,
+  {
+    title,
+    choices = [],
+    textAnswer = "",
+    expectedResponseParts,
+    expectedCorrectParts,
+    nextTitle,
+  },
+) => {
+  await waitFor(
+    client,
+    `document.querySelector(".question-title")?.textContent?.trim() === ${JSON.stringify(title)}`,
+    `${title}の表示`,
+  );
+  for (const choice of choices) {
+    const clicked = await evaluate(
+      client,
+      `(() => { const button = [...document.querySelectorAll(".choice-button")].find((item) => item.textContent?.includes(${JSON.stringify(choice)})); if (!button) return false; button.click(); return true; })()`,
+    );
+    if (!clicked) throw new Error(`${title}: 選択肢「${choice}」を選べませんでした。`);
+  }
+  if (textAnswer) {
+    const entered = await evaluate(
+      client,
+      `(() => { const input = document.querySelector(".quiz-card label input"); if (!input) return false; const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set; setter?.call(input, ${JSON.stringify(textAnswer)}); input.dispatchEvent(new Event("input", { bubbles: true })); return true; })()`,
+    );
+    if (!entered) throw new Error(`${title}: 入力回答を設定できませんでした。`);
+  }
+  await clickButton(client, "回答する");
+  await waitFor(
+    client,
+    `Boolean([...document.querySelectorAll(".summary-row")].find((row) => row.querySelector("span")?.textContent?.trim() === "判定"))`,
+    `${title}の回答結果`,
+  );
+  const summary = await evaluate(
+    client,
+    `(() => Object.fromEntries([...document.querySelectorAll(".summary-row")].map((row) => [row.querySelector("span")?.textContent?.trim(), row.querySelector("strong")?.textContent?.trim()])))()`,
+  );
+  const responseParts = expectedResponseParts ?? [];
+  const correctParts = expectedCorrectParts ?? responseParts;
+  if (
+    summary["判定"] !== "正解" ||
+    !responseParts.every((part) => summary["あなたの回答"]?.includes(part)) ||
+    !correctParts.every((part) => summary["正答"]?.includes(part))
+  ) {
+    throw new Error(`${title}: 回答結果の表示が不正です。${JSON.stringify(summary)}`);
+  }
+  await clickButton(client, "思い出せた");
+  await waitFor(
+    client,
+    nextTitle
+      ? `document.querySelector(".question-title")?.textContent?.trim() === ${JSON.stringify(nextTitle)}`
+      : `document.querySelector("main h1")?.textContent?.trim() === "学習結果"`,
+    nextTitle ? `${nextTitle}への遷移` : "学習結果への遷移",
+  );
+};
+const runAnswerModeJourney = async (client, downloadDirectory) => {
+  const category = "E2E回答方式";
+  const ids = ["E2E-SINGLE", "E2E-MULTIPLE", "E2E-TEXT"];
+  const csv = [
+    [
+      "id",
+      "examScopeId",
+      "category",
+      "text",
+      "questionType",
+      "choice1",
+      "choice2",
+      "choice3",
+      "answer",
+      "answers",
+      "acceptedAnswers",
+      "explanation",
+      "source",
+      "weight",
+      "difficulty",
+    ],
+    [ids[0], "lpic101", category, "E2E 択一問題", "single", "Single-A", "Single-B", "Single-C", "2", "", "", "択一解説", "E2E", "3", "1"],
+    [ids[1], "lpic101", category, "E2E 複数選択問題", "multiple", "Multiple-A", "Multiple-B", "Multiple-C", "", "1|3", "", "複数解説", "E2E", "2", "1"],
+    [ids[2], "lpic101", category, "E2E 入力問題", "text", "", "", "", "", "", "LVM|lvm", "入力解説", "E2E", "1", "1"],
+  ].map((row) => row.join(",")).join("\n");
+
+  await clickNavigation(client, "管理");
+  await waitFor(
+    client,
+    `document.querySelector("main h1")?.textContent?.trim() === "問題・教材管理"`,
+    "問題・教材管理画面",
+  );
+  await clickButton(client, "問題管理");
+  await waitFor(
+    client,
+    `document.querySelector("main h1")?.textContent?.trim() === "問題管理"`,
+    "問題管理画面",
+  );
+  await clickButton(client, "CSVから一括登録");
+  await waitFor(
+    client,
+    `document.querySelector("main h1")?.textContent?.trim() === "問題CSV一括登録"`,
+    "問題CSV一括登録画面",
+  );
+  await evaluate(
+    client,
+    `(() => { const input = document.querySelector('input[aria-label="取り込む問題CSV"]'); if (!input) return false; const transfer = new DataTransfer(); transfer.items.add(new File([${JSON.stringify(csv)}], "answer-modes.csv", { type: "text/csv" })); Object.defineProperty(input, "files", { value: transfer.files, configurable: true }); input.dispatchEvent(new Event("change", { bubbles: true })); return true; })()`,
+  );
+  await waitFor(
+    client,
+    `[...document.querySelectorAll("button")].some((button) => button.textContent?.includes("正常・警告行を登録（3件）") && !button.disabled)`,
+    "3方式CSVのプレビュー",
+  );
+  await clickButton(client, "正常・警告行を登録（3件）");
+  await waitFor(
+    client,
+    `document.querySelector('[role="status"]')?.textContent?.includes("3件を登録しました")`,
+    "3方式CSVの登録完了",
+  );
+
+  await clickNavigation(client, "学習");
+  await waitFor(
+    client,
+    `document.querySelector("main h1")?.textContent?.trim() === "学習"`,
+    "学習画面",
+  );
+  await clickLabel(client, category);
+  await clickLabel(client, "条件一致すべて");
+  await waitFor(
+    client,
+    `document.querySelector(".compact-plan-grid .is-total strong")?.textContent?.trim() === "3"`,
+    "3方式の学習候補",
+  );
+  await clickButton(client, "学習計画を確認して開始");
+  await waitFor(
+    client,
+    `document.querySelector("main h1")?.textContent?.trim() === "学習セッション"`,
+    "3方式の学習セッション",
+  );
+  const plannedCount = await evaluate(
+    client,
+    `(() => [...document.querySelectorAll(".summary-row")].find((row) => row.querySelector("span")?.textContent?.trim() === "対象問題数")?.querySelector("strong")?.textContent?.trim())()`,
+  );
+  if (plannedCount !== "3")
+    throw new Error(`3方式の対象問題数が不正です: ${plannedCount}`);
+  await clickButton(client, "学習開始");
+
+  await answerCurrentQuestion(client, {
+    title: "E2E 択一問題",
+    choices: ["Single-B"],
+    expectedResponseParts: ["Single-B"],
+    nextTitle: "E2E 複数選択問題",
+  });
+  await answerCurrentQuestion(client, {
+    title: "E2E 複数選択問題",
+    choices: ["Multiple-C", "Multiple-A"],
+    expectedResponseParts: ["Multiple-A", "Multiple-C"],
+    nextTitle: "E2E 入力問題",
+  });
+  await answerCurrentQuestion(client, {
+    title: "E2E 入力問題",
+    textAnswer: "  ｌｖｍ  ",
+    expectedResponseParts: ["ｌｖｍ"],
+    expectedCorrectParts: ["LVM"],
+  });
+  const result = await evaluate(
+    client,
+    `document.querySelector(".result-score span")?.textContent?.replace(/\\s+/g, " ").trim()`,
+  );
+  if (result !== "3 / 3問正解")
+    throw new Error(`3方式の学習結果が不正です: ${result}`);
+  await clickButton(client, "ホームへ");
+  await waitFor(
+    client,
+    `document.querySelector("main h1")?.textContent?.trim() === "LinuC 101"`,
+    "3方式学習後のホーム画面",
+  );
+
+  await clickNavigation(client, "記録");
+  await clickButton(client, "学習履歴");
+  await waitFor(
+    client,
+    `document.querySelector("main h1")?.textContent?.trim() === "学習履歴"`,
+    "3方式の学習履歴",
+  );
+  const historyState = await evaluate(
+    client,
+    `(() => { const raw = localStorage.getItem("study-quiz-answer-history-v1"); const items = raw ? JSON.parse(raw) : []; const targets = items.filter((item) => ${JSON.stringify(ids)}.includes(item.questionId)); return { count: targets.length, types: [...new Set(targets.map((item) => item.answerType))].sort(), selectedIndices: targets.find((item) => item.questionId === "E2E-MULTIPLE")?.selectedIndices, textAnswer: targets.find((item) => item.questionId === "E2E-TEXT")?.textAnswer, visible: [...document.querySelectorAll(".history-item")].map((item) => item.textContent) }; })()`,
+  );
+  if (
+    historyState.count !== 3 ||
+    JSON.stringify(historyState.types) !== JSON.stringify(["multiple", "single", "text"]) ||
+    JSON.stringify(historyState.selectedIndices) !== JSON.stringify([0, 2]) ||
+    historyState.textAnswer !== "  ｌｖｍ  " ||
+    !ids.every((_id, index) => historyState.visible.some((text) => text?.includes(["E2E 択一問題", "E2E 複数選択問題", "E2E 入力問題"][index])))
+  ) {
+    throw new Error(`3方式の履歴保存・表示が不正です。${JSON.stringify(historyState)}`);
+  }
+
+  await clickNavigation(client, "その他");
+  await clickButton(client, "完全バックアップ");
+  await waitFor(
+    client,
+    `document.querySelector("main h1")?.textContent?.trim() === "完全バックアップ"`,
+    "3方式の完全バックアップ画面",
+  );
+  await waitFor(
+    client,
+    `document.querySelector(".storage-health-badge")?.textContent?.trim() === "正常"`,
+    "3方式データの健全性確認",
+  );
+  await rm(downloadDirectory, { force: true, recursive: true });
+  await mkdir(downloadDirectory, { recursive: true });
+  await client.send("Browser.setDownloadBehavior", {
+    behavior: "allow",
+    downloadPath: downloadDirectory,
+    eventsEnabled: true,
+  });
+  await clickButton(client, "完全バックアップを出力");
+  const backupPath = await waitForDownloadedJson(
+    downloadDirectory,
+    "study-quiz-full-backup-",
+  );
+  const backupText = await readFile(backupPath, "utf8");
+  const backup = JSON.parse(backupText);
+  const backedUpQuestions = JSON.parse(
+    backup.entries?.["study-quiz-questions-v1"] ?? "[]",
+  );
+  const backedUpHistory = JSON.parse(
+    backup.entries?.["study-quiz-answer-history-v1"] ?? "[]",
+  );
+  if (
+    !ids.every((id) => backedUpQuestions.some((item) => item.id === id)) ||
+    !ids.every((id) => backedUpHistory.some((item) => item.questionId === id))
+  ) {
+    throw new Error("完全バックアップに3方式の問題または履歴が含まれていません。");
+  }
+
+  await evaluate(
+    client,
+    `(() => { const ids = new Set(${JSON.stringify(ids)}); const questions = JSON.parse(localStorage.getItem("study-quiz-questions-v1") ?? "[]").filter((item) => !ids.has(item.id)); localStorage.setItem("study-quiz-questions-v1", JSON.stringify(questions)); localStorage.setItem("study-quiz-answer-history-v1", "[]"); localStorage.setItem("study-quiz-question-states-v1", "[]"); localStorage.removeItem("study-quiz-active-session-v1"); return true; })()`,
+  );
+  await client.send("Page.reload", { ignoreCache: true });
+  await waitFor(
+    client,
+    `document.querySelector("main h1")?.textContent?.trim() === "LinuC 101"`,
+    "3方式データ削除後のホーム画面",
+  );
+  await clickNavigation(client, "その他");
+  await clickButton(client, "完全バックアップ");
+  await waitFor(
+    client,
+    `document.querySelector("main h1")?.textContent?.trim() === "完全バックアップ"`,
+    "3方式データ削除後のバックアップ画面",
+  );
+  await evaluate(
+    client,
+    `(() => { const input = document.querySelector('input[aria-label="復元するバックアップJSON"]'); if (!input) return false; const transfer = new DataTransfer(); transfer.items.add(new File([${JSON.stringify(backupText)}], "answer-modes-backup.json", { type: "application/json" })); Object.defineProperty(input, "files", { value: transfer.files, configurable: true }); input.dispatchEvent(new Event("change", { bubbles: true })); return true; })()`,
+  );
+  await waitFor(
+    client,
+    `Boolean(document.querySelector('[aria-label="現在データとの差分集計"]'))`,
+    "3方式バックアップの差分表示",
+  );
+  await evaluate(
+    client,
+    `document.querySelector('.backup-restore-confirmation input[type="checkbox"]')?.click(); true`,
+  );
+  await clickButton(client, "確認した内容で復元");
+  await waitFor(
+    client,
+    `(() => { const questions = JSON.parse(localStorage.getItem("study-quiz-questions-v1") ?? "[]"); const history = JSON.parse(localStorage.getItem("study-quiz-answer-history-v1") ?? "[]"); return ${JSON.stringify(ids)}.every((id) => questions.some((item) => item.id === id) && history.some((item) => item.questionId === id)); })()`,
+    "3方式バックアップの復元完了",
+  );
+  await delay(700);
+  await waitFor(
+    client,
+    `document.querySelector("main h1")?.textContent?.trim() === "LinuC 101"`,
+    "3方式バックアップ復元後のホーム画面",
+  );
+};
 const run = async () => {
   const failures = [];
   const reports = [];
@@ -319,6 +633,9 @@ const run = async () => {
   const browserPath = await findBrowser();
   const { server, origin } = await startStaticServer();
   const profileDirectory = await mkdtemp(join(tmpdir(), "study-quiz-e2e-"));
+  const downloadDirectory = await mkdtemp(
+    join(tmpdir(), "study-quiz-e2e-downloads-"),
+  );
   const debugPort = await getFreePort();
   const browser = spawn(browserPath, [
     "--headless=new",
@@ -392,6 +709,8 @@ const run = async () => {
     await captureScreenshot(client, "02-home-320");
     reports.push(await evaluate(client, auditExpression("ホーム")));
 
+    await runAnswerModeJourney(client, downloadDirectory);
+
     const themeReports = [];
     for (const theme of ["aurora", "focus", "forest", "sunset", "mono"]) {
       for (const mode of ["light", "dark"]) {
@@ -430,14 +749,21 @@ const run = async () => {
     await clickNavigation(client, "管理");
     await clickButton(client, "問題管理");
     await waitFor(client, `document.querySelector("main h1")?.textContent?.trim() === "問題管理"`, "問題管理画面");
+    await waitFor(
+      client,
+      `document.activeElement?.tagName === "H1" && document.activeElement?.textContent?.trim() === "問題管理"`,
+      "問題管理見出しへのフォーカス移動",
+    );
     const openedConfirmation = await evaluate(client, `(() => {
       const button = document.querySelector('.question-actions .delete-button');
       if (!button) return false;
+      button.focus();
       button.click();
       return true;
     })()`);
     if (!openedConfirmation) failures.push("問題管理: アーカイブ確認を開始できません。");
     await waitFor(client, `Boolean(document.querySelector('[role="alertdialog"][aria-modal="true"]'))`, "アーカイブ確認ダイアログ");
+    await delay(150);
     const confirmationState = await evaluate(client, `(() => {
       const dialog = document.querySelector('[role="alertdialog"]');
       const labelledBy = dialog?.getAttribute('aria-labelledby');
@@ -450,12 +776,17 @@ const run = async () => {
       };
     })()`);
     if (!confirmationState.named || !confirmationState.described || !confirmationState.safeFocus || !confirmationState.scrollLocked)
-      failures.push("問題管理: 確認ダイアログの名前・説明・安全側初期フォーカス・背景固定が不足しています。");
+      failures.push(`問題管理: 確認ダイアログの名前・説明・安全側初期フォーカス・背景固定が不足しています。${JSON.stringify(confirmationState)}`);
     await client.send("Input.dispatchKeyEvent", { type: "keyDown", key: "Escape", code: "Escape", windowsVirtualKeyCode: 27 });
     await client.send("Input.dispatchKeyEvent", { type: "keyUp", key: "Escape", code: "Escape", windowsVirtualKeyCode: 27 });
     await waitFor(client, `!document.querySelector('[role="alertdialog"]')`, "Escapeによる確認取消");
-    const confirmationClosed = await evaluate(client, `document.activeElement?.classList.contains('delete-button') && document.body.style.overflow !== 'hidden'`);
-    if (!confirmationClosed) failures.push("問題管理: 取消後のフォーカス復帰または背景スクロール復旧に失敗しました。");
+    await delay(150);
+    const confirmationClosed = await evaluate(
+      client,
+      `(() => ({ restored: document.activeElement?.classList.contains('delete-button') ?? false, tag: document.activeElement?.tagName, text: document.activeElement?.textContent?.trim(), classes: document.activeElement?.className, overflow: document.body.style.overflow }))()`,
+    );
+    if (!confirmationClosed.restored || confirmationClosed.overflow === "hidden")
+      failures.push(`問題管理: 取消後のフォーカス復帰または背景スクロール復旧に失敗しました。${JSON.stringify(confirmationClosed)}`);
     reports.push(await evaluate(client, auditExpression("問題管理")));
     await client.send("Page.navigate", {
       url: `${origin}${BASE_PATH}?screen=backupCenter`,
@@ -589,7 +920,7 @@ const run = async () => {
     if (failures.length) {
       throw new Error(`E2Eアクセシビリティ試験で${failures.length}件の問題を検出しました。\n${failures.map((item) => `- ${item}`).join("\n")}`);
     }
-    console.log(`E2Eアクセシビリティ試験に成功しました（${reports.length}画面、${themeReports.length}テーマ組合せ、320x568・393x852、主要ナビゲーション、確認ダイアログ、コントラスト、横スクロール複数選択、固定表示、入力エラー、キーボード、AXツリー）。`);
+    console.log(`E2E試験に成功しました（3回答方式の登録・回答・履歴・バックアップ往復、${reports.length}画面、${themeReports.length}テーマ組合せ、320x568・393x852、主要ナビゲーション、確認ダイアログ、コントラスト、横スクロール複数選択、固定表示、入力エラー、キーボード、AXツリー）。`);
   } finally {
     try {
       await client?.send("Browser.close");
@@ -610,6 +941,12 @@ const run = async () => {
       recursive: true,
       retryDelay: 100,
     });
+    await rm(downloadDirectory, {
+      force: true,
+      maxRetries: 5,
+      recursive: true,
+      retryDelay: 100,
+    });
   }
 };
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
@@ -618,3 +955,4 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
     process.exitCode = 1;
   });
 }
+

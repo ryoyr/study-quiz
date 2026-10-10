@@ -175,6 +175,28 @@ test("前回中断したトランザクションを次回起動時に復旧す�
   assert.equal(storage.getItem(STORAGE_TRANSACTION_JOURNAL_KEY), null);
 });
 
+test("破損した復旧ジャーナルを消去せずデータ更新を中断する", () => {
+  const storage = new MemoryStorage();
+  storage.setItem(STORAGE_KEYS.answerHistory, '["partial-new"]');
+  storage.setItem(STORAGE_TRANSACTION_JOURNAL_KEY, "{broken");
+
+  assert.throws(
+    () => recoverStorageTransaction(storage),
+    /復旧情報が破損/,
+  );
+  assert.equal(storage.getItem(STORAGE_KEYS.answerHistory), '["partial-new"]');
+  assert.equal(storage.getItem(STORAGE_TRANSACTION_JOURNAL_KEY), "{broken");
+  assert.throws(
+    () =>
+      executeStorageTransaction(
+        [{ key: STORAGE_KEYS.answerHistory, value: '["new"]' }],
+        storage,
+      ),
+    /復旧情報が破損/,
+  );
+  assert.equal(storage.getItem(STORAGE_KEYS.answerHistory), '["partial-new"]');
+});
+
 test("アプリ外キーと重複キーはトランザクション対象にしない", () => {
   const storage = new MemoryStorage();
   assert.throws(

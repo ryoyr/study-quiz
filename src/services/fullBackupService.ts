@@ -17,6 +17,8 @@ import type { Question } from "../types/Question";
 import type { QuestionState } from "../types/QuestionState";
 import type { Setup } from "../types/Setup";
 import type { StudyHistory } from "../types/StudyHistory";
+import { isQuestion } from "./questionValidation.ts";
+import { isQuestionState } from "./questionStateService.ts";
 
 export type BackupStorageFormat = "json" | "number";
 
@@ -97,7 +99,7 @@ export const BACKUP_ENTRIES: BackupEntryDefinition[] =
     storageFormat: toBackupStorageFormat(format),
   }));
 
-const APP_VERSION = "4.4.0";
+const APP_VERSION = "4.5.0";
 const CURRENT_BACKUP_VERSION = 9 as const;
 const SUPPORTED_BACKUP_VERSIONS = [2, 3, 4, 5, 6, 7, 8, 9] as const;
 const LEGACY_HISTORY_KEY = STORAGE_KEYS.legacyHistory;
@@ -113,11 +115,15 @@ const supportedKeys = new Set([
   LEGACY_MODEL_KEY,
 ]);
 const isoDate = (value: unknown): value is string =>
-  typeof value === "string" && Number.isFinite(Date.parse(value));
+  typeof value === "string" &&
+  /^\d{4}-\d{2}-\d{2}T/u.test(value) &&
+  Number.isFinite(Date.parse(value));
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 const isString = (value: unknown, max = 20_000): value is string =>
   typeof value === "string" && value.length <= max;
+const isNonBlankString = (value: unknown, max = 20_000): value is string =>
+  isString(value, max) && value.trim().length > 0;
 const isFiniteNumber = (value: unknown): value is number =>
   typeof value === "number" && Number.isFinite(value);
 const isNonNegativeInteger = (value: unknown): value is number =>
@@ -184,56 +190,13 @@ const assertUnique = (values: string[], label: string): void => {
     throw new Error(`${label}に重複IDがあります。`);
 };
 
-const isQuestion = (value: unknown): value is Question => {
-  if (!isObject(value)) return false;
-  if (!isString(value.id, 200) || !value.id.trim()) return false;
-  if (!isString(value.examScopeId, 200) || !value.examScopeId.trim()) return false;
-  if (!isString(value.category, 200) || !value.category.trim()) return false;
-  if (!isString(value.text) || !value.text.trim()) return false;
-  if (
-    !Array.isArray(value.choices) ||
-    value.choices.length < 2 ||
-    value.choices.length > 8
-  )
-    return false;
-  if (
-    !value.choices.every((choice) => isString(choice, 10_000) && choice.trim())
-  )
-    return false;
-  if (
-    !Number.isInteger(value.answerIndex) ||
-    Number(value.answerIndex) < 0 ||
-    Number(value.answerIndex) >= value.choices.length
-  )
-    return false;
-  if (!isString(value.explanation)) return false;
-  if (!isFiniteNumber(value.weight) || value.weight <= 0) return false;
-  if (
-    !Number.isInteger(value.difficulty) ||
-    Number(value.difficulty) < 1 ||
-    Number(value.difficulty) > 5
-  )
-    return false;
-  if (
-    value.tags !== undefined &&
-    (!Array.isArray(value.tags) ||
-      !value.tags.every((tag) => isString(tag, 200)))
-  )
-    return false;
-  if (value.archivedAt !== undefined && !isoDate(value.archivedAt))
-    return false;
-  return true;
-};
-
 const isStudyHistory = (value: unknown): value is StudyHistory => {
   if (!isObject(value)) return false;
   return (
-    isString(value.id, 200) &&
-    Boolean(value.id) &&
-    isString(value.questionId, 200) &&
-    Boolean(value.questionId) &&
+    isNonBlankString(value.id, 200) &&
+    isNonBlankString(value.questionId, 200) &&
     isString(value.category, 200) &&
-    Number.isInteger(value.selectedIndex) &&
+    Number.isInteger(value.selectedIndex) && Number(value.selectedIndex) >= -1 &&
     isFiniteNumber(value.responseTimeSeconds) &&
     value.responseTimeSeconds >= 0 &&
     isFiniteNumber(value.instantScore) &&
@@ -241,44 +204,19 @@ const isStudyHistory = (value: unknown): value is StudyHistory => {
     value.instantScore <= 1 &&
     typeof value.correct === "boolean" &&
     isoDate(value.answeredAt) &&
+    (value.selectedIndices === undefined ||
+      (Array.isArray(value.selectedIndices) &&
+        value.selectedIndices.length <= 8 &&
+        new Set(value.selectedIndices).size === value.selectedIndices.length &&
+        value.selectedIndices.every(
+          (index) => Number.isInteger(index) && Number(index) >= 0,
+        ))) &&
+    (value.textAnswer === undefined || isString(value.textAnswer)) &&
+    (value.answerType === undefined ||
+      ["single", "multiple", "text"].includes(String(value.answerType))) &&
     (value.fsrsRating === undefined ||
       ["AGAIN", "HARD", "GOOD", "EASY"].includes(String(value.fsrsRating)))
   );
-};
-
-const isQuestionState = (value: unknown): value is QuestionState => {
-  if (!isObject(value) || !isString(value.questionId, 200) || !value.questionId)
-    return false;
-  const counters = ["correctCount", "incorrectCount", "totalCount"];
-  const metrics = [
-    "averageResponseTimeSeconds",
-    "recentResponseTimeSeconds",
-    "averageInstantScore",
-    "recentInstantScore",
-    "fsrsStability",
-    "fsrsDifficulty",
-  ];
-  if (!counters.every((key) => isNonNegativeInteger(value[key]))) return false;
-  if (
-    !metrics.every(
-      (key) => isFiniteNumber(value[key]) && Number(value[key]) >= 0,
-    )
-  )
-    return false;
-  if (
-    Number(value.averageInstantScore) > 1 ||
-    Number(value.recentInstantScore) > 1
-  )
-    return false;
-  if (typeof value.recentIncorrect !== "boolean") return false;
-  if (
-    !["UNLEARNED", "LEARNING", "MASTERED"].includes(String(value.masteryLevel))
-  )
-    return false;
-  if (value.lastAnsweredAt !== null && !isoDate(value.lastAnsweredAt))
-    return false;
-  if (value.nextReviewAt !== null && !isoDate(value.nextReviewAt)) return false;
-  return value.fsrsCard === null || isObject(value.fsrsCard);
 };
 
 const validateSetupEntry = (value: unknown): void => {
@@ -338,7 +276,7 @@ const validateJsonEntry = (key: string, value: unknown): void => {
         !items.every(
           (item) =>
             isObject(item) &&
-            isString(item.questionId, 200) &&
+            isNonBlankString(item.questionId, 200) &&
             isString(item.cause) &&
             isString(item.correctKnowledge) &&
             isString(item.caution) &&
@@ -347,6 +285,10 @@ const validateJsonEntry = (key: string, value: unknown): void => {
       ) {
         throw new Error("間違いノートが不正です。");
       }
+      assertUnique(
+        items.map((item) => (item as { questionId: string }).questionId),
+        "間違いノート",
+      );
       return;
     }
     case STORAGE_KEYS.questionAnnotations: {
@@ -355,7 +297,7 @@ const validateJsonEntry = (key: string, value: unknown): void => {
         !items.every(
           (item) =>
             isObject(item) &&
-            isString(item.questionId, 200) &&
+            isNonBlankString(item.questionId, 200) &&
             typeof item.favorite === "boolean" &&
             isString(item.memo) &&
             isoDate(item.updatedAt),
@@ -363,6 +305,10 @@ const validateJsonEntry = (key: string, value: unknown): void => {
       ) {
         throw new Error("お気に入り・メモが不正です。");
       }
+      assertUnique(
+        items.map((item) => (item as { questionId: string }).questionId),
+        "お気に入り・メモ",
+      );
       return;
     }
     case STORAGE_KEYS.correctionSuggestions: {
@@ -371,8 +317,8 @@ const validateJsonEntry = (key: string, value: unknown): void => {
         !items.every(
           (item) =>
             isObject(item) &&
-            isString(item.id, 200) &&
-            isString(item.questionId, 200) &&
+            isNonBlankString(item.id, 200) &&
+            isNonBlankString(item.questionId, 200) &&
             isString(item.suggestion) &&
             isString(item.reason) &&
             isString(item.reference) &&
@@ -383,6 +329,10 @@ const validateJsonEntry = (key: string, value: unknown): void => {
       ) {
         throw new Error("問題修正提案が不正です。");
       }
+      assertUnique(
+        items.map((item) => (item as { id: string }).id),
+        "問題修正提案",
+      );
       return;
     }
     case STORAGE_KEYS.aiPromptTemplates: {
@@ -391,8 +341,8 @@ const validateJsonEntry = (key: string, value: unknown): void => {
         !items.every(
           (item) =>
             isObject(item) &&
-            isString(item.id, 200) &&
-            isString(item.name, 200) &&
+            isNonBlankString(item.id, 200) &&
+            isNonBlankString(item.name, 200) &&
             isString(item.description) &&
             isString(item.template) &&
             typeof item.builtIn === "boolean" &&
@@ -402,6 +352,10 @@ const validateJsonEntry = (key: string, value: unknown): void => {
       ) {
         throw new Error("AI質問テンプレートが不正です。");
       }
+      assertUnique(
+        items.map((item) => (item as { id: string }).id),
+        "AI質問テンプレート",
+      );
       return;
     }
     default:
@@ -750,5 +704,4 @@ export const auditStorage = (
 };
 
 export const backupErrorMessage = errorMessage;
-
 

@@ -2,6 +2,10 @@ import { useMemo, useState } from "react";
 import type { Question } from "../types/Question";
 import type { StudyHistory } from "../types/StudyHistory";
 import { fsrsRatingLabel } from "../services/fsrsAdapter";
+import {
+  formatQuestionResponse,
+  responseFromHistory,
+} from "../services/questionAnswerModel";
 type Props = {
   history: StudyHistory[];
   questions: Question[];
@@ -129,6 +133,14 @@ export default function LearningHistoryPage({
                   <b>{item.correct ? "正解" : "不正解"}</b>
                 </div>
                 <div className="history-values">
+                  {q && (
+                    <span>
+                      回答 {" "}
+                      <strong>
+                        {formatQuestionResponse(q, responseFromHistory(item))}
+                      </strong>
+                    </span>
+                  )}
                   <span>
                     回答時間{" "}
                     <strong>{item.responseTimeSeconds.toFixed(1)}秒</strong>

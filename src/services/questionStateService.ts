@@ -2,8 +2,46 @@ import type { StudyHistory } from "../types/StudyHistory";
 import type { MasteryLevel, QuestionState } from "../types/QuestionState";
 import { STORAGE_KEYS } from "./storageKeyRegistry.ts";
 import { writeStorageValue } from "./verifiedStorage.ts";
+import { isStoredFsrsCard } from "./fsrsAdapter.ts";
 
 const KEY = STORAGE_KEYS.questionStates;
+const isTimestamp = (value: unknown): value is string =>
+  typeof value === "string" &&
+  /^\d{4}-\d{2}-\d{2}T/u.test(value) &&
+  Number.isFinite(Date.parse(value));
+const isFiniteNonNegative = (value: unknown): value is number =>
+  typeof value === "number" && Number.isFinite(value) && value >= 0;
+const isNonNegativeInteger = (value: unknown): value is number =>
+  Number.isInteger(value) && Number(value) >= 0;
+
+export const isQuestionState = (value: unknown): value is QuestionState => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const state = value as Partial<QuestionState>;
+  return (
+    typeof state.questionId === "string" &&
+    state.questionId.trim().length > 0 &&
+    state.questionId.length <= 200 &&
+    isNonNegativeInteger(state.correctCount) &&
+    isNonNegativeInteger(state.incorrectCount) &&
+    isNonNegativeInteger(state.totalCount) &&
+    state.correctCount + state.incorrectCount === state.totalCount &&
+    isFiniteNonNegative(state.averageResponseTimeSeconds) &&
+    isFiniteNonNegative(state.recentResponseTimeSeconds) &&
+    isFiniteNonNegative(state.averageInstantScore) &&
+    state.averageInstantScore <= 1 &&
+    isFiniteNonNegative(state.recentInstantScore) &&
+    state.recentInstantScore <= 1 &&
+    typeof state.recentIncorrect === "boolean" &&
+    (state.lastAnsweredAt === null || isTimestamp(state.lastAnsweredAt)) &&
+    ["UNLEARNED", "LEARNING", "MASTERED"].includes(
+      String(state.masteryLevel),
+    ) &&
+    (state.fsrsCard === null || isStoredFsrsCard(state.fsrsCard)) &&
+    (state.nextReviewAt === null || isTimestamp(state.nextReviewAt)) &&
+    isFiniteNonNegative(state.fsrsStability) &&
+    isFiniteNonNegative(state.fsrsDifficulty)
+  );
+};
 const mastery = (
   correct: number,
   total: number,
@@ -68,11 +106,14 @@ export const applyHistoryToState = (
 };
 export const rebuildQuestionStates = (
   history: StudyHistory[],
+  now = new Date(),
 ): QuestionState[] => {
   const map = new Map<string, QuestionState>();
-  [...history]
-    .sort((a, b) => a.answeredAt.localeCompare(b.answeredAt))
-    .forEach((item) =>
+  history
+    .map((item, index) => ({ item, index, time: Date.parse(item.answeredAt) }))
+    .filter(({ time }) => Number.isFinite(time) && time <= now.getTime())
+    .sort((left, right) => left.time - right.time || left.index - right.index)
+    .forEach(({ item }) =>
       map.set(
         item.questionId,
         applyHistoryToState(map.get(item.questionId), item),
@@ -87,7 +128,14 @@ export const loadQuestionStates = (
     const raw = localStorage.getItem(KEY);
     if (raw) {
       const parsed: unknown = JSON.parse(raw);
-      if (Array.isArray(parsed)) return parsed as QuestionState[];
+      if (
+        Array.isArray(parsed) &&
+        parsed.length <= 100_000 &&
+        parsed.every(isQuestionState) &&
+        new Set(parsed.map((state) => state.questionId)).size === parsed.length &&
+        (parsed.length > 0 || history.length === 0)
+      )
+        return parsed;
     }
   } catch {
     /* rebuild */
@@ -96,19 +144,26 @@ export const loadQuestionStates = (
   saveQuestionStates(rebuilt);
   return rebuilt;
 };
-export const saveQuestionStates = (states: QuestionState[]): void =>
+export const saveQuestionStates = (states: QuestionState[]): void => {
+  if (
+    states.length > 100_000 ||
+    !states.every(isQuestionState) ||
+    new Set(states.map((state) => state.questionId)).size !== states.length
+  )
+    throw new Error("保存する問題状態・FSRSの形式が不正です。");
   writeStorageValue(KEY, JSON.stringify(states));
+};
 export const updateQuestionStates = (
   states: QuestionState[],
   item: StudyHistory,
 ): QuestionState[] => {
-  const existing = states.find((state) => state.questionId === item.questionId);
+  const byQuestion = new Map(
+    states.filter(isQuestionState).map((state) => [state.questionId, state]),
+  );
+  const existing = byQuestion.get(item.questionId);
   const next = applyHistoryToState(existing, item);
-  return existing
-    ? states.map((state) =>
-        state.questionId === item.questionId ? next : state,
-      )
-    : [...states, next];
+  byQuestion.set(item.questionId, next);
+  return [...byQuestion.values()];
 };
 export const getMasteryLabel = (level: MasteryLevel): string =>
   level === "MASTERED"

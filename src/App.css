@@ -6122,3 +6122,4 @@ tbody tr:hover { background: var(--surface-hover); }
   .chart-series-learning { stroke: LinkText; }
   .chart-series-mastered { stroke: Highlight; }
 }
+

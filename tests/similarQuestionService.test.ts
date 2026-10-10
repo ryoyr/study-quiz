@@ -23,6 +23,7 @@ const baseQuestion: Question = {
 };
 
 const validJson = JSON.stringify({
+  questionType: "single",
   category: "Linux",
   subcategory: "権限",
   text: "chmod 640でグループに与えられる権限はどれか。",
@@ -35,11 +36,12 @@ const validJson = JSON.stringify({
   difficulty: 2,
 });
 
-test("元問題の文脈とJSON出力契約を含むプロンプトを生成する", () => {
+test("元問題の文脈と回答方式別JSON契約を含むプロンプトを生成する", () => {
   const prompt = buildSimilarQuestionPrompt(baseQuestion);
   assert.match(prompt, /元問題ID: Q-1/);
   assert.match(prompt, /answerNumberは1始まり/);
-  assert.match(prompt, /選択肢3（正解）/);
+  assert.match(prompt, /正答: 選択肢3: 所有者は全権限/);
+  assert.match(prompt, /"questionType":"single"/);
 });
 
 test("AI回答JSONを検証し、一意な問題IDを採番する", () => {
@@ -100,3 +102,110 @@ test("選択肢範囲外のanswerNumberを拒否する", () => {
   );
 });
 
+test("複数選択問題の類似案を生成・検証できる", () => {
+  const multipleBase: Question = {
+    ...baseQuestion,
+    id: "M-1",
+    questionType: "multiple",
+    answerIndex: 0,
+    answerIndices: [0, 2],
+  };
+  const prompt = buildSimilarQuestionPrompt(multipleBase);
+  assert.match(prompt, /answerNumbersは1始まりの整数配列/);
+  assert.match(prompt, /"questionType":"multiple"/);
+  const draft = parseSimilarQuestionDraft(
+    JSON.stringify({
+      questionType: "multiple",
+      category: "Linux",
+      text: "正しい権限をすべて選べ。",
+      choices: ["A", "B", "C"],
+      answerNumbers: [1, 3],
+      explanation: "AとCが正しい。",
+      source: "公式",
+      tags: ["類似"],
+      weight: 2,
+      difficulty: 3,
+    }),
+    multipleBase,
+    [multipleBase],
+  );
+  assert.equal(draft.questionType, "multiple");
+  assert.deepEqual(draft.answerIndices, [0, 2]);
+  assert.equal(draft.answerIndex, 0);
+});
+
+test("入力問題の類似案を生成・検証できる", () => {
+  const textBase: Question = {
+    ...baseQuestion,
+    id: "T-1",
+    text: "論理ボリューム管理の略称を入力せよ。",
+    questionType: "text",
+    choices: [],
+    answerIndex: 0,
+    acceptedAnswers: ["LVM"],
+  };
+  const prompt = buildSimilarQuestionPrompt(textBase);
+  assert.match(prompt, /acceptedAnswersは正答として許容する文字列配列/);
+  assert.match(prompt, /"questionType":"text"/);
+  const draft = parseSimilarQuestionDraft(
+    JSON.stringify({
+      questionType: "text",
+      category: "Linux",
+      text: "物理ボリュームの略称を入力せよ。",
+      acceptedAnswers: ["PV", "pv"],
+      explanation: "Physical Volumeの略称です。",
+      source: "公式",
+      tags: ["類似"],
+      weight: 2,
+      difficulty: 2,
+    }),
+    textBase,
+    [textBase],
+  );
+  assert.equal(draft.questionType, "text");
+  assert.deepEqual(draft.choices, []);
+  assert.deepEqual(draft.acceptedAnswers, ["PV", "pv"]);
+});
+
+test("回答方式別の不正なAI回答を拒否する", () => {
+  const multipleBase: Question = {
+    ...baseQuestion,
+    questionType: "multiple",
+    answerIndices: [0, 2],
+  };
+  assert.throws(
+    () =>
+      parseSimilarQuestionDraft(
+        JSON.stringify({
+          questionType: "multiple",
+          category: "Linux",
+          text: "別問題",
+          choices: ["A", "B"],
+          answerNumbers: [1, 1],
+          explanation: "解説",
+          weight: 1,
+          difficulty: 1,
+        }),
+        multipleBase,
+        [multipleBase],
+      ),
+    /重複/,
+  );
+  assert.throws(
+    () =>
+      parseSimilarQuestionDraft(
+        JSON.stringify({
+          questionType: "text",
+          category: "Linux",
+          text: "別問題",
+          acceptedAnswers: "LVM",
+          explanation: "解説",
+          weight: 1,
+          difficulty: 1,
+        }),
+        baseQuestion,
+        [baseQuestion],
+      ),
+    /文字列配列/,
+  );
+});

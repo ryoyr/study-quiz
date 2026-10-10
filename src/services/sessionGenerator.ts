@@ -23,6 +23,13 @@ type Candidate = {
   lastAnsweredAt: string;
 };
 const clamp = (v: number) => Math.min(1, Math.max(0, v));
+const timestamp = (value: string): number => Date.parse(value);
+const validHistoryAt = (value: string, now: Date): boolean => {
+  const time = timestamp(value);
+  return Number.isFinite(time) && time <= now.getTime();
+};
+const maximumWeight = (questions: Question[]): number =>
+  questions.reduce((maximum, question) => Math.max(maximum, question.weight), 1);
 const countFutureReservedDates = (setup: Setup, now: Date) => {
   const today = formatLocalDate(now);
   const reservedDates = getEffectiveReservedDates(setup, now);
@@ -58,27 +65,38 @@ export const generateStudySession = (
   questionStates: QuestionState[] = [],
   now = new Date(),
 ): GeneratedStudySession => {
+  const activeQuestions = questions.filter((question) => !question.archivedAt);
+  const validHistory = history.filter((item) => validHistoryAt(item.answeredAt, now));
   const byQuestion = new Map<string, StudyHistory[]>();
-  history.forEach((h) =>
-    byQuestion.set(h.questionId, [...(byQuestion.get(h.questionId) ?? []), h]),
-  );
+  validHistory.forEach((item) => {
+    const items = byQuestion.get(item.questionId);
+    if (items) items.push(item);
+    else byQuestion.set(item.questionId, [item]);
+  });
   byQuestion.forEach((items) =>
-    items.sort((a, b) => b.answeredAt.localeCompare(a.answeredAt)),
+    items.sort(
+      (left, right) =>
+        timestamp(right.answeredAt) - timestamp(left.answeredAt) ||
+        left.id.localeCompare(right.id),
+    ),
   );
-  const newQuestions = questions.filter((q) => !byQuestion.has(q.id));
+  const newQuestions = activeQuestions.filter((q) => !byQuestion.has(q.id));
   const { effectiveDays, requiredNewCount } = calculateRequiredNewCount(
     newQuestions.length,
     setup,
     now,
   );
   const weakMap = new Map(
-    analyzeWeakQuestions(questions, history)
+    analyzeWeakQuestions(activeQuestions, validHistory)
       .filter((w) => w.weaknessScore >= 0.35)
       .map((w) => [w.question.id, w.weaknessScore]),
   );
-  const maxWeight = Math.max(1, ...questions.map((q) => q.weight));
+  const maxWeight = maximumWeight(activeQuestions);
   const urgency = clamp(1 - effectiveDays / 90);
   const candidates = new Map<string, Candidate>();
+  const statesByQuestion = new Map(
+    questionStates.map((state) => [state.questionId, state]),
+  );
   const add = (q: Question, source: SourceType, weakness = 0, due = 0) => {
     const current = candidates.get(q.id) ?? {
       question: q,
@@ -95,19 +113,18 @@ export const generateStudySession = (
     current.newScore = source === "NEW" ? 1 : current.newScore;
     candidates.set(q.id, current);
   };
-  questions.forEach((q) => {
+  activeQuestions.forEach((q) => {
     const answers = byQuestion.get(q.id);
     if (!answers) return;
-    const state = questionStates.find((item) => item.questionId === q.id);
+    const state = statesByQuestion.get(q.id);
+    const dueAt = state?.nextReviewAt ? timestamp(state.nextReviewAt) : NaN;
     if (
-      state?.nextReviewAt &&
-      new Date(state.nextReviewAt).getTime() <= now.getTime()
+      Number.isFinite(dueAt) &&
+      dueAt <= now.getTime()
     ) {
       const overdue = Math.max(
         0,
-        Math.floor(
-          (now.getTime() - new Date(state.nextReviewAt).getTime()) / 86400000,
-        ),
+        Math.floor((now.getTime() - dueAt) / 86400000),
       );
       add(q, "REVIEW", 0, clamp((overdue + 1) / 14));
     }
@@ -159,7 +176,7 @@ export const generateStudySession = (
     weakCount: items.filter((i) => i.primarySourceType === "WEAK").length,
     otherCount: items.filter((i) => i.primarySourceType === "CUSTOM").length,
     totalCount: items.length,
-    estimatedMinutes: Math.max(1, Math.ceil(items.length * 0.75)),
+    estimatedMinutes: items.length === 0 ? 0 : Math.ceil(items.length * 0.75),
     remainingNewQuestions: newQuestions.length,
     effectiveDays,
     requiredNewCount,

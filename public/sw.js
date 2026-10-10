@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "study-quiz-shell-";
-const CACHE_NAME = `${CACHE_PREFIX}v19`;
+const CACHE_NAME = `${CACHE_PREFIX}v20`;
 const BASE_URL = new URL("./", self.registration.scope);
 const CORE_SHELL = ["./", "./index.html", "./manifest.webmanifest"].map(
   (path) => new URL(path, BASE_URL).href,

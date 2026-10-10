@@ -18,12 +18,22 @@ const average = (values: number[]): number =>
 export const analyzeWeakQuestions = (
   questions: Question[],
   history: StudyHistory[],
+  now = new Date(),
 ): WeakQuestionCandidate[] => {
+  const nowTime = now.getTime();
   return questions
+    .filter((question) => !question.archivedAt)
     .map((question) => {
       const answers = history
-        .filter((item) => item.questionId === question.id)
-        .sort((a, b) => b.answeredAt.localeCompare(a.answeredAt));
+        .map((item, index) => ({ item, index, time: Date.parse(item.answeredAt) }))
+        .filter(
+          ({ item, time }) =>
+            item.questionId === question.id &&
+            Number.isFinite(time) &&
+            time <= nowTime,
+        )
+        .sort((left, right) => right.time - left.time || left.index - right.index)
+        .map(({ item }) => item);
 
       if (answers.length === 0) {
         return null;
@@ -66,6 +76,6 @@ export const selectWeakQuestions = (
 ): Question[] =>
   analyzeWeakQuestions(questions, history)
     .filter((item) => item.weaknessScore >= 0.35)
-    .slice(0, Math.max(1, limit))
+    .slice(0, Math.max(0, Math.floor(limit)))
     .map((item) => item.question);
 

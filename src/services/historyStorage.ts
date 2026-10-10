@@ -21,7 +21,7 @@ const normalize = (value: Record<string, unknown>): StudyHistory | null => {
     !value.questionId ||
     typeof value.category !== "string" ||
     !Number.isInteger(value.selectedIndex) ||
-    Number(value.selectedIndex) < 0 ||
+    Number(value.selectedIndex) < -1 ||
     typeof value.correct !== "boolean" ||
     typeof value.answeredAt !== "string" ||
     !Number.isFinite(Date.parse(value.answeredAt))
@@ -43,12 +43,29 @@ const normalize = (value: Record<string, unknown>): StudyHistory | null => {
   )
     ? (value.fsrsRating as NonNullable<StudyHistory["fsrsRating"]>)
     : undefined;
+  const selectedIndices = Array.isArray(value.selectedIndices)
+    ? [...new Set(value.selectedIndices.filter(
+        (index): index is number => Number.isInteger(index) && Number(index) >= 0,
+      ).map(Number))].slice(0, 8)
+    : undefined;
+  const textAnswer =
+    typeof value.textAnswer === "string" && value.textAnswer.length <= 20_000
+      ? value.textAnswer
+      : undefined;
+  const answerType = ["single", "multiple", "text"].includes(
+    String(value.answerType),
+  )
+    ? (value.answerType as StudyHistory["answerType"])
+    : undefined;
 
   return {
     id: value.id,
     questionId: value.questionId,
     category: value.category,
     selectedIndex: Number(value.selectedIndex),
+    ...(selectedIndices ? { selectedIndices } : {}),
+    ...(textAnswer !== undefined ? { textAnswer } : {}),
+    ...(answerType ? { answerType } : {}),
     correct: value.correct,
     answeredAt: value.answeredAt,
     responseTimeSeconds,

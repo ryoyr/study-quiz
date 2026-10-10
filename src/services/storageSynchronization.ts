@@ -59,3 +59,4 @@ export const subscribeExternalStorageChange = (listener: Listener): (() => void)
 export const resetExternalStorageChange = (): void => {
   latestExternalChange = null;
 };
+

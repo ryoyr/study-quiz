@@ -68,3 +68,42 @@ test("不正なFSRS評価は履歴へ取り込まない", () => {
   assert.equal(loadHistory()[0]?.fsrsRating, undefined);
 });
 
+test("回答時点の問題方式と方式別回答を再読込できる", () => {
+  const storage = installStorage();
+  storage.setItem(
+    "study-quiz-answer-history-v1",
+    JSON.stringify([
+      {
+        id: "H-M",
+        questionId: "Q-M",
+        category: "Linux",
+        selectedIndex: -1,
+        selectedIndices: [2, 0, 2],
+        answerType: "multiple",
+        correct: true,
+        answeredAt: "2026-10-05T00:00:00.000Z",
+        responseTimeSeconds: 5,
+        instantScore: 0.8,
+      },
+      {
+        id: "H-T",
+        questionId: "Q-T",
+        category: "Linux",
+        selectedIndex: -1,
+        textAnswer: "LVM",
+        answerType: "text",
+        correct: true,
+        answeredAt: "2026-10-05T00:01:00.000Z",
+        responseTimeSeconds: 6,
+        instantScore: 0.7,
+      },
+    ]),
+  );
+
+  const history = loadHistory();
+  assert.deepEqual(history[0]?.selectedIndices, [2, 0]);
+  assert.equal(history[0]?.answerType, "multiple");
+  assert.equal(history[1]?.textAnswer, "LVM");
+  assert.equal(history[1]?.answerType, "text");
+});
+

@@ -4,6 +4,11 @@ import {
   parseSimilarQuestionDraft,
   validateSimilarQuestion,
 } from "../services/similarQuestionService";
+import {
+  questionTypeLabel,
+  questionTypeOf,
+} from "../services/questionAnswerModel";
+import { QUESTION_LIMITS } from "../services/questionValidation";
 import type { Question } from "../types/Question";
 
 type Props = {
@@ -112,13 +117,17 @@ export default function SimilarQuestionGeneratorPage({
   const removeChoice = (index: number) => {
     if (!draft || draft.choices.length <= 2) return;
     const choices = draft.choices.filter((_, itemIndex) => itemIndex !== index);
-    const answerIndex =
-      draft.answerIndex === index
+    const answerIndices = (draft.answerIndices ?? [])
+      .filter((answer) => answer !== index)
+      .map((answer) => (answer > index ? answer - 1 : answer));
+    const answerIndex = questionTypeOf(draft) === "multiple"
+      ? (answerIndices[0] ?? 0)
+      : draft.answerIndex === index
         ? 0
         : draft.answerIndex > index
           ? draft.answerIndex - 1
           : draft.answerIndex;
-    setDraft({ ...draft, choices, answerIndex });
+    setDraft({ ...draft, choices, answerIndex, answerIndices });
     setReviewConfirmed(false);
   };
 
@@ -179,7 +188,7 @@ export default function SimilarQuestionGeneratorPage({
                 <textarea
                   rows={12}
                   value={responseJson}
-                  placeholder='{"category":"...","text":"...","choices":["...","..."],"answerNumber":1,"explanation":"...","weight":1,"difficulty":1}'
+                  placeholder='{"questionType":"single|multiple|text","category":"...","text":"...","explanation":"...","weight":1,"difficulty":1}'
                   onChange={(event) => {
                     setResponseJson(event.target.value);
                     resetDraft();
@@ -207,9 +216,13 @@ export default function SimilarQuestionGeneratorPage({
                 <input value={draft.id} readOnly />
               </label>
               <label className="form-item">
+                <span>回答方式</span>
+                <input value={questionTypeLabel(draft)} readOnly />
+              </label>
+              <label className="form-item">
                 <span>カテゴリ</span>
                 <input
-                  maxLength={200}
+                  maxLength={QUESTION_LIMITS.shortText}
                   value={draft.category}
                   onChange={(event) => {
                     setDraft({ ...draft, category: event.target.value });
@@ -220,7 +233,7 @@ export default function SimilarQuestionGeneratorPage({
               <label className="form-item">
                 <span>サブカテゴリ</span>
                 <input
-                  maxLength={500}
+                  maxLength={QUESTION_LIMITS.shortText}
                   value={draft.subcategory ?? ""}
                   onChange={(event) => {
                     setDraft({ ...draft, subcategory: event.target.value });
@@ -232,7 +245,7 @@ export default function SimilarQuestionGeneratorPage({
                 <span>問題文</span>
                 <textarea
                   rows={5}
-                  maxLength={20_000}
+                  maxLength={QUESTION_LIMITS.longText}
                   value={draft.text}
                   onChange={(event) => {
                     setDraft({ ...draft, text: event.target.value });
@@ -242,55 +255,98 @@ export default function SimilarQuestionGeneratorPage({
               </label>
             </div>
 
-            <fieldset className="similar-question-choices">
-              <legend>選択肢と正解</legend>
-              {draft.choices.map((choice, index) => (
-                <div className="similar-question-choice" key={`${index}-${choice}`}>
-                  <label>
-                    <input
-                      type="radio"
-                      name="similar-question-answer"
-                      checked={draft.answerIndex === index}
-                      onChange={() => {
-                        setDraft({ ...draft, answerIndex: index });
-                        setReviewConfirmed(false);
-                      }}
-                    />
-                    <span>正解 {index + 1}</span>
-                  </label>
-                  <input
-                    aria-label={`選択肢${index + 1}`}
-                    value={choice}
-                    onChange={(event) => changeChoice(index, event.target.value)}
-                  />
-                  <button
-                    className="inline-link-button"
-                    type="button"
-                    disabled={draft.choices.length <= 2}
-                    onClick={() => removeChoice(index)}
-                  >
-                    削除
-                  </button>
-                </div>
-              ))}
-              <button
-                className="secondary-button"
-                type="button"
-                disabled={draft.choices.length >= 8}
-                onClick={() => {
-                  setDraft({ ...draft, choices: [...draft.choices, ""] });
-                  setReviewConfirmed(false);
-                }}
-              >
-                選択肢を追加
-              </button>
-            </fieldset>
+            {questionTypeOf(draft) === "text" ? (
+              <label className="form-item">
+                <span>許容回答（1行1回答）</span>
+                <textarea
+                  rows={5}
+                  maxLength={
+                    QUESTION_LIMITS.longText *
+                    QUESTION_LIMITS.maxAcceptedAnswers
+                  }
+                  value={(draft.acceptedAnswers ?? []).join("\n")}
+                  onChange={(event) => {
+                    setDraft({
+                      ...draft,
+                      acceptedAnswers: event.target.value
+                        .split(/\r?\n/u)
+                        .map((answer) => answer.trim())
+                        .filter(Boolean),
+                    });
+                    setReviewConfirmed(false);
+                  }}
+                />
+              </label>
+            ) : (
+              <fieldset className="similar-question-choices">
+                <legend>選択肢と正解</legend>
+                {draft.choices.map((choice, index) => {
+                  const multiple = questionTypeOf(draft) === "multiple";
+                  const checked = multiple
+                    ? (draft.answerIndices ?? []).includes(index)
+                    : draft.answerIndex === index;
+                  return (
+                    <div className="similar-question-choice" key={`${index}-${choice}`}>
+                      <label>
+                        <input
+                          type={multiple ? "checkbox" : "radio"}
+                          name="similar-question-answer"
+                          checked={checked}
+                          onChange={() => {
+                            if (multiple) {
+                              const current = draft.answerIndices ?? [];
+                              const answerIndices = current.includes(index)
+                                ? current.filter((answer) => answer !== index)
+                                : [...current, index];
+                              setDraft({
+                                ...draft,
+                                answerIndices,
+                                answerIndex: answerIndices[0] ?? 0,
+                              });
+                            } else {
+                              setDraft({ ...draft, answerIndex: index });
+                            }
+                            setReviewConfirmed(false);
+                          }}
+                        />
+                        <span>正解 {index + 1}</span>
+                      </label>
+                      <input
+                        aria-label={`選択肢${index + 1}`}
+                        maxLength={QUESTION_LIMITS.longText}
+                        value={choice}
+                        onChange={(event) => changeChoice(index, event.target.value)}
+                      />
+                      <button
+                        className="inline-link-button"
+                        type="button"
+                        disabled={draft.choices.length <= 2}
+                        onClick={() => removeChoice(index)}
+                      >
+                        削除
+                      </button>
+                    </div>
+                  );
+                })}
+                <button
+                  className="secondary-button"
+                  type="button"
+                  disabled={draft.choices.length >= QUESTION_LIMITS.maxChoices}
+                  onClick={() => {
+                    setDraft({ ...draft, choices: [...draft.choices, ""] });
+                    setReviewConfirmed(false);
+                  }}
+                >
+                  選択肢を追加
+                </button>
+              </fieldset>
+            )}
 
             <label className="form-item">
               <span>解説</span>
               <textarea
                 rows={6}
-                maxLength={20_000}
+                maxLength={QUESTION_LIMITS.longText}
                 value={draft.explanation}
                 onChange={(event) => {
                   setDraft({ ...draft, explanation: event.target.value });
@@ -301,7 +357,7 @@ export default function SimilarQuestionGeneratorPage({
             <label className="form-item">
               <span>出典</span>
               <input
-                maxLength={2_000}
+                maxLength={QUESTION_LIMITS.longText}
                 value={draft.source ?? ""}
                 onChange={(event) => {
                   setDraft({ ...draft, source: event.target.value });

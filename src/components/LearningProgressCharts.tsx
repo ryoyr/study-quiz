@@ -55,7 +55,10 @@ function LineChart({ data, keys, max, label }: { data: ReturnType<typeof buildLe
 
 export default function LearningProgressCharts({ history, questions, days = 14, compact = false }: Props) {
   const data = useMemo(() => buildLearningTrend(history, questions, days), [history, questions, days]);
-  const maxAnswers = Math.max(1, ...data.map((item) => item.answers));
+  const maxAnswers = data.reduce(
+    (maximum, item) => Math.max(maximum, item.answers),
+    1,
+  );
   const maxQuestions = Math.max(1, questions.filter((item) => !item.archivedAt).length);
   const latest = data[data.length - 1];
   return (
@@ -84,3 +87,4 @@ export default function LearningProgressCharts({ history, questions, days = 14, 
     </section>
   );
 }
+

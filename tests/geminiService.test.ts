@@ -58,3 +58,4 @@ test("利用者によるGemini送信中止をタイムアウトと区別する",
     restoreProperty(globalThis, "fetch", descriptor);
   }
 });
+

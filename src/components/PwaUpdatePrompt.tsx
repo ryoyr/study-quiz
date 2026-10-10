@@ -30,7 +30,10 @@ export default function PwaUpdatePrompt() {
       window.location.reload();
     };
     const checkForUpdate = () => {
-      if (document.visibilityState === "visible") void registration?.update();
+      if (document.visibilityState !== "visible" || !registration) return;
+      void registration.update().catch(() => {
+        if (!disposed) setNotice("error");
+      });
     };
     const onBeforeInstallPrompt = (event: Event) => {
       event.preventDefault();
@@ -53,6 +56,7 @@ export default function PwaUpdatePrompt() {
     navigator.serviceWorker
       .register(`${import.meta.env.BASE_URL}sw.js`)
       .then((result) => {
+        if (disposed) return;
         registration = result;
         if (!navigator.serviceWorker.controller) {
           void navigator.serviceWorker.ready.then(() => {
@@ -70,6 +74,7 @@ export default function PwaUpdatePrompt() {
           if (!worker) return;
           worker.addEventListener("statechange", () => {
             if (
+              !disposed &&
               worker.state === "installed" &&
               navigator.serviceWorker.controller
             ) {
@@ -104,10 +109,14 @@ export default function PwaUpdatePrompt() {
   const install = async () => {
     const prompt = installPrompt.current;
     if (!prompt) return;
-    await prompt.prompt();
-    await prompt.userChoice;
-    installPrompt.current = null;
-    setNotice(null);
+    try {
+      await prompt.prompt();
+      await prompt.userChoice;
+      installPrompt.current = null;
+      setNotice(null);
+    } catch {
+      setNotice("error");
+    }
   };
   const canPromptInstall = notice === "install" && Boolean(installPrompt.current);
   const title =
@@ -179,3 +188,4 @@ export default function PwaUpdatePrompt() {
     </aside>
   );
 }
+

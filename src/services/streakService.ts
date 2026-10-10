@@ -28,10 +28,22 @@ export const calculateStudyStreak = (
   reservedDates: string[] = [],
   now = new Date(),
 ): StudyStreak => {
+  const today = localDayNumber(now);
+  if (today === null) {
+    return {
+      currentDays: 0,
+      longestDays: 0,
+      studiedToday: false,
+      reservedToday: false,
+      totalStudyDays: 0,
+      skippedReservedDays: 0,
+      lastStudyDate: null,
+    };
+  }
   const studyDays = new Set(
     history
       .map((item) => localDayNumber(item.answeredAt))
-      .filter((day): day is number => day !== null),
+      .filter((day): day is number => day !== null && day <= today),
   );
   const reservedDays = new Set(
     reservedDates
@@ -39,7 +51,6 @@ export const calculateStudyStreak = (
       .filter((day): day is number => day !== null),
   );
   const sortedStudyDays = [...studyDays].sort((a, b) => a - b);
-  const today = localDayNumber(now)!;
   const studiedToday = studyDays.has(today);
   const reservedToday = reservedDays.has(today);
   if (sortedStudyDays.length === 0) {

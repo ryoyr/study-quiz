@@ -57,6 +57,33 @@ const toInput = (card: StoredFsrsCard): CardInput => ({
   state: card.state,
   last_review: card.lastReview,
 });
+const isFiniteNonNegative = (value: unknown): value is number =>
+  typeof value === "number" && Number.isFinite(value) && value >= 0;
+const isNonNegativeInteger = (value: unknown): value is number =>
+  Number.isInteger(value) && Number(value) >= 0;
+const isTimestamp = (value: unknown): value is string =>
+  typeof value === "string" &&
+  /^\d{4}-\d{2}-\d{2}T/u.test(value) &&
+  Number.isFinite(Date.parse(value));
+
+export const isStoredFsrsCard = (value: unknown): value is StoredFsrsCard => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const card = value as Partial<StoredFsrsCard>;
+  return (
+    isTimestamp(card.due) &&
+    (card.lastReview === null || isTimestamp(card.lastReview)) &&
+    isFiniteNonNegative(card.stability) &&
+    isFiniteNonNegative(card.difficulty) &&
+    isNonNegativeInteger(card.elapsedDays) &&
+    isNonNegativeInteger(card.scheduledDays) &&
+    isNonNegativeInteger(card.learningSteps) &&
+    isNonNegativeInteger(card.reps) &&
+    isNonNegativeInteger(card.lapses) &&
+    Number.isInteger(card.state) &&
+    Number(card.state) >= 0 &&
+    Number(card.state) <= 3
+  );
+};
 export const scheduleFsrs = (
   stored: StoredFsrsCard | null,
   rating: FsrsRating,

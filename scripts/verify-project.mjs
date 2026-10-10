@@ -29,7 +29,17 @@ const requiredFiles = [
   "package.json",
   "package-lock.json",
   "README.md",
-  "UPGRADE_REPORT.md",
+  "CURRENT_STATE_ASSESSMENT.md",
+  "CHANGE_SUMMARY.md",
+  "TASK_MANAGEMENT.md",
+  "FUTURE_RECOMMENDATIONS.md",
+  "REMOVAL_CANDIDATES.md",
+  "VALIDATION_REPORT_4.5.0.md",
+  "RELEASE_MANIFEST.md",
+  "docs/requirements.md",
+  "docs/basic-design.md",
+  "docs/detailed-design.md",
+  "docs/traceability.md",
   "tsconfig.json",
   "tsconfig.app.json",
   "tsconfig.node.json",
@@ -41,6 +51,8 @@ const requiredFiles = [
   "src/services/storageKeyRegistry.ts",
   "src/services/storageSynchronization.ts",
   "src/services/storagePersistenceService.ts",
+  "src/services/questionValidation.ts",
+  "src/services/questionAnswerModel.ts",
   "src/services/verifiedStorage.ts",
   "src/components/ConcurrentUpdateNotice.tsx",
   "src/components/ConfirmDialog.tsx",
@@ -48,11 +60,12 @@ const requiredFiles = [
   "tests/storageKeyRegistry.test.ts",
   "tests/studyOptionService.test.ts",
   "scripts/e2e-accessibility.mjs",
+  "tools/generate_pwa_icons.py",
   "tests/accessibilityHarness.test.ts",
 ];
 for (const path of requiredFiles) assert(existsSync(path), `${path} がありません`);
 const packageJson = readJson("package.json");
-assert(packageJson.version === "4.4.0", "package.jsonの版は4.4.0である必要があります");
+assert(packageJson.version === "4.5.0", "package.jsonの版は4.5.0である必要があります");
 for (const script of ["verify:structure", "test", "test:e2e", "typecheck", "build", "check"]) {
   assert(typeof packageJson.scripts?.[script] === "string", `scripts.${script} がありません`);
 }
@@ -94,6 +107,16 @@ const retiredPaths = [
   "public/favicon.svg",
   "public/icons.svg",
   "eslint.config.js",
+  "APPLY_ACCESSIBILITY_FIX.md",
+  "APPLY_GUIDE.md",
+  "APPLY_THEME_UPDATE.md",
+  "APPLY_UPDATE.md",
+  "PATCH_MANIFEST.md",
+  "PATCH_MANIFEST_THEME.md",
+  "SHA256SUMS.txt",
+  "SHA256SUMS_THEME.txt",
+  "VALIDATION_REPORT.md",
+  "VALIDATION_REPORT_COMPLETE.md",
 ];
 for (const path of retiredPaths) assert(!existsSync(path), `${path} は削除対象です`);
 const manifest = readJson("public/manifest.webmanifest");
@@ -118,12 +141,15 @@ const appleIcon = readPngSize("public/apple-touch-icon.png");
 assert(appleIcon.width === 180 && appleIcon.height === 180, "apple-touch-icon.png は180x180である必要があります");
 for (const [path, tokens] of [
   ["src/main.tsx", ["<ErrorBoundary>", "<ConcurrentUpdateNotice />", "<PwaUpdatePrompt />"]],
-  ["public/sw.js", ["CACHE_PREFIX}v19", "SKIP_WAITING", "matchAll", "Promise.allSettled", "navigationPreload", "pwa-maskable-512x512.png", "Cache Storageへの保存はベストエフォート"]],
+  ["public/sw.js", ["CACHE_PREFIX}v20", "SKIP_WAITING", "matchAll", "Promise.allSettled", "navigationPreload", "pwa-maskable-512x512.png", "Cache Storageへの保存はベストエフォート"]],
   ["src/services/fullBackupService.ts", ["CURRENT_BACKUP_VERSION = 9", "FNV-1A-32", "auditStorage", "compareFullBackup", "downloadBackupFile"]],
   ["src/pages/BackupCenterPage.tsx", ["storage-health-badge", "整合性チェック済み", "端末データの保持を強化", "現在データとの差分集計", "study-quiz-pre-restore"]],
   ["src/components/StudyFilterPanel.tsx", ["masteryFilters", "questionModes", "horizontal-option-scroller"]],
   ["src/components/ConfirmDialog.tsx", ["role=\"alertdialog\"", "aria-modal=\"true\"", "createPortal", "previousFocusRef", "FOCUSABLE_SELECTOR"]],
-  ["src/pages/QuestionManagementPage.tsx", ["<ConfirmDialog", "MAX_LONG_TEXT_LENGTH", "MAX_TAGS"]],
+  ["src/pages/QuestionManagementPage.tsx", ["<ConfirmDialog", "QUESTION_LIMITS", "questionValidationErrors"]],
+  ["src/services/questionValidation.ts", ["longText: 20_000", "maxTags: 30", "maxAcceptedAnswers: 100"]],
+  ["src/services/questionAnswerModel.ts", ["QuestionAnswerDefinition", "answerDefinitionOf", "responseToHistoryFields", "answerDefinitionForExternalUse"]],
+  ["src/services/similarQuestionService.ts", ["answerNumbers", "acceptedAnswers", "questionTypeLabel"]],
   ["src/App.css", ["overflow-x: auto", "scroll-snap-type: x proximity"]],
 ]) {
   try {
@@ -140,5 +166,4 @@ if (failures.length > 0) {
 } else {
   console.log("構成検証に成功しました（TypeScript設定、PWA資材、統合状態）。");
 }
-
 

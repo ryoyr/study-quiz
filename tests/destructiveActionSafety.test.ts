@@ -61,9 +61,12 @@ test("確認ダイアログは狭幅・強制カラー・セーフエリアへ�
 
 test("問題編集はCSV取込と同等の入力上限を適用する", () => {
   const source = read("src/pages/QuestionManagementPage.tsx");
-  assert.match(source, /MAX_ID_LENGTH = 200/);
-  assert.match(source, /MAX_SHORT_TEXT_LENGTH = 500/);
-  assert.match(source, /MAX_LONG_TEXT_LENGTH = 20_000/);
-  assert.match(source, /MAX_TAGS = 30/);
+  const validation = read("src/services/questionValidation.ts");
+  assert.match(source, /QUESTION_LIMITS/);
+  assert.match(source, /questionValidationErrors/);
+  assert.match(validation, /id: 200/);
+  assert.match(validation, /shortText: 500/);
+  assert.match(validation, /longText: 20_000/);
+  assert.match(validation, /maxTags: 30/);
 });
 

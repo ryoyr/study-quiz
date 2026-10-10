@@ -28,6 +28,19 @@ test("試験枠・カテゴリ・理解度で問題を絞り込む", () => {
   assert.equal(filtered.some((item) => item.id === learned.questionId), false);
 });
 
+test("サービスへ直接渡されたアーカイブ問題も学習候補から除外する", () => {
+  const archived = {
+    ...questions[0],
+    archivedAt: "2026-10-10T00:00:00.000Z",
+  };
+  const filtered = filterStudyQuestions([archived, questions[1]], [], {
+    ...selection,
+    categories: ["ALL"],
+    masteryFilters: ["ALL"],
+  });
+  assert.equal(filtered.some((item) => item.id === archived.id), false);
+});
+
 test("個別指定した問題だけでセッションを作成する", () => {
   const setup = { ...createDefaultSetup(), dailyQuestionLimit: 20 };
   const selected: StudySelection = { ...selection, categories: ["ALL"], masteryFilters: ["ALL"], questionIds: ["LPIC101-001", "LPIC101-100"] };
@@ -113,5 +126,21 @@ test("日別回答数と理解度の累積推移を再構成する", () => {
   assert.equal(trend[0].learning, 1);
   assert.equal(trend[1].mastered, 1);
   assert.equal(trend[1].unlearned, 1);
+});
+
+test("学習推移へ未来履歴と不正日時を混ぜない", () => {
+  const history: StudyHistory[] = [
+    { id: "H1", questionId: "LPIC101-001", category: "101", selectedIndex: 0, correct: true, answeredAt: "2026-10-10T01:00:00.000Z", responseTimeSeconds: 10, instantScore: 0.8 },
+    { id: "H2", questionId: "LPIC101-001", category: "101", selectedIndex: 0, correct: true, answeredAt: "2026-10-11T01:00:00.000Z", responseTimeSeconds: 10, instantScore: 0.8 },
+    { id: "H3", questionId: "LPIC101-001", category: "101", selectedIndex: 0, correct: true, answeredAt: "invalid", responseTimeSeconds: 10, instantScore: 0.8 },
+  ];
+  const trend = buildLearningTrend(
+    history,
+    questions.slice(0, 1),
+    1,
+    new Date("2026-10-10T12:00:00.000Z"),
+  );
+  assert.equal(trend[0].answers, 1);
+  assert.equal(trend[0].learning, 1);
 });
 

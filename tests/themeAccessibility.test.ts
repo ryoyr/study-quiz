@@ -89,3 +89,4 @@ test("表示色はCSSカスタムプロパティに集約され、状態を色�
   assert.match(css, /@media \(forced-colors: active\)/);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
 });
+

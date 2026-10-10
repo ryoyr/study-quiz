@@ -117,8 +117,11 @@ export const recoverStorageTransaction = (
 
   const journal = parseJournal(raw);
   if (!journal) {
-    removeJournal(storage);
-    return false;
+    // 破損したジャーナルを消すと、途中まで書き込まれた値だけが残り、
+    // 次回起動でも復旧不能になる。利用者が退避・調査できるよう原文を保持する。
+    throw new Error(
+      "保存トランザクションの復旧情報が破損しています。データを上書きせず、バックアップしてから確認してください。",
+    );
   }
 
   applyValues(storage, journal.before);

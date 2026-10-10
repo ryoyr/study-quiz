@@ -50,27 +50,33 @@ export const createFinalReviewPlan = (
   questionStates: QuestionState[],
   remainingDays: number,
   limit = 20,
+  now = new Date(),
 ): FinalReviewPlan => {
   const strategy = strategyFor(Math.max(0, remainingDays));
+  const activeQuestions = questions.filter((question) => !question.archivedAt);
+  const validHistory = history.filter((item) => {
+    const answeredAt = Date.parse(item.answeredAt);
+    return Number.isFinite(answeredAt) && answeredAt <= now.getTime();
+  });
   const weakIds = new Set(
-    analyzeWeakQuestions(questions, history)
+    analyzeWeakQuestions(activeQuestions, validHistory, now)
       .filter((item) => item.weaknessScore >= 0.35)
       .map((item) => item.question.id),
   );
   const forgettingIds = new Set(
-    detectForgettingCandidates(questions, history).map(
+    detectForgettingCandidates(activeQuestions, validHistory, now).map(
       (item) => item.question.id,
     ),
   );
-  const answeredIds = new Set(history.map((item) => item.questionId));
+  const answeredIds = new Set(validHistory.map((item) => item.questionId));
   const mastery = new Map(
     questionStates.map((state) => [state.questionId, state.masteryLevel]),
   );
-  const maxWeight = Math.max(
+  const maxWeight = activeQuestions.reduce(
+    (maximum, question) => Math.max(maximum, question.weight),
     1,
-    ...questions.map((question) => question.weight),
   );
-  const selected = [...questions]
+  const selected = [...activeQuestions]
     .map((question) => {
       const weight = question.weight / maxWeight;
       const weak = weakIds.has(question.id) ? 1 : 0;
@@ -96,7 +102,7 @@ export const createFinalReviewPlan = (
         b.question.weight - a.question.weight ||
         a.question.id.localeCompare(b.question.id),
     )
-    .slice(0, Math.max(1, limit))
+    .slice(0, Math.max(0, Math.floor(limit)))
     .map((item) => item.question);
   return {
     questions: selected,
@@ -109,7 +115,8 @@ export const createFinalReviewPlan = (
     ).length,
     unlearnedCount: selected.filter((question) => !answeredIds.has(question.id))
       .length,
-    estimatedMinutes: Math.max(1, Math.ceil(selected.length * 0.75)),
+    estimatedMinutes:
+      selected.length === 0 ? 0 : Math.ceil(selected.length * 0.75),
     strategy: strategy.strategy,
     strategyLabel: strategy.label,
     strategyDescription: strategy.description,

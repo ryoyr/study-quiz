@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { parseQuestionCsv } from "../src/services/csvImportService.ts";
+import {
+  parseQuestionCsv,
+  questionsFromPreview,
+} from "../src/services/csvImportService.ts";
 import { parseFullBackup } from "../src/services/fullBackupService.ts";
 
 test("CSVからサブカテゴリ・出典・タグ・可変選択肢を取り込む", () => {
@@ -24,6 +27,52 @@ test("CSV内の重複IDと存在しない正解番号を拒否する", () => {
   ].join("\n");
   const result = parseQuestionCsv(csv, []);
   assert.equal(result.errorCount, 2);
+});
+
+test("CSVから択一・複数選択・入力回答をまとめて取り込む", () => {
+  const csv = [
+    "id,category,text,questionType,choice1,choice2,choice3,answer,answers,acceptedAnswers,explanation,source",
+    "S-1,Linux,択一問題,single,A,B,,2,,,解説,出典",
+    "M-1,Linux,複数問題,multiple,A,B,C,,1|3,,解説,出典",
+    "T-1,Linux,入力問題,text,,,,,,LVM|lvm,解説,出典",
+  ].join("\n");
+  const result = parseQuestionCsv(csv, []);
+  assert.equal(result.errorCount, 0);
+  const imported = questionsFromPreview(result);
+  assert.equal(imported.length, 3);
+  assert.equal(imported[0].answerIndex, 1);
+  assert.deepEqual(imported[1].answerIndices, [0, 2]);
+  assert.deepEqual(imported[2].choices, []);
+  assert.deepEqual(imported[2].acceptedAnswers, ["LVM", "lvm"]);
+});
+
+test("CSVは回答方式ごとの必須回答を検証する", () => {
+  const csv = [
+    "id,category,text,questionType,choice1,choice2,answers,acceptedAnswers",
+    "M-1,Linux,複数問題,multiple,A,B,1|1,",
+    "T-1,Linux,入力問題,text,,,,",
+  ].join("\n");
+  const result = parseQuestionCsv(csv, []);
+  assert.equal(result.errorCount, 2);
+  assert.match(result.rows[0].messages.join(" "), /重複/);
+  assert.match(result.rows[1].messages.join(" "), /acceptedAnswers/);
+});
+
+test("CSVは引用符の位置・閉じた引用符後の余計な文字・総容量を拒否する", () => {
+  const afterQuote = parseQuestionCsv(
+    'id,category,text,choice1,choice2,answer\nQ-1,Linux,"問題"x,A,B,1',
+    [],
+  );
+  assert.match(afterQuote.fatalErrors.join(" "), /余計な文字/);
+
+  const middleQuote = parseQuestionCsv(
+    'id,category,text,choice1,choice2,answer\nQ-1,Linux,問"題,A,B,1',
+    [],
+  );
+  assert.match(middleQuote.fatalErrors.join(" "), /フィールドの先頭/);
+
+  const oversized = parseQuestionCsv("x".repeat(5 * 1024 * 1024 + 1), []);
+  assert.match(oversized.fatalErrors.join(" "), /5MB以下/);
 });
 
 test("旧バックアップの回答履歴キーを現行キーへ移行する", () => {
@@ -112,5 +161,44 @@ test("旧バックアップの問題と設定へLPIC試験枠を補完する", (
   assert.deepEqual(restoredSetup.defaultMasteryFilters, ["ALL"]);
   assert.deepEqual(restoredSetup.defaultQuestionModes, ["ADAPTIVE"]);
   assert.equal(restoredQuestions[0].examScopeId, "lpic101");
+});
+
+test("完全バックアップは複数選択・入力回答の問題を復元できる", () => {
+  const questions = [
+    {
+      id: "M-1",
+      examScopeId: "lpic101",
+      category: "Linux",
+      text: "複数問題",
+      questionType: "multiple",
+      choices: ["A", "B", "C"],
+      answerIndex: 0,
+      answerIndices: [0, 2],
+      explanation: "解説",
+      weight: 1,
+      difficulty: 2,
+    },
+    {
+      id: "T-1",
+      examScopeId: "lpic101",
+      category: "Linux",
+      text: "入力問題",
+      questionType: "text",
+      choices: [],
+      answerIndex: 0,
+      acceptedAnswers: ["LVM"],
+      explanation: "解説",
+      weight: 1,
+      difficulty: 2,
+    },
+  ];
+  const backup = parseFullBackup(JSON.stringify({
+    format: "study-quiz-full-backup",
+    version: 6,
+    appVersion: "4.4.0",
+    exportedAt: "2026-10-10T00:00:00.000Z",
+    entries: { "study-quiz-questions-v1": JSON.stringify(questions) },
+  }));
+  assert.deepEqual(JSON.parse(backup.entries["study-quiz-questions-v1"]), questions);
 });
 

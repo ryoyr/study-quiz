@@ -77,9 +77,12 @@ export default function CsvImportPage({
         <h1>問題CSV一括登録</h1>
         <div className="csv-help">
           <strong>必須列</strong>
-          <code>id, category, text, choice1, choice2, answer</code>
+          <code>id, category, text</code>
           <p>
-            answerは1開始の選択肢番号です。UTF-8（BOMあり・なし）に対応します。
+            questionTypeはsingle（既定）、multiple、textに対応します。singleは
+            choice1・choice2とanswer（1開始）、multipleは選択肢とanswers
+            （例: 1|3）、textはacceptedAnswers（例: LVM|lvm）を指定してください。
+            UTF-8（BOMあり・なし）に対応します。
           </p>
         </div>
         <button className="template-button" type="button" onClick={template}>

@@ -110,6 +110,16 @@ import type { CorrectionSuggestion } from "./types/CorrectionSuggestion";
 import type { ExamScope } from "./types/ExamScope";
 import type { MistakeNote } from "./types/MistakeNote";
 import type { Question } from "./types/Question";
+import {
+  correctIndicesOf,
+  formatCorrectAnswer,
+  formatQuestionResponse,
+  isQuestionResponseCorrect,
+  questionTypeOf,
+  responseToHistoryFields,
+  type QuestionResponse,
+} from "./services/questionAnswerService";
+import { QUESTION_LIMITS } from "./services/questionValidation";
 import type { QuestionAnnotation } from "./types/QuestionAnnotation";
 import type { QuestionState } from "./types/QuestionState";
 import { createDefaultSetup, type Setup } from "./types/Setup";
@@ -218,7 +228,7 @@ export default function App() {
   const [requiresInitialSetup, setRequiresInitialSetup] = useState(false);
   const [screen, setScreen] = useState<Screen>(readInitialScreen);
   const [questionIndex, setQuestionIndex] = useState(0);
-  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
+  const [selectedAnswer, setSelectedAnswer] = useState<QuestionResponse | null>(null);
   const [showAnswer, setShowAnswer] = useState(false);
   const [questionStates, setQuestionStates] = useState<QuestionState[]>([]);
   const [generatedSession, setGeneratedSession] =
@@ -245,6 +255,7 @@ export default function App() {
   });
   const [editQuestionId, setEditQuestionId] = useState("");
   const [storageError, setStorageError] = useState("");
+  const [storageBlocked, setStorageBlocked] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -253,11 +264,16 @@ export default function App() {
         recoverStorageTransaction();
         migrateLegacyStorage();
       } catch (error) {
-        setStorageError(
-          error instanceof Error
-            ? error.message
-            : "前回の保存状態を確認できませんでした。",
-        );
+        if (!cancelled) {
+          setStorageError(
+            error instanceof Error
+              ? error.message
+              : "前回の保存状態を確認できませんでした。",
+          );
+          setStorageBlocked(true);
+          setLoaded(true);
+        }
+        return;
       }
       const safeLoad = <T,>(load: () => T, fallback: T): T => {
         try {
@@ -307,8 +323,11 @@ export default function App() {
       setQuestionStates(safeLoad(() => loadQuestionStates(loadedHistory), []));
       setStoredQuestions(safeLoad(loadQuestions, questions));
       try {
-        setExamScopes(await readExamScopes());
+        const loadedExamScopes = await readExamScopes();
+        if (cancelled) return;
+        setExamScopes(loadedExamScopes);
       } catch {
+        if (cancelled) return;
         setExamScopes(defaultExamScopes);
       }
       setResumableSession(safeLoad(loadActiveSession, null));
@@ -646,12 +665,14 @@ export default function App() {
           setup.instantThresholdSeconds,
         ) * 1000,
       ) / 1000;
+    const correct = isQuestionResponseCorrect(question, selectedAnswer);
     const item: StudyHistory = {
       id: crypto.randomUUID(),
       questionId: question.id,
       category: question.category,
-      selectedIndex: selectedAnswer,
-      correct: selectedAnswer === question.answerIndex,
+      answerType: questionTypeOf(question),
+      ...responseToHistoryFields(selectedAnswer),
+      correct,
       answeredAt: new Date().toISOString(),
       responseTimeSeconds,
       instantScore,
@@ -767,6 +788,23 @@ export default function App() {
       <main className="app-shell">
         <section className="home-card">
           <h1>Loading...</h1>
+        </section>
+      </main>
+    );
+  }
+  if (storageBlocked) {
+    return (
+      <main className="app-shell">
+        <section className="home-card" role="alert">
+          <p className="eyebrow">DATA SAFETY</p>
+          <h1>端末内データを保護するため停止しました</h1>
+          <p>{storageError}</p>
+          <p>
+            この画面では保存処理を行いません。端末内データを退避してから、再読み込みしてください。
+          </p>
+          <button type="button" onClick={() => window.location.reload()}>
+            再読み込み
+          </button>
         </section>
       </main>
     );
@@ -1079,32 +1117,35 @@ export default function App() {
           </p>
           <h1 className="question-title">{question.text}</h1>
           <div className="form-grid">
-            {question.choices.map((choice, index) => {
-              const selected = selectedAnswer === index;
+            {questionTypeOf(question) === "text" ? (
+              <label>
+                回答を入力
+                <input
+                  value={typeof selectedAnswer === "string" ? selectedAnswer : ""}
+                  disabled={showAnswer}
+                  maxLength={QUESTION_LIMITS.longText}
+                  onChange={(event) => setSelectedAnswer(event.target.value)}
+                  autoComplete="off"
+                />
+              </label>
+            ) : question.choices.map((choice, index) => {
+              const selected = Array.isArray(selectedAnswer) ? selectedAnswer.includes(index) : selectedAnswer === index;
+              const correct = correctIndicesOf(question).includes(index);
               let className = "secondary-button choice-button";
               if (!showAnswer && selected) className += " choice-selected";
-              if (showAnswer && index === question.answerIndex)
-                className += " choice-correct";
-              if (showAnswer && selected && index !== question.answerIndex)
-                className += " choice-wrong";
+              if (showAnswer && correct) className += " choice-correct";
+              if (showAnswer && selected && !correct) className += " choice-wrong";
               return (
-                <button
-                  key={`${question.id}-${index}`}
-                  className={className}
-                  type="button"
-                  aria-pressed={selected}
-                  disabled={showAnswer}
-                  onClick={() => setSelectedAnswer(index)}
-                >
-                  <span className="choice-index" aria-hidden="true">
-                    {String.fromCharCode(65 + index)}
-                  </span>
-                  <span>{choice}</span>
+                <button key={`${question.id}-${index}`} className={className} type="button" aria-pressed={selected} disabled={showAnswer}
+                  onClick={() => questionTypeOf(question) === "multiple"
+                    ? setSelectedAnswer((current) => { const values = Array.isArray(current) ? current : []; return values.includes(index) ? values.filter((item) => item !== index) : [...values, index]; })
+                    : setSelectedAnswer(index)}>
+                  <span className="choice-index" aria-hidden="true">{String.fromCharCode(65 + index)}</span><span>{choice}</span>
                 </button>
               );
             })}
           </div>
-          {selectedAnswer !== null && !showAnswer && (
+          {selectedAnswer !== null && (!Array.isArray(selectedAnswer) || selectedAnswer.length > 0) && (typeof selectedAnswer !== "string" || selectedAnswer.trim()) && !showAnswer && (
             <button
               className="primary-button"
               type="button"
@@ -1119,9 +1160,7 @@ export default function App() {
                 <div className="summary-row">
                   <span>判定</span>
                   <strong>
-                    {selectedAnswer === question.answerIndex
-                      ? "正解"
-                      : "不正解"}
+                    {isQuestionResponseCorrect(question, selectedAnswer as QuestionResponse) ? "正解" : "不正解"}
                   </strong>
                 </div>
                 <div className="summary-row">
@@ -1132,6 +1171,14 @@ export default function App() {
                   <span>即答スコア</span>
                   <strong>{Math.round(currentInstantScore * 100)}%</strong>
                 </div>
+                <div className="summary-row">
+                  <span>あなたの回答</span>
+                  <strong>{formatQuestionResponse(question, selectedAnswer)}</strong>
+                </div>
+                <div className="summary-row">
+                  <span>正答</span>
+                  <strong>{formatCorrectAnswer(question)}</strong>
+                </div>
                 <div className="explanation-row">
                   <span>解説</span>
                   <p>{question.explanation}</p>
@@ -1139,7 +1186,7 @@ export default function App() {
               </div>
               <AiQuestionPanel
                 question={question}
-                selectedIndex={selectedAnswer}
+                response={selectedAnswer}
               />
               <button
                 className="correction-open-button"

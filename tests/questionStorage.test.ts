@@ -56,3 +56,37 @@ test("重複IDまたは不正な選択肢は保存しない", () => {
   );
 });
 
+test("複数選択・入力回答の問題を保存して再読込できる", () => {
+  installStorage();
+  const multiple: Question = {
+    ...question,
+    id: "M-1",
+    questionType: "multiple",
+    choices: ["A", "B", "C"],
+    answerIndex: 0,
+    answerIndices: [0, 2],
+  };
+  const text: Question = {
+    ...question,
+    id: "T-1",
+    questionType: "text",
+    choices: [],
+    answerIndex: 0,
+    acceptedAnswers: ["LVM"],
+  };
+  saveQuestions([multiple, text]);
+  assert.deepEqual(loadQuestions(), [multiple, text]);
+});
+
+test("複数選択の重複正解と入力回答の空許容回答を拒否する", () => {
+  installStorage();
+  assert.throws(
+    () => saveQuestions([{ ...question, questionType: "multiple", answerIndices: [0, 0] }]),
+    /形式/,
+  );
+  assert.throws(
+    () => saveQuestions([{ ...question, questionType: "text", choices: [], acceptedAnswers: [] }]),
+    /形式/,
+  );
+});
+
