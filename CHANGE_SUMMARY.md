@@ -1,12 +1,14 @@
 # 変更内容一覧 — 4.4.0 → 4.7.0
 
-## 4.7.0 品質向上Chrome E2E契約修正
+## 4.7.0 総合改良
 
-- E2Eが旧ボタン名`対象問題JSONを出力`へ依存し、現行の`現在の分割JSONを出力`／`選択全体JSONを出力`を認識できない問題を修正。
-- 画面へ`study-quiz-question-quality-input` version 1と`study-quiz-question-quality-proposals` version 1の可視契約を追加。
-- 表示文言ではなく意味的な`data-testid`で、入力契約、出力契約、JSON出力、プロンプト、ファイル取込、提案JSON、前後比較、状態フィルターをE2E検証。
-- 品質向上後に潜在していた旧`.correction-filter`と旧「変更前の解説／提案後の解説」依存も現行レビューUIへ更新。
-- Chrome E2Eを実走し、全ジャーニー成功を確認。
+- AI JSONの抽出・限定修復・schema／整合性検証・最大3回再生成を共通化。
+- 類似問題はコピー方式を維持しつつ、Gemini自動生成・検証・下書き反映を追加。
+- 手動編集、品質提案、問題マスター同期の改訂履歴を追加。
+- 解説の改行・段落・箇条書きを安全表示し、編集画面へpreviewと履歴を追加。
+- GitHubを唯一の問題マスター正本として明記し、IndexedDB v3は検証済み派生cacheに限定。
+- Service Worker v24へ更新し、network-first、二段fallback、content cache消去を整備。
+- 個人データ、問題ID、backup互換、Cloudflare Access、GitHub App、PR冪等性を維持。
 
 ## 4.7.0 問題・解説品質向上UI拡張
 

@@ -274,3 +274,50 @@ JSON契約、提案状態、適用トランザクション、初期データ反�
 ### 互換境界
 
 `QuestionQualityProposal`、localStorage key、品質提案JSON version 1、seed update version 1、backup version 10、共通Question検証、適用トランザクションは変更しない。ファクトチェック、問題マスター、Cloudflare Worker、GitHub PRサービスは変更しない。
+
+
+## 4.7.0 AI JSON・改訂履歴・DB cache詳細
+
+### AI JSON pipeline
+
+1. UTF-8 BOMと外側fenceだけを除去。
+2. 文字列・escapeを認識してbalanced `{}`／`[]`候補を抽出。
+3. `JSON.parse`。
+4. 失敗時は文字列外で閉じ括弧直前の末尾カンマだけを除去し再parse。
+5. feature validatorと共通Question validator。
+6. Gemini自動生成では検証エラーと前回応答先頭12,000文字を含め、JSONだけを最大3回要求。
+7. 3回失敗後は保存せず最終エラーを表示。
+
+### 問題改訂履歴
+
+物理キー: `study-quiz-question-revisions-v1`。
+
+```text
+id, questionId, source, summary, changedFields,
+before, after, createdAt, proposalId?
+```
+
+- before／afterは共通Question validatorを通す。
+- 問題ID変更を拒否。
+- 品質提案適用では問題、seed version、提案状態、revisionを同一localStorage transactionで更新。
+- 手動編集とmaster同期は本体保存成功後にrevisionを追加し、履歴失敗を本体失敗へ偽装しない。
+- 完全バックアップのJSON領域として形式・ID参照を検証する。
+
+### 解説表示
+
+- 保存値はplain textのまま。
+- CRLFをLFへ表示時正規化。
+- 空行で段落分割。
+- `-`、`*`、`•`、`1.`、`1)`をlist項目として表示。
+- その他の連続行は`<br>`で保持。
+- HTML parserと`dangerouslySetInnerHTML`は禁止。
+
+### IndexedDB cache
+
+- DB version: 3。
+- store: `questionMasterCache`, keyPath `key`。
+- record: `latest`, `cachedAt`, `contentVersion`, `payload`。
+- remote取得成功後にbest-effort保存。
+- remote失敗時だけ読込み、manifest／dataset／ID重複を再検証。
+- cache不正時は元のnetwork errorを返す。
+- authorityは`github-content`、cache roleは`derived-offline-cache`。

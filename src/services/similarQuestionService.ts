@@ -1,4 +1,5 @@
 import type { Question, QuestionType } from "../types/Question";
+import { parseAiJson } from "./aiJsonPipeline";
 import { buildQuestionContext } from "./promptBuilder";
 import {
   questionTypeLabel,
@@ -56,12 +57,6 @@ const numberInRange = (
     throw new Error(`${label}は${minimum}～${maximum}の整数にしてください。`);
   }
   return numberValue;
-};
-
-const stripCodeFence = (value: string): string => {
-  const trimmed = value.trim();
-  const match = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/iu);
-  return match?.[1]?.trim() ?? trimmed;
 };
 
 const createUniqueId = (baseId: string, existingQuestions: Question[]): string => {
@@ -185,18 +180,12 @@ export const validateSimilarQuestion = (
   return normalized;
 };
 
-export const parseSimilarQuestionDraft = (
-  jsonText: string,
+export const parseSimilarQuestionValue = (
+  value: unknown,
   baseQuestion: Question,
   existingQuestions: Question[],
 ): Question => {
-  let value: unknown;
-  try {
-    value = JSON.parse(stripCodeFence(jsonText));
-  } catch {
-    throw new Error("類似問題案をJSONとして読み取れません。");
-  }
-  if (!isRecord(value)) throw new Error("JSONオブジェクトを貼り付けてください。");
+  if (!isRecord(value)) throw new Error("JSONオブジェクトを指定してください。");
 
   const type = parseQuestionType(value.questionType, questionTypeOf(baseQuestion));
   const rawTags = value.tags ?? [];
@@ -267,4 +256,22 @@ export const parseSimilarQuestionDraft = (
     baseQuestion,
     existingQuestions,
   );
+};
+
+
+export const parseSimilarQuestionDraft = (
+  jsonText: string,
+  baseQuestion: Question,
+  existingQuestions: Question[],
+): Question => {
+  try {
+    return parseSimilarQuestionValue(
+      parseAiJson(jsonText).value,
+      baseQuestion,
+      existingQuestions,
+    );
+  } catch (error) {
+    if (error instanceof Error) throw error;
+    throw new Error("類似問題案をJSONとして読み取れません。");
+  }
 };

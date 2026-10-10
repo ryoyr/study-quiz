@@ -2,8 +2,13 @@ import { useMemo, useState } from "react";
 import {
   buildSimilarQuestionPrompt,
   parseSimilarQuestionDraft,
+  parseSimilarQuestionValue,
   validateSimilarQuestion,
 } from "../services/similarQuestionService";
+import {
+  generateGeminiStructuredJson,
+  isGeminiConfigured,
+} from "../services/geminiService";
 import {
   questionTypeLabel,
   questionTypeOf,
@@ -29,6 +34,8 @@ export default function SimilarQuestionGeneratorPage({
   const [responseJson, setResponseJson] = useState("");
   const [draft, setDraft] = useState<Question | null>(null);
   const [reviewConfirmed, setReviewConfirmed] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [generationAttempts, setGenerationAttempts] = useState(0);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
@@ -56,6 +63,33 @@ export default function SimilarQuestionGeneratorPage({
       setError(
         "コピーできませんでした。プレビュー欄を選択してコピーしてください。",
       );
+    }
+  };
+
+  const generateWithGemini = async () => {
+    if (!baseQuestion || generating) return;
+    setGenerating(true);
+    setMessage("");
+    setError("");
+    try {
+      const result = await generateGeminiStructuredJson(
+        prompt,
+        (value) => parseSimilarQuestionValue(value, baseQuestion, questions),
+        { maxAttempts: 3, label: "類似問題案" },
+      );
+      setDraft(result.value);
+      setResponseJson(result.jsonText);
+      setGenerationAttempts(result.attempts);
+      setReviewConfirmed(false);
+      setMessage(
+        `GeminiのJSONを${result.attempts}回目で検証しました${result.repaired ? "（末尾カンマを安全に修復）" : ""}。登録前に全項目を確認してください。`,
+      );
+    } catch (generationError) {
+      setDraft(null);
+      setGenerationAttempts(3);
+      setError(errorMessage(generationError));
+    } finally {
+      setGenerating(false);
     }
   };
 
@@ -171,14 +205,32 @@ export default function SimilarQuestionGeneratorPage({
                 readOnly
                 value={prompt}
               />
-              <button
-                className="primary-button"
-                type="button"
-                disabled={!prompt}
-                onClick={() => void copyPrompt()}
-              >
-                プロンプトをコピー
-              </button>
+              <div className="question-master-actions">
+                <button
+                  className="primary-button"
+                  type="button"
+                  disabled={!prompt}
+                  onClick={() => void copyPrompt()}
+                >
+                  プロンプトをコピー
+                </button>
+                <button
+                  className="secondary-button"
+                  type="button"
+                  disabled={!prompt || generating || !isGeminiConfigured()}
+                  onClick={() => void generateWithGemini()}
+                >
+                  {generating ? "JSONを生成・検証中…" : "Geminiで生成・検証（最大3回）"}
+                </button>
+              </div>
+              {!isGeminiConfigured() && (
+                <small className="planning-note">
+                  Gemini自動生成を使う場合は、その他 → 設定でAPIキーを登録してください。コピー方式は引き続き利用できます。
+                </small>
+              )}
+              {generationAttempts > 0 && (
+                <small className="planning-note">直近の自動生成試行回数: {generationAttempts}</small>
+              )}
             </section>
 
             <section className="similar-question-step" aria-labelledby="similar-step-2">

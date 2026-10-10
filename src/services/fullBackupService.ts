@@ -22,6 +22,8 @@ import { isQuestionState } from "./questionStateService.ts";
 import { isStudyHistoryQuestionSnapshot } from "./questionAnswerModel.ts";
 import { isQuestionQualityProposal } from "./questionQualityService.ts";
 import type { QuestionQualityProposal } from "../types/QuestionQualityProposal";
+import { isQuestionRevision } from "./questionRevisionService.ts";
+import type { QuestionRevision } from "../types/QuestionRevision";
 
 export type BackupStorageFormat = "json" | "number";
 
@@ -350,6 +352,16 @@ const validateJsonEntry = (key: string, value: unknown): void => {
       );
       return;
     }
+    case STORAGE_KEYS.questionRevisions: {
+      const items = assertArray(value, "問題改訂履歴");
+      if (!items.every(isQuestionRevision))
+        throw new Error("問題改訂履歴が不正です。");
+      assertUnique(
+        items.map((item) => (item as QuestionRevision).id),
+        "問題改訂履歴",
+      );
+      return;
+    }
     case STORAGE_KEYS.aiPromptTemplates: {
       const items = assertArray(value, "AI質問テンプレート");
       if (
@@ -446,6 +458,11 @@ const validateReferences = (entries: Record<string, string>): void => {
   check(
     STORAGE_KEYS.questionQualityProposals,
     "問題・解説品質提案",
+    (item) => item.questionId,
+  );
+  check(
+    STORAGE_KEYS.questionRevisions,
+    "問題改訂履歴",
     (item) => item.questionId,
   );
 

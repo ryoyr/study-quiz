@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import ConfirmDialog from "../components/ConfirmDialog";
+import StructuredText from "../components/StructuredText";
 import type { Question } from "../types/Question";
 import type {
   QuestionQualityProposal,
@@ -214,11 +215,7 @@ export default function QuestionQualityReviewPage({
         <div className="quality-review-filters">
           <label>
             <span>状態</span>
-            <select
-              value={filter}
-              data-testid="quality-status-filter"
-              onChange={(event) => setFilter(event.target.value as typeof filter)}
-            >
+            <select value={filter} data-testid="quality-status-filter" onChange={(event) => setFilter(event.target.value as typeof filter)}>
               <option value="pending">未確認</option>
               <option value="applied">適用済み</option>
               <option value="rejected">却下</option>
@@ -282,7 +279,8 @@ export default function QuestionQualityReviewPage({
                     <p>{item.beforeQuestion.text}</p>
                     <small>選択肢: {item.beforeQuestion.choices.join(" / ") || "なし"}</small>
                     <small>正答: {formatCorrectAnswer(item.beforeQuestion)}</small>
-                    <small>解説: {item.beforeQuestion.explanation}</small>
+                    <small>解説:</small>
+                    <StructuredText text={item.beforeQuestion.explanation} />
                     <small>出典: {item.beforeQuestion.source || "なし"}</small>
                   </section>
                   <section data-testid="quality-after">
@@ -291,7 +289,8 @@ export default function QuestionQualityReviewPage({
                     <p>{item.proposedQuestion.text}</p>
                     <small>選択肢: {item.proposedQuestion.choices.join(" / ") || "なし"}</small>
                     <small>正答: {formatCorrectAnswer(item.proposedQuestion)}</small>
-                    <small>解説: {item.proposedQuestion.explanation}</small>
+                    <small>解説:</small>
+                    <StructuredText text={item.proposedQuestion.explanation} />
                     <small>出典: {item.proposedQuestion.source || "なし"}</small>
                   </section>
                 </div>

@@ -15,9 +15,10 @@ import { defaultExamScopes } from "../src/data/examScopes.ts";
   });
 });
 
-test("IndexedDB v2にexamScopesストアと試験コード索引を定義する", () => {
+test("IndexedDB v3はexamScopesストア・試験コード索引・問題マスターキャッシュを定義する", () => {
   const source = readFileSync("src/infrastructure/db/database.ts", "utf8");
-  assert.match(source, /DATABASE_VERSION = 2/);
+  assert.match(source, /DATABASE_VERSION = 3/);
+  assert.match(source, /createObjectStore\("questionMasterCache"/);
   assert.match(source, /createObjectStore\("examScopes"/);
   assert.match(source, /createIndex\("examCode"/);
   assert.match(source, /LEGACY_EXAM_ID = "linuc101"/);

@@ -3,7 +3,7 @@ import { LPIC101_EXAM_SCOPE_ID, type ExamScope } from "../../types/ExamScope";
 import type { MasteryFilter, QuestionMode, ThemePreference, VisualTheme } from "../../types/Setup";
 
 const DATABASE_NAME = "study-quiz";
-const DATABASE_VERSION = 2;
+const DATABASE_VERSION = 3;
 
 export const EXAM_ID = LPIC101_EXAM_SCOPE_ID;
 const LEGACY_EXAM_ID = "linuc101";
@@ -76,6 +76,9 @@ export const openDatabase = (): Promise<IDBDatabase> => {
         scopes.createIndex("examCode", "examCode", { unique: true });
         scopes.createIndex("sortOrder", "sortOrder");
         defaultExamScopes.forEach((item) => scopes.put(item));
+      }
+      if (!database.objectStoreNames.contains("questionMasterCache")) {
+        database.createObjectStore("questionMasterCache", { keyPath: "key" });
       }
     });
     request.addEventListener("success", () => {
@@ -162,5 +165,51 @@ export const clearInitialSetupRecords = async (): Promise<void> => {
   transaction.objectStore("exams").delete(LEGACY_EXAM_ID);
   transaction.objectStore("days").clear();
   transaction.objectStore("settings").delete("setup");
+  await completion;
+};
+
+
+export interface QuestionMasterCacheRecord {
+  key: "latest";
+  cachedAt: string;
+  contentVersion: string;
+  payload: unknown;
+}
+
+export const readQuestionMasterCacheRecord = async (): Promise<QuestionMasterCacheRecord | null> => {
+  const database = await openDatabase();
+  const transaction = database.transaction("questionMasterCache", "readonly");
+  const completion = transactionToPromise(transaction);
+  const record = await requestToPromise(
+    transaction.objectStore("questionMasterCache").get("latest") as IDBRequest<
+      QuestionMasterCacheRecord | undefined
+    >,
+  );
+  await completion;
+  return record ?? null;
+};
+
+export const writeQuestionMasterCacheRecord = async (
+  record: QuestionMasterCacheRecord,
+): Promise<void> => {
+  if (
+    record.key !== "latest" ||
+    !Number.isFinite(Date.parse(record.cachedAt)) ||
+    !record.contentVersion.trim()
+  ) {
+    throw new Error("問題マスターキャッシュの形式が不正です。");
+  }
+  const database = await openDatabase();
+  const transaction = database.transaction("questionMasterCache", "readwrite");
+  const completion = transactionToPromise(transaction);
+  transaction.objectStore("questionMasterCache").put(record);
+  await completion;
+};
+
+export const clearQuestionMasterCacheRecord = async (): Promise<void> => {
+  const database = await openDatabase();
+  const transaction = database.transaction("questionMasterCache", "readwrite");
+  const completion = transactionToPromise(transaction);
+  transaction.objectStore("questionMasterCache").delete("latest");
   await completion;
 };

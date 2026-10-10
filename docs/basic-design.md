@@ -167,3 +167,28 @@ public/content manifest + datasets
 ```
 
 境界は、配布原本、端末正本、GitHub書込みの3つに分ける。端末編集はGitHub通信の成否に依存せず、Workers未設定でも学習機能を継続する。Access JWTはWorker内でのみ扱い、popupからPWAへはAPI結果だけを固定Originの`postMessage`で返す。
+
+
+## 4.7.0 総合改良構成
+
+```text
+AI response
+  → aiJsonPipeline（抽出・限定修復・parse）
+  → feature validator（similar / quality）
+  → Question共通validator
+  → 下書き・before/after review
+  → 明示承認
+  → questions + proposal + revision transaction
+```
+
+```text
+GitHub public/content（唯一の配布正本）
+  → Service Worker v24 network-first
+  → questionMasterService schema validation
+  → IndexedDB v3 questionMasterCache（派生cache）
+  → local question merge（端末編集保護）
+```
+
+- `StructuredText`はplain textを段落・改行・listのReact要素へ変換する。
+- `QuestionRevision`は問題IDを変えず、手動、品質提案、master同期の前後を記録する。
+- IndexedDB cacheは正本書込みAPIを持たず、検証済みremote snapshotのfallbackだけに利用する。

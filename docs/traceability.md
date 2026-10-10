@@ -47,3 +47,21 @@
 |再送の重複防止|SHA-256冪等キー、決定的ブランチ、既存PR回収|`questionMasterChangeService.test.ts`, `workerQuizContent.test.ts`|
 |マージ後の安全同期・オフライン維持|安全マージ、SW network-first→cache fallback|`questionMasterService.test.ts`, `pwaAssets.test.ts`|
 |設定・運用・費用|`github-cloudflare-setup.md`|文書レビュー、本番接続は設定後|
+
+
+## 4.7.0 総合改良
+
+|要件|実装|検証|
+|---|---|---|
+|AI JSON抽出・限定修復|`aiJsonPipeline.ts`|`aiJsonPipeline.test.ts`|
+|schema・Question整合性|`similarQuestionService.ts`, `questionQualityService.ts`|既存similar／quality試験|
+|最大3回再生成|`generateStructuredAiJson`, `generateGeminiStructuredJson`|`aiJsonPipeline.test.ts`|
+|レビュー・承認|既存品質提案、類似問題下書き|品質・類似問題試験|
+|問題改訂履歴|`QuestionRevision`, `questionRevisionService`|`questionRevisionAndFormatting.test.ts`|
+|改行・段落・箇条書き|`StructuredText.tsx`|`questionRevisionAndFormatting.test.ts`|
+|編集preview|`QuestionManagementPage.tsx`|静的UI契約・bundle|
+|GitHub唯一正本|`QUESTION_MASTER_AUTHORITY`|`questionMasterDbPreparation.test.ts`|
+|IndexedDB派生cache|DB v3 `questionMasterCache`|DB準備・exam scope試験|
+|PWA cache整合性|Service Worker v24|`pwaAssets.test.ts`, DB準備試験|
+|backup保護|registry + full backup revision検証|backup／revision試験|
+|認証・GitHubセキュリティ維持|既存Worker・Access relay|`workerAccessAuth`, `workerQuizContent`|

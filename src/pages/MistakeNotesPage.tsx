@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import type { MistakeNote } from "../types/MistakeNote";
 import type { Question } from "../types/Question";
+import StructuredText from "../components/StructuredText";
 import type { StudyHistory } from "../types/StudyHistory";
 import { upsertMistakeNote } from "../services/mistakeNoteStorage";
 
@@ -84,7 +85,7 @@ export default function MistakeNotesPage({
               <>
                 <div className="mistake-question">
                   <strong>{selected.text}</strong>
-                  <p>{selected.explanation}</p>
+                  <StructuredText text={selected.explanation} />
                 </div>
                 <label className="form-item">
                   <span>誤答原因</span>

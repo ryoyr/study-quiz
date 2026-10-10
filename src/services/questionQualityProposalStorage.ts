@@ -6,6 +6,11 @@ import type {
 import { isQuestion } from "./questionValidation.ts";
 import { isQuestionQualityProposal } from "./questionQualityService.ts";
 import {
+  appendQuestionRevision,
+  createQuestionRevision,
+  loadQuestionRevisions,
+} from "./questionRevisionService.ts";
+import {
   QUESTION_SEED_VERSION,
   QUESTION_SEED_VERSION_KEY,
   QUESTIONS_STORAGE_KEY,
@@ -128,10 +133,22 @@ export const applyQuestionQualityProposal = (
   );
   validateProposals(proposalsNext);
 
+  const revisionsNext = appendQuestionRevision(
+    loadQuestionRevisions(),
+    createQuestionRevision({
+      before: current,
+      after: nextQuestion,
+      source: "quality-proposal",
+      summary: proposal.summary,
+      proposalId: proposal.id,
+      createdAt: now,
+    }),
+  );
   executeStorageTransaction([
     { key: QUESTIONS_STORAGE_KEY, value: JSON.stringify(questionsNext) },
     { key: QUESTION_SEED_VERSION_KEY, value: QUESTION_SEED_VERSION },
     { key: STORAGE_KEY, value: JSON.stringify(proposalsNext) },
+    { key: STORAGE_KEYS.questionRevisions, value: JSON.stringify(revisionsNext) },
   ]);
   return { questions: questionsNext, proposals: proposalsNext };
 };

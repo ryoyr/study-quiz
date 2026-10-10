@@ -1,4 +1,8 @@
 import { questions as bundledQuestions } from "../data/questions";
+import {
+  readQuestionMasterCacheRecord,
+  writeQuestionMasterCacheRecord,
+} from "../infrastructure/db/database";
 import type { Question } from "../types/Question";
 import type {
   QuestionMasterDataset,
@@ -10,6 +14,9 @@ import type {
 } from "../types/QuestionMaster";
 import { isQuestion } from "./questionValidation";
 import { STORAGE_KEYS } from "./storageKeyRegistry";
+
+export const QUESTION_MASTER_AUTHORITY = "github-content" as const;
+export const QUESTION_MASTER_CACHE_ROLE = "derived-offline-cache" as const;
 
 const CONTENT_STATE_LIMIT = 100_000;
 const DATASET_ID_PATTERN = /^[a-z0-9][a-z0-9-]{0,63}$/u;
@@ -99,9 +106,9 @@ export const defaultQuestionMasterRootUrl = (): URL => {
   return new URL("content/", document.baseURI);
 };
 
-export const fetchQuestionMaster = async (
-  fetcher: typeof fetch = fetch,
-  rootUrl: URL = defaultQuestionMasterRootUrl(),
+const fetchRemoteQuestionMaster = async (
+  fetcher: typeof fetch,
+  rootUrl: URL,
 ): Promise<QuestionMasterSnapshot> => {
   const manifestUrl = new URL("manifest.json", rootUrl);
   const manifest = parseQuestionMasterManifest(
@@ -126,6 +133,48 @@ export const fetchQuestionMaster = async (
     throw new Error("複数データセット間で問題IDが重複しています。");
   }
   return { manifest, datasets, questions };
+};
+
+const parseCachedQuestionMaster = (value: unknown): QuestionMasterSnapshot => {
+  if (!isRecord(value)) throw new Error("問題マスターキャッシュが不正です。");
+  const manifest = parseQuestionMasterManifest(value.manifest);
+  const cachedDatasets = value.datasets;
+  if (!Array.isArray(cachedDatasets))
+    throw new Error("問題マスターキャッシュのデータセットが不正です。");
+  const datasets = manifest.datasets.map((descriptor) => {
+    const candidate = cachedDatasets.find(
+      (item: unknown) => isRecord(item) && item.datasetId === descriptor.id,
+    );
+    return parseQuestionMasterDataset(candidate, descriptor);
+  });
+  const questions = datasets.flatMap((dataset) => dataset.questions);
+  if (new Set(questions.map((question) => question.id)).size !== questions.length)
+    throw new Error("問題マスターキャッシュで問題IDが重複しています。");
+  return { manifest, datasets, questions };
+};
+
+export const fetchQuestionMaster = async (
+  fetcher: typeof fetch = fetch,
+  rootUrl: URL = defaultQuestionMasterRootUrl(),
+): Promise<QuestionMasterSnapshot> => {
+  try {
+    const snapshot = await fetchRemoteQuestionMaster(fetcher, rootUrl);
+    void writeQuestionMasterCacheRecord({
+      key: "latest",
+      cachedAt: new Date().toISOString(),
+      contentVersion: snapshot.manifest.contentVersion,
+      payload: snapshot,
+    }).catch(() => undefined);
+    return snapshot;
+  } catch (networkError) {
+    try {
+      const cached = await readQuestionMasterCacheRecord();
+      if (cached) return parseCachedQuestionMaster(cached.payload);
+    } catch {
+      // キャッシュ自体が不正・利用不能なら元のネットワークエラーを返す。
+    }
+    throw networkError;
+  }
 };
 
 const stableValue = (value: unknown): unknown => {

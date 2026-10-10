@@ -143,3 +143,30 @@ HTML直接挿入、動的コード実行、認証情報同梱を行わないこ�
 - 同一内容の再送でコミット・PRを重複させない。
 - PR URLとopen／closed／mergedを画面表示する。
 - マージ後の問題マスターはnetwork-firstで取得し、失敗時は既存問題・キャッシュを維持する。
+
+
+## 4.7.0 総合改良追加要件
+
+### FR-12 AI構造化出力
+
+- AI応答のコードフェンス、前後説明、balanced JSONを安全に抽出する。
+- JSON文字列を変更せず、文字列外の末尾カンマだけを自動修復できる。
+- 機能別schema、Question共通制約、ID、回答定義、重複を検証する。
+- 検証失敗時はエラーを明示して最大3回だけ再生成する。
+- AI結果は下書きまたは品質提案としてレビューし、直接正本へ保存しない。
+
+### FR-13 編集・改訂履歴・解説表示
+
+- 問題編集で既存値の一部だけを変更し、保存前表示を確認できる。
+- 手動編集、品質提案適用、問題マスター同期のbefore／after、変更項目、時刻、由来を保存する。
+- 問題IDを維持する。
+- 解説の改行、段落、箇条書きをplain textとして保存し、HTML挿入なしで安全に表示する。
+
+### FR-14 問題マスター正本・cache
+
+- GitHub `public/content`とDBを二重正本にしない。
+- 今回はGitHubを唯一の正本、IndexedDBとCache Storageを派生cacheとする。
+- remote問題マスターはschema・件数・ID重複を検証後だけIndexedDBへcacheする。
+- 通信失敗時のcacheも同じvalidatorを通す。
+- Service Workerは問題マスターをnetwork-firstとし、cache世代と明示消去を提供する。
+- 本番DB正本化はstaging移行、hash照合、認証API、revision、rollbackを満たす別リリースとする。

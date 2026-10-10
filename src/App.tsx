@@ -18,6 +18,7 @@ import StudySourceLauncher from "./components/StudySourceLauncher";
 import StudyFilterPanel from "./components/StudyFilterPanel";
 import LearningProgressCharts from "./components/LearningProgressCharts";
 import TimeBasedSessionCard from "./components/TimeBasedSessionCard";
+import StructuredText from "./components/StructuredText";
 import AiPromptTemplatesPage from "./pages/AiPromptTemplatesPage";
 import BackupCenterPage from "./pages/BackupCenterPage";
 import BatchFactCheckPage from "./pages/BatchFactCheckPage";
@@ -1276,7 +1277,7 @@ export default function App() {
                 </div>
                 <div className="explanation-row">
                   <span>解説</span>
-                  <p>{question.explanation}</p>
+                  <StructuredText text={question.explanation} />
                 </div>
               </div>
               <AiQuestionPanel

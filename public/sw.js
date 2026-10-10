@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "study-quiz-shell-";
-const CACHE_NAME = `${CACHE_PREFIX}v23`;
+const CACHE_NAME = `${CACHE_PREFIX}v24`;
 const BASE_URL = new URL("./", self.registration.scope);
 const CORE_SHELL = ["./", "./index.html", "./manifest.webmanifest"].map(
   (path) => new URL(path, BASE_URL).href,
@@ -73,6 +73,22 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("message", (event) => {
   if (event.data?.type === "SKIP_WAITING") self.skipWaiting();
+  if (event.data?.type === "CLEAR_CONTENT_CACHE") {
+    event.waitUntil(
+      caches.open(CACHE_NAME).then(async (cache) => {
+        const keys = await cache.keys();
+        await Promise.all(
+          keys
+            .filter((request) =>
+              new URL(request.url).pathname.startsWith(
+                new URL("content/", BASE_URL).pathname,
+              ),
+            )
+            .map((request) => cache.delete(request)),
+        );
+      }),
+    );
+  }
 });
 
 const fetchWithTimeout = async (request, milliseconds = 5000) => {

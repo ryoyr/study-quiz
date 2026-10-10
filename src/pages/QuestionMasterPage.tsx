@@ -18,6 +18,12 @@ import {
   saveQuestionMasterSyncState,
 } from "../services/questionMasterService";
 import type { Question } from "../types/Question";
+import {
+  appendQuestionRevision,
+  createQuestionRevision,
+  loadQuestionRevisions,
+  saveQuestionRevisions,
+} from "../services/questionRevisionService";
 import type {
   CreateContentPullRequestCommand,
   CreateContentPullRequestResult,
@@ -163,11 +169,36 @@ export default function QuestionMasterPage({
       setError("問題マスターの更新を端末内へ保存できませんでした。");
       return;
     }
+    let revisionWarning = "";
+    try {
+      let revisions = loadQuestionRevisions();
+      for (const action of mergePlan.actions) {
+        revisions = appendQuestionRevision(
+          revisions,
+          createQuestionRevision({
+            before: action.before ?? null,
+            after: action.after,
+            source: "master-sync",
+            summary:
+              action.kind === "add"
+                ? "問題マスターから追加"
+                : action.kind === "archive"
+                  ? "問題マスター削除をアーカイブとして反映"
+                  : "問題マスター更新を反映",
+          }),
+        );
+      }
+      saveQuestionRevisions(revisions);
+    } catch (revisionError) {
+      revisionWarning = ` 改訂履歴は保存できませんでした: ${
+        revisionError instanceof Error ? revisionError.message : String(revisionError)
+      }`;
+    }
     saveQuestionMasterSyncState(mergePlan.nextState);
     const nextPlan = planQuestionMasterMerge(next, snapshot, mergePlan.nextState);
     setMergePlan(nextPlan);
     setMessage(
-      `${mergePlan.actions.length}件の安全な更新を適用しました。競合は上書きしていません。`,
+      `${mergePlan.actions.length}件の安全な更新を適用しました。競合は上書きしていません。${revisionWarning}`,
     );
     setError("");
   };

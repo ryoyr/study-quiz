@@ -1,4 +1,5 @@
 import type { Question, QuestionType } from "../types/Question";
+import { parseAiJson } from "./aiJsonPipeline";
 import type {
   QuestionQualityProposal,
   QuestionQualityProposalInput,
@@ -94,15 +95,7 @@ const containsSearch = (question: Question, search: string): boolean => {
 const parseJson = (text: string): unknown => {
   if (new Blob([text]).size > MAX_JSON_BYTES)
     throw new Error("JSONファイルは5MB以下にしてください。");
-  const trimmed = text.trim();
-  const source = trimmed.startsWith("```")
-    ? trimmed.replace(/^```(?:json)?\s*/iu, "").replace(/\s*```$/u, "")
-    : trimmed;
-  try {
-    return JSON.parse(source) as unknown;
-  } catch {
-    throw new Error("JSONを読み取れません。");
-  }
+  return parseAiJson(text).value;
 };
 
 export const createQualityInput = (questions: Question[]) => ({

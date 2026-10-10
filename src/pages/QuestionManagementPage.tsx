@@ -5,6 +5,13 @@ import { getMasteryLabel } from "../services/questionStateService";
 import { LPIC101_EXAM_SCOPE_ID, type ExamScope } from "../types/ExamScope";
 import ConfirmDialog from "../components/ConfirmDialog";
 import {
+  appendQuestionRevision,
+  createQuestionRevision,
+  loadQuestionRevisions,
+  saveQuestionRevisions,
+} from "../services/questionRevisionService";
+import StructuredText from "../components/StructuredText";
+import {
   QUESTION_LIMITS,
   questionValidationErrors,
 } from "../services/questionValidation";
@@ -204,6 +211,9 @@ export default function QuestionManagementPage({
       setError(validationErrors[0]);
       return;
     }
+    const before = originalId
+      ? questions.find((question) => question.id === originalId) ?? null
+      : null;
     const saved = onChange(
       originalId
         ? questions.map((question) =>
@@ -216,6 +226,26 @@ export default function QuestionManagementPage({
         "端末内へ保存できませんでした。空き容量を確認して再試行してください。",
       );
       return;
+    }
+    try {
+      const revisions = loadQuestionRevisions();
+      saveQuestionRevisions(
+        appendQuestionRevision(
+          revisions,
+          createQuestionRevision({
+            before,
+            after: next,
+            source: "manual",
+            summary: before ? "問題管理画面で更新" : "問題管理画面で新規登録",
+          }),
+        ),
+      );
+    } catch (revisionError) {
+      setMessage(
+        `問題は保存しましたが、改訂履歴を保存できませんでした: ${
+          revisionError instanceof Error ? revisionError.message : String(revisionError)
+        }`,
+      );
     }
     setEditing(null);
   };
@@ -254,6 +284,9 @@ export default function QuestionManagementPage({
   };
 
   if (editing) {
+    const revisions = loadQuestionRevisions()
+      .filter((item) => item.questionId === (originalId || editing.id))
+      .slice(0, 10);
     return (
       <main className="app-shell">
         <section className="home-card question-admin-card">
@@ -479,6 +512,35 @@ export default function QuestionManagementPage({
               />
             </label>
           </div>
+          <details className="question-edit-preview" open>
+            <summary>保存前プレビュー</summary>
+            <article>
+              <strong>{editing.text || "問題文を入力してください"}</strong>
+              {editing.questionType !== "text" && (
+                <ol>
+                  {editing.choices.map((choice, index) => (
+                    <li key={`${index}-${choice}`}>{choice || `選択肢 ${index + 1}`}</li>
+                  ))}
+                </ol>
+              )}
+              <h2>解説</h2>
+              <StructuredText text={editing.explanation || "解説を入力してください"} />
+            </article>
+          </details>
+          {revisions.length > 0 && (
+            <details className="question-edit-preview">
+              <summary>改訂履歴（直近{revisions.length}件）</summary>
+              <div className="revision-list">
+                {revisions.map((revision) => (
+                  <article key={revision.id}>
+                    <strong>{revision.summary || revision.source}</strong>
+                    <span>{new Date(revision.createdAt).toLocaleString("ja-JP")}</span>
+                    <small>変更項目: {revision.changedFields.join("、") || "なし"}</small>
+                  </article>
+                ))}
+              </div>
+            </details>
+          )}
           {error && (
             <div className="error-box" role="alert">
               {error}

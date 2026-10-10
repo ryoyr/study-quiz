@@ -1,3 +1,7 @@
+import {
+  generateStructuredAiJson,
+  type StructuredAiResult,
+} from "./aiJsonPipeline";
 import { STORAGE_KEYS } from "./storageKeyRegistry";
 import { executeStorageTransaction } from "./storageTransaction";
 
@@ -153,3 +157,22 @@ export const testGeminiConnection = async (
     { settings },
   );
 };
+
+
+export const generateGeminiStructuredJson = async <T>(
+  prompt: string,
+  validate: (value: unknown) => T,
+  options: GenerateOptions & { maxAttempts?: number; label?: string } = {},
+): Promise<StructuredAiResult<T>> =>
+  generateStructuredAiJson({
+    prompt,
+    validate,
+    maxAttempts: options.maxAttempts ?? 3,
+    label: options.label ?? "Gemini JSON",
+    generate: (nextPrompt) =>
+      generateGeminiContent(nextPrompt, {
+        settings: options.settings,
+        history: options.history,
+        signal: options.signal,
+      }),
+  });
