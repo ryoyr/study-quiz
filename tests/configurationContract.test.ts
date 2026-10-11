@@ -29,7 +29,7 @@ test("checkは構成検証・単体試験・ビルド・E2Eを順に実行する
   assert.equal(scripts["test:e2e"], "node scripts/e2e-accessibility.mjs");
   assert.equal(
     scripts.check,
-    "npm run verify:structure && npm run test && npm run build && npm run test:e2e",
+    "npm run verify:structure && npm run d1:seed:build && npm run verify:d1-migrations && npm run test && npm run typecheck && npm run worker:typecheck && npm run build && npm run test:e2e",
   );
 });
 

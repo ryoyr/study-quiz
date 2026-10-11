@@ -3,6 +3,7 @@ import type { Question } from "./Question";
 export interface QuestionMasterDatasetDescriptor {
   id: string;
   version: number;
+  /** 互換スナップショット上の論理パス。D1では物理ファイルを意味しない。 */
   path: string;
   questionCount: number;
 }
@@ -27,11 +28,17 @@ export interface QuestionMasterSnapshot {
   questions: Question[];
 }
 
-export interface ContentPullRequestState {
-  number: number;
-  url: string;
-  branch: string;
-  state: "open" | "closed" | "merged";
+export type QuestionMasterSource = "d1" | "bundled-snapshot" | "indexeddb-cache";
+
+export interface LoadedQuestionMaster {
+  snapshot: QuestionMasterSnapshot;
+  source: QuestionMasterSource;
+  warning?: string;
+}
+
+export interface D1WriteState {
+  contentVersion: string;
+  appliedCount: number;
   updatedAt: string;
 }
 
@@ -41,7 +48,7 @@ export interface QuestionMasterSyncState {
   datasetVersions: Record<string, number>;
   questionFingerprints: Record<string, string>;
   checkedAt: string;
-  lastPullRequest?: ContentPullRequestState;
+  lastD1Write?: D1WriteState;
 }
 
 export type QuestionMasterMergeActionKind = "add" | "update" | "archive";
@@ -82,23 +89,21 @@ export interface QuestionMasterChange {
   after: Question;
 }
 
-export interface CreateContentPullRequestCommand {
+export interface ApplyD1ChangesCommand {
   schemaVersion: 1;
   baseContentVersion: string;
   baseDatasetVersions: Record<string, number>;
   changes: QuestionMasterChange[];
-  title: string;
-  body: string;
-  commitMessage: string;
+  message: string;
   idempotencyKey: string;
 }
 
-export interface CreateContentPullRequestResult {
-  number: number;
-  url: string;
-  branch: string;
-  state: "open" | "closed" | "merged";
+export interface ApplyD1ChangesResult {
+  contentVersion: string;
+  datasetVersions: Record<string, number>;
+  appliedCount: number;
   reused: boolean;
+  updatedAt: string;
 }
 
 export interface ContentApiErrorBody {

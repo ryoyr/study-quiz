@@ -82,6 +82,7 @@ export default function CsvImportPage({
             questionTypeはsingle（既定）、multiple、textに対応します。singleは
             choice1・choice2とanswer（1開始）、multipleは選択肢とanswers
             （例: 1|3）、textはacceptedAnswers（例: LVM|lvm）を指定してください。
+            distributionはlocal-only（既定）またはsharedです。新規問題は安全のため端末限定が既定です。
             UTF-8（BOMあり・なし）に対応します。
           </p>
         </div>

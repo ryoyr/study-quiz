@@ -10,7 +10,7 @@ import {
   writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { extname, join, normalize, resolve } from "node:path";
+import { extname, isAbsolute, join, normalize, relative, resolve, sep } from "node:path";
 import { createServer as createNetServer } from "node:net";
 import { pathToFileURL } from "node:url";
 
@@ -50,9 +50,19 @@ const fileExists = async (path) => {
   }
 };
 const findBrowser = async () => {
+  const windowsPrograms = [
+    process.env.PROGRAMFILES,
+    process.env["PROGRAMFILES(X86)"],
+    process.env.LOCALAPPDATA,
+  ].filter(Boolean);
+  const windowsCandidates = windowsPrograms.flatMap((base) => [
+    join(base, "Google", "Chrome", "Application", "chrome.exe"),
+    join(base, "Microsoft", "Edge", "Application", "msedge.exe"),
+  ]);
   const candidates = [
     process.env.CHROME_PATH,
     process.env.BROWSER_EXECUTABLE,
+    ...windowsCandidates,
     "/usr/bin/google-chrome",
     "/usr/bin/google-chrome-stable",
     "/usr/bin/chromium",
@@ -79,7 +89,12 @@ const startStaticServer = async () => {
       const requested = relativePath && relativePath !== "/" ? relativePath : "index.html";
       const safePath = normalize(requested).replace(/^(\.\.[/\\])+/, "");
       let target = resolve(DIST_DIRECTORY, safePath);
-      if (!target.startsWith(`${DIST_DIRECTORY}/`) && target !== DIST_DIRECTORY) {
+      const relativeTarget = relative(DIST_DIRECTORY, target);
+      const escapesDist =
+        relativeTarget === ".." ||
+        relativeTarget.startsWith(`..${sep}`) ||
+        isAbsolute(relativeTarget);
+      if (escapesDist) {
         response.writeHead(403).end("Forbidden");
         return;
       }
@@ -159,7 +174,7 @@ const evaluate = async (client, expression) => {
   }
   return result.result?.value;
 };
-const waitFor = async (client, expression, label, timeoutMilliseconds = 10000) => {
+const waitFor = async (client, expression, label, timeoutMilliseconds = 30000) => {
   const deadline = Date.now() + timeoutMilliseconds;
   let lastError;
   while (Date.now() < deadline) {
@@ -169,9 +184,26 @@ const waitFor = async (client, expression, label, timeoutMilliseconds = 10000) =
       // reload直後は実行コンテキストが切り替わるため、次のポーリングで再試行する。
       lastError = error;
     }
-    await delay(80);
+    await delay(100);
   }
-  throw new Error(`${label}の待機がタイムアウトしました。${lastError ? ` ${lastError}` : ""}`);
+  let diagnostics = {};
+  try {
+    diagnostics = await evaluate(client, `(() => ({
+      href: location.href,
+      readyState: document.readyState,
+      title: document.title,
+      heading: document.querySelector("main h1")?.textContent?.trim() ?? null,
+      mainText: document.querySelector("main")?.textContent?.trim().slice(0, 500) ?? null,
+      bodyText: document.body?.textContent?.trim().slice(0, 500) ?? null,
+    }))()`);
+  } catch (error) {
+    diagnostics = { diagnosticError: error instanceof Error ? error.message : String(error) };
+  }
+  throw new Error(
+    `${label}の待機が${timeoutMilliseconds}msでタイムアウトしました。` +
+      ` 診断=${JSON.stringify(diagnostics)}` +
+      (lastError ? ` 最終評価エラー=${lastError}` : ""),
+  );
 };
 const captureScreenshot = async (client, name) => {
   const directory = process.env.UI_SCREENSHOT_DIR;

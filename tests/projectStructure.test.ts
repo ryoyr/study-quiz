@@ -13,15 +13,24 @@ const retiredFiles = [
   "src/services/setupFlow.ts",
   "src/services/sessionService.ts",
   "src/services/studyPlanService.ts",
+  "src/services/contentPullRequestApi.ts",
   "src/types/AppScreen.ts",
   "src/types/Session.ts",
   "src/ui-enhancement.css",
   "public/favicon.svg",
   "public/icons.svg",
   "eslint.config.js",
+  "tests/contentPullRequestApi.test.ts",
+  "tests/workerQuizContent.test.ts",
+  "tests/workerAccessAuth.test.ts",
 ];
 
-const retiredDirectories = ["src/major", "src/enhancements", "src/assets"];
+const retiredDirectories = [
+  "src/major",
+  "src/enhancements",
+  "src/assets",
+  "workers/quiz-content-pr",
+];
 
 test("ビルドに必要な設定ファイルが揃っている", () => {
   for (const path of [

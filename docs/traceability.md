@@ -1,67 +1,39 @@
-# 要件トレーサビリティ — 4.6.0
+# Study Quiz 5.0.0 要件トレーサビリティ
 
-|要件|主実装|主検証|状態|
-|---|---|---|---|
-|FR-01 初回設定|`InitialSetupPage.tsx`, `setupValidation.ts`, `setupStorage.ts`|`setupValidation.test.ts`, `examScopeSchema.test.ts`|実装済み|
-|FR-02 問題管理|`QuestionManagementPage.tsx`, `questionStorage.ts`, `questionValidation.ts`|`questionStorage.test.ts`, `questionValidation.test.ts`|実装済み|
-|FR-03 回答定義・採点|`questionAnswerModel.ts`, `questionAnswerService.ts`, `App.tsx`|`questionAnswerService.test.ts`, `answerTypeIntegration.test.ts`|4.5.0改良|
-|FR-04 CSV|`CsvImportPage.tsx`, `csvImportService.ts`|`importAndBackup.test.ts`|実装済み|
-|FR-05 学習セッション|`sessionGenerator.ts`, `studySelectionService.ts`, `activeSessionStorage.ts`|`sessionGenerator.test.ts`, `studySelectionAndTrend.test.ts`, `resilience.test.ts`|実装済み|
-|FR-06 履歴・復習・分析|`StudyHistory.ts`, `questionAnswerModel.ts`, `historyStorage.ts`, `LearningHistoryPage.tsx`, `questionStateService.ts`|`questionAnswerService.test.ts`, `historyStorage.test.ts`, `importAndBackup.test.ts`, Chrome E2E, 分析系test|4.5.1スナップショット対応|
-|FR-07 教材・AI補助|`promptBuilder.ts`, `AiQuestionPanel.tsx`, `similarQuestionService.ts`, `batchFactCheckService.ts`|`answerTypeIntegration.test.ts`, `similarQuestionService.test.ts`, `projectStructure.test.ts`|4.5.0改良|
-|FR-08 保存|`storageTransaction.ts`, `verifiedStorage.ts`, `storageSynchronization.ts`|`storageTransaction.test.ts`, `storageSynchronization.test.ts`|実装済み|
-|FR-09 完全バックアップ|`fullBackupService.ts`, `BackupCenterPage.tsx`|`resilience.test.ts`, `importAndBackup.test.ts`|実装済み|
-|FR-10 PWA|manifest、`sw.js`、PNG 4件、生成ツール|`pwaAssets.test.ts`, `verify-project.mjs`|4.6.0 cache v22|
-|FR-11 問題・解説品質向上|`questionQualityService.ts`, `questionQualityProposalStorage.ts`, 品質生成・レビュー画面, seed update tool|`questionQualityService.test.ts`, `questionQualityPlanningService.test.ts`, `questionQualityPlanningUi.test.ts`, `questionSeedUpdateTool.test.ts`, Chrome E2E|4.7.0で選択・分割・品質プロンプト・再生成を拡張|
-|NFR-01 互換性|回答アダプター、migration schema 9、backup 10|`configurationContract.test.ts`, `resilience.test.ts`, `questionQualityService.test.ts`|version 2～10読込み|
-|NFR-02 品質|package scripts、CI、構成/E2E scripts|全単体、構文変換、型検査|通常CI最終ゲートあり|
-|NFR-03 アクセシビリティ|`ConfirmDialog.tsx`, `App.css`, E2E script|`accessibilityHarness.test.ts`, `themeAccessibility.test.ts`|自動試験実装済み|
-|NFR-04 セキュリティ|保存・外部連携境界|`projectStructure.test.ts`, 静的監査|新規自動外部送信なし|
-
-## 未実装追跡
-
-|候補|要求化|設計|実装|試験|
-|---|---|---|---|---|
-|問題revision|候補|未|未|未|
-|部分点・数値許容差等|候補|内部モデルに拡張点|未|未|
-|CSVエクスポート・一括更新|候補|未|未|未|
-|IndexedDB正本化|候補|未|未|未|
-|認証・同期|範囲外|未|未|未|
-|暗号化・署名バックアップ|候補|未|未|未|
-|3方式の実ブラウザーE2E|P1|済|済|Chromeで2回連続成功|
-
-## 4.7.0 問題マスターGitHub連携
-
-|要件|設計・実装|検証|
+|要件|主実装|主検証|
 |---|---|---|
-|現行問題形式・ID・学習データ互換|`public/content/**`, `questionMasterService`, storage schema 9 / backup 10維持|`questionMasterService.test.ts`, 既存questionStorage/history/PWA試験|
-|送信前の追加・更新・アーカイブ差分|`questionMasterChangeService`, `QuestionMasterPage`|`questionMasterChangeService.test.ts`, `questionMasterUi.test.ts`|
-|明示操作時だけPR作成|`QuestionMasterPage` + `ConfirmDialog`|`questionMasterUi.test.ts`|
-|秘密情報をクライアントへ置かない|`contentPullRequestApi`, Workers Secrets|`questionMasterUi.test.ts`, `workerAccessAuth.test.ts`|
-|Access認証・利用者認可・CORS・Rate Limit|Worker `auth.ts`, `http.ts`, `index.ts`|`workerAccessAuth.test.ts`, `workerQuizContent.test.ts`|
-|クロスサイトCookie非依存のAccess連携|`contentPullRequestApi.ts`、`QuestionMasterPage.tsx`、Worker access-session relay|`contentPullRequestApi.test.ts`, `questionMasterUi.test.ts`, `workerQuizContent.test.ts`|
-|許可リポジトリ・ブランチ・パス固定|Worker env + command strict validation|`workerQuizContent.test.ts`, `questionMasterUi.test.ts`|
-|最新版・問題単位競合検出|manifest version、base SHA、question fingerprint|`questionMasterService.test.ts`, `workerQuizContent.test.ts`|
-|複数ファイルを1コミット|GitHub blobs/tree/commit/ref|`workerQuizContent.test.ts`|
-|main直接更新・自動マージ禁止|専用`quiz-content/*` ref、PR createのみ|`questionMasterUi.test.ts`|
-|再送の重複防止|SHA-256冪等キー、決定的ブランチ、既存PR回収|`questionMasterChangeService.test.ts`, `workerQuizContent.test.ts`|
-|マージ後の安全同期・オフライン維持|安全マージ、SW network-first→cache fallback|`questionMasterService.test.ts`, `pwaAssets.test.ts`|
-|設定・運用・費用|`github-cloudflare-setup.md`|文書レビュー、本番接続は設定後|
+|D1を共有正本にする|`QUESTION_MASTER_AUTHORITY`, `workers/quiz-content-db`|`questionMasterDbPreparation.test.ts`, `verify-project.mjs`|
+|公開snapshot API|Worker `index.ts`, `repository.ts`|`d1WorkerHttp.test.ts`, `d1ContentApi.test.ts`|
+|offline fallback|`questionMasterService.ts`, IndexedDB, `public/content`|`questionMasterService.test.ts`, `questionMasterDbPreparation.test.ts`, E2E|
+|端末編集保護|`planQuestionMasterMerge`|`questionMasterService.test.ts`|
+|local-only新規既定|問題管理、CSV、類似問題|`questionStorage.test.ts`, `importAndBackup.test.ts`, `similarQuestionService.test.ts`|
+|local-only送信禁止|`questionMasterChangeService.ts`, Worker `validation.ts`|`questionMasterChangeService.test.ts`, `d1Worker.test.ts`, `d1WorkerHttp.test.ts`|
+|送信前差分・確認|`QuestionMasterPage.tsx`, `ConfirmDialog.tsx`|`questionMasterUi.test.ts`, E2E|
+|Access popup relay|`d1ContentApi.ts`, Worker `http.ts`|`d1ContentApi.test.ts`, `d1WorkerHttp.test.ts`|
+|Access JWT署名・issuer・AUD・期限|Worker `auth.ts`|`d1AccessAuth.test.ts`|
+|許可メール|Worker `auth.ts`|`d1AccessAuth.test.ts`|
+|Origin/CORS|Worker `http.ts`, `index.ts`|`d1WorkerHttp.test.ts`|
+|冪等キー|`createApplyD1ChangesCommand`, Worker `verifyIdempotencyKey`, `idempotency_keys`|`questionMasterChangeService.test.ts`, `d1Worker.test.ts`|
+|content/dataset競合|Worker `repository.ts`|構成検証、ローカルD1統合確認|
+|問題fingerprint競合|Worker `repository.ts`|`d1Worker.test.ts`, 構成検証|
+|監査ログ|`question_revisions`とWorker batch|migration検証、構成検証|
+|書込み排他|`content_write_lock`|migration検証、構成検証|
+|D1 seed 100問|seed生成script、`0002_seed_content.sql`|`verify-d1-migrations.py`, `lpicSeedAndCalendar.test.ts`|
+|旧GitHub PR経路排除|retired path検証、現行package/CI|`verify-project.mjs`, `projectStructure.test.ts`|
+|アプリstrict型|`tsconfig.app.json`, `tsconfig.node.json`|`npm run typecheck`|
+|Worker strict型|Worker `tsconfig.json`|`npm run worker:typecheck`|
+|本番bundle|Vite|`npm run build`|
+|PWA・アクセシビリティ|manifest、SW v25、UI|`pwaAssets.test.ts`, `themeAccessibility.test.ts`, E2E|
 
+## 廃止対象
 
-## 4.7.0 総合改良
+以下は5.0.0の要件・実行経路ではない。
 
-|要件|実装|検証|
-|---|---|---|
-|AI JSON抽出・限定修復|`aiJsonPipeline.ts`|`aiJsonPipeline.test.ts`|
-|schema・Question整合性|`similarQuestionService.ts`, `questionQualityService.ts`|既存similar／quality試験|
-|最大3回再生成|`generateStructuredAiJson`, `generateGeminiStructuredJson`|`aiJsonPipeline.test.ts`|
-|レビュー・承認|既存品質提案、類似問題下書き|品質・類似問題試験|
-|問題改訂履歴|`QuestionRevision`, `questionRevisionService`|`questionRevisionAndFormatting.test.ts`|
-|改行・段落・箇条書き|`StructuredText.tsx`|`questionRevisionAndFormatting.test.ts`|
-|編集preview|`QuestionManagementPage.tsx`|静的UI契約・bundle|
-|GitHub唯一正本|`QUESTION_MASTER_AUTHORITY`|`questionMasterDbPreparation.test.ts`|
-|IndexedDB派生cache|DB v3 `questionMasterCache`|DB準備・exam scope試験|
-|PWA cache整合性|Service Worker v24|`pwaAssets.test.ts`, DB準備試験|
-|backup保護|registry + full backup revision検証|backup／revision試験|
-|認証・GitHubセキュリティ維持|既存Worker・Access relay|`workerAccessAuth`, `workerQuizContent`|
+- `CreateContentPullRequestCommand`
+- `CreateContentPullRequestResult`
+- `createContentPullRequestCommand`
+- `contentPullRequestApi.ts`
+- `workers/quiz-content-pr`
+- PR作成・状態取得テスト
+
+互換型や空実装で残さず、構成検証で再混入を失敗させる。

@@ -7,7 +7,9 @@ import { executeStorageTransaction } from "./storageTransaction.ts";
 
 export const QUESTIONS_STORAGE_KEY = STORAGE_KEYS.questions;
 export const QUESTION_SEED_VERSION_KEY = STORAGE_KEYS.questionSeedVersion;
-export const QUESTION_SEED_VERSION = "4";
+export const QUESTION_SEED_VERSION = "5";
+
+const bundledQuestionIds = new Set(seedQuestions.map((question) => question.id));
 
 const normalizeQuestion = (value: Partial<Question>): Partial<Question> => ({
   ...value,
@@ -15,6 +17,13 @@ const normalizeQuestion = (value: Partial<Question>): Partial<Question> => ({
     typeof value.examScopeId === "string" && value.examScopeId.trim()
       ? value.examScopeId
       : LPIC101_EXAM_SCOPE_ID,
+  // 旧版で公開範囲がない独自問題は、移行時に安全側のlocal-onlyへ倒す。
+  distribution:
+    value.distribution === "shared" || value.distribution === "local-only"
+      ? value.distribution
+      : typeof value.id === "string" && bundledQuestionIds.has(value.id)
+        ? "shared"
+        : "local-only",
 });
 
 export const loadQuestions = (): Question[] => {

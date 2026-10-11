@@ -1,3 +1,16 @@
+# Changelog
+
+## 5.0.0 - 2026-10-11
+
+- 共有問題・解説の正本をGitHub JSONからCloudflare D1へ移行。
+- 指定binding `DB`、database `study-quiz-db`、D1 schema・100問seed migrationを追加。
+- 公開snapshot read APIとCloudflare Access認証write APIを追加。
+- revision監査、冪等性、base fingerprint競合検知、D1短期排他を追加。
+- `Question.distribution`を追加し、新規・CSV・AI類似問題を`local-only`既定に変更。
+- local-onlyをD1同期・送信payload・Workerの三重境界で保護。
+- D1→同梱snapshot→IndexedDB→端末seedのoffline fallbackを実装。
+- PWA画像を補完しService Workerをv25へ更新。
+
 # CHANGELOG
 
 ## 4.7.0 - 2026-10-11

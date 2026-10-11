@@ -42,6 +42,7 @@ const OPTIONAL = [
   "tags",
   "weight",
   "difficulty",
+  "distribution",
 ];
 const MAX_ROWS = 20_000;
 const MAX_CSV_CHARS = 5 * 1024 * 1024;
@@ -195,6 +196,11 @@ export const parseQuestionCsv = (
     ).filter(Boolean);
     const weight = numberValue(get("weight"), 1);
     const difficulty = numberValue(get("difficulty"), 1);
+    const distributionValue = get("distribution") || "local-only";
+    const distribution =
+      distributionValue === "shared" || distributionValue === "local-only"
+        ? distributionValue
+        : null;
     const tags = parseList(get("tags"));
     const acceptedAnswers = parseList(get("acceptedAnswers"));
     const answerNumbers = splitList(get("answers")).map(Number);
@@ -206,6 +212,8 @@ export const parseQuestionCsv = (
       );
     if (!questionType)
       errors.push("questionTypeはsingle、multiple、textのいずれかです。");
+    if (!distribution)
+      errors.push("distributionはsharedまたはlocal-onlyを指定してください。");
     if (existingIds.has(id)) errors.push("既存の問題IDと重複しています。");
     if (csvIds.has(id)) errors.push("CSV内で問題IDが重複しています。");
     if (id) csvIds.add(id);
@@ -256,6 +264,7 @@ export const parseQuestionCsv = (
       tags,
       weight,
       difficulty,
+      distribution: distribution ?? "local-only",
     };
 
     for (const validationError of questionValidationErrors(candidate)) {
@@ -315,6 +324,7 @@ const CSV_COLUMNS = [
   "tags",
   "weight",
   "difficulty",
+  "distribution",
 ];
 
 export const CSV_TEMPLATE = [
@@ -323,18 +333,18 @@ export const CSV_TEMPLATE = [
     "LPIC101-CSV-001", "lpic101", "103 GNUとUNIXコマンド", "103.1 コマンドライン",
     "lsコマンドの用途は？", "single", "一覧表示", "削除", "移動", "圧縮",
     "", "", "", "", "1", "", "", "ディレクトリの内容を一覧表示します。",
-    "LPI 101-500 Objectives", "LPIC-1|101-500|103.1", "3", "2",
+    "LPI 101-500 Objectives", "LPIC-1|101-500|103.1", "3", "2", "local-only",
   ],
   [
     "LPIC101-CSV-002", "lpic101", "103 GNUとUNIXコマンド", "103.2 フィルター",
     "標準入力を扱えるコマンドをすべて選択してください。", "multiple", "grep", "sed", "pwd", "awk",
     "", "", "", "", "", "1|2|4", "", "grep、sed、awkは標準入力を処理できます。",
-    "LPI 101-500 Objectives", "LPIC-1|101-500|103.2", "3", "3",
+    "LPI 101-500 Objectives", "LPIC-1|101-500|103.2", "3", "3", "local-only",
   ],
   [
     "LPIC101-CSV-003", "lpic101", "102 Linuxのインストール", "102.1 ハードディスク設計",
     "論理ボリューム管理の略称を入力してください。", "text", "", "", "", "",
     "", "", "", "", "", "", "LVM|lvm", "Logical Volume Managerの略称です。",
-    "LPI 101-500 Objectives", "LPIC-1|101-500|102.1", "2", "2",
+    "LPI 101-500 Objectives", "LPIC-1|101-500|102.1", "2", "2", "local-only",
   ],
 ].map((row) => row.join(",")).join("\n") + "\n";

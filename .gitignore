@@ -88,3 +88,7 @@ SHA256SUMS*
 VALIDATION_REPORT*
 TASK_MANAGEMENT*
 RELEASE_MANIFEST*
+
+# D1 migrations are source assets and must be version-controlled.
+!workers/quiz-content-db/migrations/
+!workers/quiz-content-db/migrations/*.sql

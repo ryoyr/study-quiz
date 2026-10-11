@@ -1,4 +1,5 @@
 export type QuestionType = "single" | "multiple" | "text";
+export type QuestionDistribution = "shared" | "local-only";
 
 export interface Question {
   id: string;
@@ -21,6 +22,11 @@ export interface Question {
   tags?: string[];
   weight: number;
   difficulty: number;
+  /**
+   * shared は明示操作によりD1へ公開可能、local-only は端末外へ送信しない。
+   * 旧配布問題で省略されている場合は shared として扱う。
+   */
+  distribution?: QuestionDistribution;
   /** 論理削除日時。設定済みの問題は通常の出題対象から除外する。 */
   archivedAt?: string;
 }

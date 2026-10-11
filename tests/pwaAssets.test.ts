@@ -50,7 +50,7 @@ test("iOS用アイコンとService Workerのプリキャッシュ対象が存在
 test("Service Workerのキャッシュ世代は問題マスター連携版へ更新されている", () => {
   const serviceWorker = readFileSync("public/sw.js", "utf8");
   assert.match(serviceWorker, /study-quiz-shell-/);
-  assert.match(serviceWorker, /CACHE_NAME = `\$\{CACHE_PREFIX\}v24`/);
+  assert.match(serviceWorker, /CACHE_NAME = `\$\{CACHE_PREFIX\}v25`/);
   assert.match(serviceWorker, /networkFirstContent/);
   assert.match(serviceWorker, /new URL\("content\/", BASE_URL\)/);
   assert.match(serviceWorker, /if \(!response\.ok\) throw/);

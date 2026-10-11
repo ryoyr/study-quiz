@@ -1,3 +1,19 @@
+# 現状評価 — Study Quiz 5.0.0 D1移行版
+
+> この節は以下の4.7.0評価より新しく、問題マスター正本に関する旧記述を置き換える。
+
+- 共有問題・解説の正本をCloudflare D1へ移行した。
+- 端末localStorageは学習実行データとローカル専用問題を保持する。
+- 同梱`public/content`はD1 seed生成元兼offline snapshotであり、編集正本ではない。
+- D1→同梱snapshot→IndexedDB→端末seedのfallbackと、端末編集を保護する三者比較を実装した。
+- `distribution=local-only`は自動同期・送信差分・Worker受信の各境界で保護する。
+- 指定D1 binding、schema、100問seed、Access JWT、監査、冪等性、短期排他を実装した。
+- 本番D1へのmigrationとWorker deployはCloudflare認証済み環境でbackup後に実施する。
+
+詳細: `D1_MIGRATION_PLAN.md`, `TASKS_D1.md`, `TEST_REPORT_D1.md`
+
+---
+
 # 現状評価 — Study Quiz 4.7.0
 
 評価基準日時: 2026-10-11  

@@ -1,3 +1,16 @@
+# DECISIONS — D1移行追補
+
+## ADR-009 D1を共有問題・解説の正本とする（ADR-001/002を置換）
+
+- 状態: 採用（5.0.0）
+- 正本: Cloudflare D1。GitHub `public/content`は生成snapshotとmigration入力へ降格する。
+- 端末: localStorageは学習実行データと`local-only`問題、IndexedDBは検証済みsnapshot cache。
+- 同期: D1から端末への安全な一方向同期。端末からD1は差分確認・Access認証・明示確認後だけ。
+- 禁止: local-only、学習履歴、メモ、APIキーのD1送信。
+- 保護: Access JWT、許可メール、Origin/relay、fingerprint、監査、冪等性、TTL付き排他。
+
+---
+
 # DECISIONS — 総合改良プロジェクト
 
 ## ADR-001 問題マスター正本

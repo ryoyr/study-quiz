@@ -18,8 +18,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      # 公開URLのみ。GitHub App秘密情報やAccess認証情報は設定しない。
-      VITE_QUIZ_CONTENT_API_URL: https://study-quiz-content-pr.forxdevelop.workers.dev/
+      # 公開D1 Worker URLのみ。Repository variable QUIZ_CONTENT_API_URLへ設定する。
+      VITE_QUIZ_CONTENT_API_URL: ${{ vars.QUIZ_CONTENT_API_URL }}
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -27,8 +27,8 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci --no-audit --no-fund
-      - name: Verify Worker TypeScript
-        run: npx --no-install tsc -p workers/quiz-content-pr/tsconfig.json
+      - name: Verify D1 Worker TypeScript
+        run: npx --no-install tsc -p workers/quiz-content-db/tsconfig.json
       - id: setup-chrome
         uses: browser-actions/setup-chrome@v2
       - run: npm run check

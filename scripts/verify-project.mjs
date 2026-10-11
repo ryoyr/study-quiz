@@ -1,232 +1,199 @@
-import { existsSync, readFileSync, statSync } from "node:fs";
+import {
+  existsSync,
+  readFileSync,
+  readdirSync,
+  statSync,
+} from "node:fs";
+import { join } from "node:path";
+
 const failures = [];
-const assert = (condition, message) => {
-  if (!condition) failures.push(message);
-};
-const readJson = (path) => {
-  try {
-    return JSON.parse(readFileSync(path, "utf8"));
-  } catch (error) {
-    failures.push(`${path} をJSONとして読み込めません: ${error.message}`);
-    return {};
-  }
-};
-const readPngSize = (path) => {
-  try {
-    const bytes = readFileSync(path);
-    assert(bytes.subarray(0, 8).toString("hex") === "89504e470d0a1a0a", `${path} はPNGではありません`);
-    assert(bytes.length >= 24, `${path} のPNGヘッダーが不足しています`);
-    return bytes.length >= 24
-      ? { width: bytes.readUInt32BE(16), height: bytes.readUInt32BE(20) }
-      : { width: 0, height: 0 };
-  } catch (error) {
-    failures.push(`${path} を読み込めません: ${error.message}`);
-    return { width: 0, height: 0 };
-  }
-};
-const requiredFiles = [
-  "index.html",
-  "package.json",
-  "package-lock.json",
-  "PROJECT_PLAN.md",
-  "TASKS.md",
-  "PROGRESS.md",
-  "DECISIONS.md",
-  "TEST_REPORT.md",
-  "public/content/manifest.json",
-  "public/content/questions/lpic-101.json",
-  "src/services/questionMasterService.ts",
-  "src/services/questionMasterChangeService.ts",
-  "src/services/contentPullRequestApi.ts",
-  "src/pages/QuestionMasterPage.tsx",
-  "src/types/QuestionMaster.ts",
-  "workers/quiz-content-pr/src/index.ts",
-  "workers/quiz-content-pr/src/auth.ts",
-  "workers/quiz-content-pr/src/github.ts",
-  "workers/quiz-content-pr/wrangler.toml",
-  "workers/quiz-content-pr/wrangler.toml.example",
-  "tsconfig.json",
-  "tsconfig.app.json",
-  "tsconfig.node.json",
-  "vite.config.ts",
-  "public/manifest.webmanifest",
-  "public/sw.js",
-  "src/main.tsx",
-  "src/App.tsx",
-  "src/services/storageKeyRegistry.ts",
-  "src/services/storageSynchronization.ts",
-  "src/services/storagePersistenceService.ts",
-  "src/services/questionValidation.ts",
-  "src/services/questionAnswerModel.ts",
-  "src/services/aiJsonPipeline.ts",
-  "src/services/questionQualityService.ts",
-  "src/services/questionQualityProposalStorage.ts",
-  "src/services/questionRevisionService.ts",
-  "src/types/QuestionRevision.ts",
-  "src/components/StructuredText.tsx",
-  "src/types/QuestionQualityProposal.ts",
-  "src/pages/QuestionQualityGeneratorPage.tsx",
-  "src/pages/QuestionQualityReviewPage.tsx",
-  "src/data/questionQualityOverrides.ts",
-  "src/services/verifiedStorage.ts",
-  "src/components/ConcurrentUpdateNotice.tsx",
-  "src/components/ConfirmDialog.tsx",
-  "src/services/studyOptionService.ts",
-  "tests/storageKeyRegistry.test.ts",
-  "tests/studyOptionService.test.ts",
-  "scripts/e2e-accessibility.mjs",
-  "tools/generate_pwa_icons.py",
-  "tools/apply_question_seed_updates.mjs",
-  "tests/accessibilityHarness.test.ts",
-  "tests/questionQualityPlanningService.test.ts",
-  "tests/questionQualityPlanningUi.test.ts",
-  "tests/aiJsonPipeline.test.ts",
-  "tests/questionRevisionAndFormatting.test.ts",
-  "tests/questionMasterDbPreparation.test.ts",
-  "docs/question-master-authority-assessment.md",
+const assert = (condition, message) => { if (!condition) failures.push(message); };
+const text = (path) => readFileSync(path, "utf8");
+const json = (path) => JSON.parse(text(path));
+const readTree = (directory) =>
+  readdirSync(directory, { withFileTypes: true })
+    .map((entry) => {
+      const path = join(directory, entry.name);
+      return entry.isDirectory() ? readTree(path) : text(path);
+    })
+    .join("\n");
+
+const required = [
+  "README.md", "D1_MIGRATION_PLAN.md", "TASKS_D1.md", "package.json", "package-lock.json",
+  "docs/d1-cloudflare-setup.md", "docs/requirements.md", "docs/basic-design.md", "docs/detailed-design.md", "docs/traceability.md",
+  "public/content/manifest.json", "public/content/questions/lpic-101.json", "public/sw.js",
+  "src/types/Question.ts", "src/types/QuestionMaster.ts", "src/services/d1ContentApi.ts",
+  "src/services/questionMasterService.ts", "src/services/questionMasterChangeService.ts",
+  "src/pages/QuestionMasterPage.tsx", "scripts/generate-d1-seed.mjs", "scripts/verify-d1-migrations.py",
+  "workers/quiz-content-db/wrangler.toml", "workers/quiz-content-db/tsconfig.json",
+  "workers/quiz-content-db/migrations/0001_schema.sql",
+  "workers/quiz-content-db/migrations/0002_seed_content.sql",
+  "workers/quiz-content-db/src/index.ts", "workers/quiz-content-db/src/auth.ts",
+  "workers/quiz-content-db/src/http.ts", "workers/quiz-content-db/src/repository.ts",
+  "workers/quiz-content-db/src/validation.ts", "tools/generate_pwa_icons.py",
+  "tests/d1ContentApi.test.ts", "tests/d1AccessAuth.test.ts", "tests/d1Worker.test.ts",
+  "tests/d1WorkerHttp.test.ts", "tests/questionMasterChangeService.test.ts",
+  "tests/questionMasterService.test.ts", "tests/questionMasterUi.test.ts",
 ];
-for (const path of requiredFiles) assert(existsSync(path), `${path} がありません`);
-const packageJson = readJson("package.json");
-assert(packageJson.version === "4.7.0", "package.jsonの版は4.7.0である必要があります");
-for (const script of ["verify:structure", "test", "test:e2e", "typecheck", "build", "check"]) {
-  assert(typeof packageJson.scripts?.[script] === "string", `scripts.${script} がありません`);
-}
-assert(
-  packageJson.scripts?.check?.includes("verify:structure") &&
-    packageJson.scripts?.check?.includes("test") &&
-    packageJson.scripts?.check?.includes("build") &&
-    packageJson.scripts?.check?.includes("test:e2e"),
-  "scripts.check は構成検証・テスト・ビルド・E2Eを順に実行する必要があります",
-);
-const rootConfig = readJson("tsconfig.json");
-const references = new Set((rootConfig.references ?? []).map((item) => item.path));
-assert(references.has("./tsconfig.app.json"), "tsconfig.app.json への参照がありません");
-assert(references.has("./tsconfig.node.json"), "tsconfig.node.json への参照がありません");
-for (const path of ["tsconfig.app.json", "tsconfig.node.json"]) {
-  const config = readJson(path);
-  assert(config.compilerOptions?.strict === true, `${path}: strict=true が必要です`);
-  assert(config.compilerOptions?.noEmit === true, `${path}: noEmit=true が必要です`);
-  assert(config.compilerOptions?.moduleResolution === "Bundler", `${path}: moduleResolution=Bundler が必要です`);
-}
-const appConfig = readJson("tsconfig.app.json");
-assert(appConfig.compilerOptions?.jsx === "react-jsx", "tsconfig.app.json: jsx=react-jsx が必要です");
+for (const path of required) assert(existsSync(path), `${path} がありません`);
+
 const retiredPaths = [
-  "src/components/BottomNavigation.tsx",
-  "src/pages/GeminiSettingsSection.tsx",
-  "src/pages/HomePage.tsx",
-  "src/pages/QuizPage.tsx",
-  "src/pages/SetupPage.tsx",
-  "src/services/backupService.ts",
-  "src/services/setupFlow.ts",
-  "src/services/sessionService.ts",
-  "src/services/studyPlanService.ts",
-  "src/types/AppScreen.ts",
-  "src/types/Session.ts",
-  "src/major",
-  "src/enhancements",
-  "src/assets",
-  "src/ui-enhancement.css",
-  "public/favicon.svg",
-  "public/icons.svg",
-  "eslint.config.js",
-  "APPLY_ACCESSIBILITY_FIX.md",
-  "APPLY_GUIDE.md",
-  "APPLY_THEME_UPDATE.md",
-  "APPLY_UPDATE.md",
-  "PATCH_MANIFEST.md",
-  "PATCH_MANIFEST_THEME.md",
-  "SHA256SUMS.txt",
-  "SHA256SUMS_THEME.txt",
-  "VALIDATION_REPORT.md",
-  "VALIDATION_REPORT_COMPLETE.md",
-];
-for (const path of retiredPaths) assert(!existsSync(path), `${path} は削除対象です`);
-const manifest = readJson("public/manifest.webmanifest");
-assert(manifest.id === "./", "manifest.id は ./ である必要があります");
-assert(manifest.start_url === "./", "manifest.start_url は ./ である必要があります");
-assert(manifest.scope === "./", "manifest.scope は ./ である必要があります");
-assert(Array.isArray(manifest.icons) && manifest.icons.length >= 3, "manifest.icons が不足しています");
-assert(
-  Array.isArray(manifest.shortcuts) &&
-    manifest.shortcuts.some((item) => item.url === "./?screen=backupCenter"),
-  "manifest.shortcuts にバックアップ導線がありません",
-);
-for (const icon of manifest.icons ?? []) {
-  const path = `public/${icon.src}`;
-  assert(existsSync(path), `${path} がありません`);
-  const expected = Number(String(icon.sizes).split("x")[0]);
-  const actual = readPngSize(path);
-  assert(actual.width === expected && actual.height === expected, `${path} の寸法が ${icon.sizes} ではありません`);
-  if (existsSync(path)) assert(statSync(path).size > 100, `${path} のファイルサイズが不正です`);
-}
-const appleIcon = readPngSize("public/apple-touch-icon.png");
-assert(appleIcon.width === 180 && appleIcon.height === 180, "apple-touch-icon.png は180x180である必要があります");
-const contentManifest = readJson("public/content/manifest.json");
-const contentDataset = readJson("public/content/questions/lpic-101.json");
-assert(contentManifest.schemaVersion === 1, "問題マスターmanifestのschemaVersionが不正です");
-assert(contentDataset.schemaVersion === 1, "問題データセットのschemaVersionが不正です");
-assert(contentManifest.datasets?.[0]?.id === contentDataset.datasetId, "問題マスターのdataset IDが一致しません");
-assert(contentManifest.datasets?.[0]?.version === contentDataset.version, "問題マスターのdataset versionが一致しません");
-assert(contentManifest.datasets?.[0]?.questionCount === contentDataset.questions?.length, "問題マスターの件数が一致しません");
-const clientSources = [
   "src/services/contentPullRequestApi.ts",
-  "src/pages/QuestionMasterPage.tsx",
-  ".github/workflows/deploy.yml",
-].map((path) => readFileSync(path, "utf8")).join("\n");
-assert(!/GITHUB_PRIVATE_KEY|GITHUB_INSTALLATION_ID|BEGIN RSA PRIVATE KEY/u.test(clientSources), "GitHub秘密情報をクライアントへ含めてはいけません");
-const deployWorkflow = readFileSync(".github/workflows/deploy.yml", "utf8");
-assert(
-  deployWorkflow.includes("VITE_QUIZ_CONTENT_API_URL: https://study-quiz-content-pr.forxdevelop.workers.dev/"),
-  "GitHub Pagesへ公開Worker URLが設定されていません",
-);
-const workerConfig = readFileSync("workers/quiz-content-pr/wrangler.toml", "utf8");
-for (const token of [
-  'GITHUB_OWNER = "ryoyr"',
-  'GITHUB_REPO = "study-quiz"',
-  'GITHUB_BASE_BRANCH = "main"',
-  'ALLOWED_ORIGIN = "https://ryoyr.github.io"',
-  'ACCESS_TEAM_DOMAIN = "abrsb.cloudflareaccess.com"',
+  "tests/contentPullRequestApi.test.ts",
+  "tests/workerQuizContent.test.ts",
+  "tests/workerAccessAuth.test.ts",
+  "workers/quiz-content-pr",
+  "docs/github-cloudflare-setup.md",
+  "docs/github-integration-assessment.md",
+  "docs/github-integration-progress.md",
+  "VALIDATION_REPORT_CLOUDFLARE_ACCESS_20261011.md",
+  "VALIDATION_REPORT_4.7.0.md",
+];
+for (const path of retiredPaths) {
+  assert(!existsSync(path), `${path} はD1移行後の廃止対象です`);
+}
+
+const pkg = json("package.json");
+const lock = json("package-lock.json");
+assert(pkg.version === "5.0.0", "package.jsonの版は5.0.0である必要があります");
+assert(lock.version === pkg.version, "package-lock.jsonの版が一致しません");
+assert(lock.packages?.[""]?.version === pkg.version, "lockfile root packageの版が一致しません");
+for (const name of [
+  "verify:structure", "test", "typecheck", "build", "test:e2e", "check",
+  "d1:seed:build", "verify:d1-migrations", "d1:migrate:local", "d1:migrate:remote",
+  "worker:typecheck", "worker:dev", "worker:deploy",
 ]) {
-  assert(workerConfig.includes(token), `wrangler.toml に ${token} がありません`);
+  assert(typeof pkg.scripts?.[name] === "string", `scripts.${name} がありません`);
 }
 assert(
-  !/GITHUB_PRIVATE_KEY\s*=|GITHUB_INSTALLATION_ID\s*=|GITHUB_APP_ID\s*=/u.test(workerConfig),
-  "wrangler.tomlへGitHub App秘密情報を書いてはいけません",
+  pkg.scripts.check ===
+    "npm run verify:structure && npm run d1:seed:build && npm run verify:d1-migrations && npm run test && npm run typecheck && npm run worker:typecheck && npm run build && npm run test:e2e",
+  "scripts.checkの検証順または対象が不正です",
 );
-for (const [path, tokens] of [
-  ["src/main.tsx", ["<ErrorBoundary>", "<ConcurrentUpdateNotice />", "<PwaUpdatePrompt />"]],
-  ["public/sw.js", ["CACHE_PREFIX}v24", "SKIP_WAITING", "matchAll", "Promise.allSettled", "navigationPreload", "networkFirstContent", "content/", "pwa-maskable-512x512.png", "Cache Storageへの保存はベストエフォート"]],
-  ["src/services/fullBackupService.ts", ["CURRENT_BACKUP_VERSION = 10", "FNV-1A-32", "auditStorage", "compareFullBackup", "downloadBackupFile", "questionQualityProposals"]],
-  ["src/pages/BackupCenterPage.tsx", ["storage-health-badge", "整合性チェック済み", "端末データの保持を強化", "現在データとの差分集計", "study-quiz-pre-restore"]],
-  ["src/components/StudyFilterPanel.tsx", ["masteryFilters", "questionModes", "horizontal-option-scroller"]],
-  ["src/components/ConfirmDialog.tsx", ["role=\"alertdialog\"", "aria-modal=\"true\"", "createPortal", "previousFocusRef", "FOCUSABLE_SELECTOR"]],
-  ["src/pages/QuestionManagementPage.tsx", ["<ConfirmDialog", "QUESTION_LIMITS", "questionValidationErrors"]],
-  ["src/services/questionValidation.ts", ["longText: 20_000", "maxTags: 30", "maxAcceptedAnswers: 100"]],
-  ["src/services/questionAnswerModel.ts", ["QuestionAnswerDefinition", "answerDefinitionOf", "responseToHistoryFields", "answerDefinitionForExternalUse", "createStudyHistoryQuestionSnapshot", "historyQuestionText"]],
-  ["src/services/similarQuestionService.ts", ["answerNumbers", "acceptedAnswers", "questionTypeLabel"]],
-  ["src/services/aiJsonPipeline.ts", ["extractAiJsonCandidates", "stripTrailingCommas", "generateStructuredAiJson", "maxAttempts", "説明文やMarkdownを付けず"]],
-  ["src/services/questionQualityService.ts", ["study-quiz-question-quality-input", "study-quiz-question-quality-proposals", "study-quiz-question-seed-updates", "planQuestionQualitySelection", "createQuestionQualityBatches", "buildQuestionQualityRegenerationPrompt", "誤答選択肢", "重複回避", "出力前セルフチェック"]],
-  ["src/services/questionRevisionService.ts", ["questionRevisions", "changedQuestionFields", "createQuestionRevision"]],
-  ["src/components/StructuredText.tsx", ["kind: \"list\"", "<ul", "<br />"]],
-  ["src/services/questionMasterService.ts", ["QUESTION_MASTER_AUTHORITY", "derived-offline-cache", "writeQuestionMasterCacheRecord", "readQuestionMasterCacheRecord"]],
-  ["src/pages/QuestionQualityGeneratorPage.tsx", ["対象問題の選択ロジック", "対象件数・対象問題を確認", "品質維持の分割単位", "現在の分割プロンプトをコピー"]],
-  ["src/pages/QuestionQualityReviewPage.tsx", ["変更前の問題文", "提案後の問題文", "却下して再生成プロンプトをコピー", "適用済みの初期データ更新JSONを出力"]],
-  ["src/services/contentPullRequestApi.ts", ["credentials: \"include\"", "api/quiz-content/access-session", "requestThroughContentAccessSession", "createContentPullRequestWithAccessSession"]],
-  ["workers/quiz-content-pr/src/index.ts", ["ACCESS_SESSION_PATH", "PULL_REQUESTS_PATH", "accessSessionResponse", "verifyAccessIdentity"]],
-  ["workers/quiz-content-pr/src/http.ts", ["study-quiz-content-access-session-ready", "credentials: \"same-origin\"", "x-study-quiz-access-relay", "content-security-policy"]],
-  ["src/App.css", ["overflow-x: auto", "scroll-snap-type: x proximity"]],
+for (const [name, command] of Object.entries(pkg.scripts ?? {})) {
+  if (typeof command !== "string") continue;
+  assert(!/quiz-content-pr|contentPullRequest|pull-requests/u.test(command), `scripts.${name} が旧GitHub PR経路を参照しています`);
+}
+
+const rootTsconfig = json("tsconfig.json");
+assert(
+  JSON.stringify(rootTsconfig.references) ===
+    JSON.stringify([{ path: "./tsconfig.app.json" }, { path: "./tsconfig.node.json" }]),
+  "tsconfig.jsonの参照構成が不正です",
+);
+const appTsconfig = json("tsconfig.app.json");
+const nodeTsconfig = json("tsconfig.node.json");
+for (const [path, config] of [["tsconfig.app.json", appTsconfig], ["tsconfig.node.json", nodeTsconfig]]) {
+  assert(config.compilerOptions?.strict === true, `${path}: strict=trueが必要です`);
+  assert(config.compilerOptions?.noEmit === true, `${path}: noEmit=trueが必要です`);
+  assert(config.compilerOptions?.moduleResolution === "Bundler", `${path}: moduleResolution=Bundlerが必要です`);
+}
+assert(JSON.stringify(appTsconfig.include) === JSON.stringify(["src"]), "tsconfig.app.jsonはsrcだけを対象にしてください");
+assert(nodeTsconfig.include?.includes("tests/**/*.ts"), "tsconfig.node.jsonは全テストを型検査する必要があります");
+
+const wrangler = text("workers/quiz-content-db/wrangler.toml");
+for (const token of [
+  'main = "src/index.ts"',
+  'binding = "DB"',
+  'database_name = "study-quiz-db"',
+  'database_id = "e342a769-d2fc-493f-88a7-9aac70f7914c"',
+  'migrations_dir = "migrations"',
+  'ALLOW_LOCAL_WRITE = "false"',
+]) assert(wrangler.includes(token), `wrangler.toml に ${token} がありません`);
+assert(!/CF-Access-Client-Secret|PRIVATE_KEY|API_TOKEN/u.test(wrangler), "wrangler.tomlへ秘密情報を含めてはいけません");
+const migrations = readdirSync("workers/quiz-content-db/migrations")
+  .filter((name) => name.endsWith(".sql"))
+  .sort();
+assert(
+  JSON.stringify(migrations) === JSON.stringify(["0001_schema.sql", "0002_seed_content.sql"]),
+  `D1 migration構成が不正です: ${migrations.join(", ")}`,
+);
+
+const manifest = json("public/content/manifest.json");
+const dataset = json("public/content/questions/lpic-101.json");
+assert(manifest.datasets?.[0]?.questionCount === dataset.questions?.length, "同梱snapshotの件数が一致しません");
+const seed = text("workers/quiz-content-db/migrations/0002_seed_content.sql");
+const seedCount = (seed.match(/INSERT OR IGNORE INTO questions/gu) ?? []).length;
+assert(seedCount === dataset.questions.length, `D1 seed件数が一致しません: ${seedCount}/${dataset.questions.length}`);
+
+const pngSize = (path) => {
+  const bytes = readFileSync(path);
+  assert(bytes.subarray(0, 8).toString("hex") === "89504e470d0a1a0a", `${path} はPNGではありません`);
+  return { width: bytes.readUInt32BE(16), height: bytes.readUInt32BE(20) };
+};
+for (const [path, size] of [
+  ["public/apple-touch-icon.png", 180],
+  ["public/pwa-192x192.png", 192],
+  ["public/pwa-512x512.png", 512],
+  ["public/pwa-maskable-512x512.png", 512],
 ]) {
-  try {
-    const source = readFileSync(path, "utf8");
-    for (const token of tokens) assert(source.includes(token), `${path} に ${token} がありません`);
-  } catch (error) {
-    failures.push(`${path} を検証できません: ${error.message}`);
+  assert(existsSync(path), `${path} がありません`);
+  if (existsSync(path)) {
+    const actual = pngSize(path);
+    assert(actual.width === size && actual.height === size, `${path} の寸法が不正です`);
+    assert(statSync(path).size > 100, `${path} が小さすぎます`);
   }
 }
-if (failures.length > 0) {
+
+const validation = text("workers/quiz-content-db/src/validation.ts");
+const auth = text("workers/quiz-content-db/src/auth.ts");
+const http = text("workers/quiz-content-db/src/http.ts");
+const index = text("workers/quiz-content-db/src/index.ts");
+const repository = text("workers/quiz-content-db/src/repository.ts");
+const changeService = text("src/services/questionMasterChangeService.ts");
+const masterService = text("src/services/questionMasterService.ts");
+const d1Api = text("src/services/d1ContentApi.ts");
+const page = text("src/pages/QuestionMasterPage.tsx");
+assert(validation.includes('"distribution" in value'), "Workerのlocal-only拒否境界がありません");
+assert(changeService.includes('distributionOf(local) === "local-only"'), "クライアントのlocal-only除外境界がありません");
+assert(masterService.includes('QUESTION_MASTER_AUTHORITY = "cloudflare-d1"'), "D1正本宣言がありません");
+assert(masterService.includes("bundled-snapshot") && masterService.includes("indexeddb-cache"), "offline fallbackが不足しています");
+assert(page.includes("<ConfirmDialog") && page.includes("ローカル専用"), "D1送信前確認UIが不足しています");
+for (const token of ["SNAPSHOT_PATH", "CHANGES_PATH", "ACCESS_SESSION_PATH", "HEALTH_PATH"]) {
+  assert(index.includes(token), `D1 Workerの公開経路 ${token} がありません`);
+}
+for (const token of ["RS256", "ACCESS_AUD", "ALLOWED_EMAILS", "exp", "iat"]) {
+  assert(auth.includes(token), `Access認証検証 ${token} がありません`);
+}
+for (const token of ["same-origin", "content-security-policy", "x-study-quiz-access-relay"]) {
+  assert(http.includes(token), `Access popup relay保護 ${token} がありません`);
+}
+for (const token of ["content_write_lock", "idempotency_keys", "question_revisions", "baseFingerprint"]) {
+  const schema = text("workers/quiz-content-db/migrations/0001_schema.sql");
+  assert(index.includes(token) || repository.includes(token) || validation.includes(token) || schema.includes(token), `D1保護 ${token} がありません`);
+}
+for (const token of ["api/content/snapshot", "api/content/changes", "applyD1ChangesWithAccessSession"]) {
+  assert(d1Api.includes(token), `アプリ側D1 API呼出し ${token} がありません`);
+}
+
+const activeRuntime = [
+  readTree("src"),
+  readTree("workers/quiz-content-db/src"),
+  text("package.json"),
+  text("tsconfig.json"),
+  text("tsconfig.app.json"),
+  text("tsconfig.node.json"),
+  text(".github/workflows/deploy.yml"),
+].join("\n");
+for (const token of [
+  "CreateContentPullRequestCommand",
+  "CreateContentPullRequestResult",
+  "createContentPullRequestCommand",
+  "contentPullRequestApi",
+  "quiz-content-pr",
+  "/api/quiz-content/pull-requests",
+]) {
+  assert(!activeRuntime.includes(token), `実行・ビルド経路に旧GitHub PR要素 ${token} が残っています`);
+}
+const workflow = text(".github/workflows/deploy.yml");
+assert(workflow.includes("workers/quiz-content-db/tsconfig.json"), "CIがD1 Workerを型検査していません");
+assert(workflow.includes("vars.QUIZ_CONTENT_API_URL"), "CIがD1 Worker公開URLを受け取っていません");
+assert(text("public/sw.js").includes("${CACHE_PREFIX}v25"), "Service Workerはv25である必要があります");
+
+if (failures.length) {
   console.error(`構成検証で ${failures.length} 件の問題を検出しました。`);
   for (const failure of failures) console.error(`- ${failure}`);
   process.exitCode = 1;
 } else {
-  console.log("構成検証に成功しました（TypeScript設定、PWA資材、統合状態）。");
+  console.log(`構成検証に成功しました（D1 ${seedCount}問、旧PR経路0、local-only二重境界、Access/JWT、offline fallback、PWA）。`);
 }

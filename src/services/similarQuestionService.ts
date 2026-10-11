@@ -174,6 +174,7 @@ export const validateSimilarQuestion = (
     tags,
     weight: candidate.weight,
     difficulty: candidate.difficulty,
+    distribution: "local-only",
   };
   const errors = questionValidationErrors(normalized);
   if (errors.length > 0) throw new Error(errors[0]);

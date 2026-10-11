@@ -3,11 +3,16 @@ import {
   readQuestionMasterCacheRecord,
   writeQuestionMasterCacheRecord,
 } from "../infrastructure/db/database";
+import {
+  configuredContentApiBaseUrl,
+  fetchD1QuestionMasterValue,
+} from "./d1ContentApi";
 import type { Question } from "../types/Question";
 import type {
   QuestionMasterDataset,
   QuestionMasterDatasetDescriptor,
   QuestionMasterManifest,
+  LoadedQuestionMaster,
   QuestionMasterMergePlan,
   QuestionMasterSnapshot,
   QuestionMasterSyncState,
@@ -15,7 +20,7 @@ import type {
 import { isQuestion } from "./questionValidation";
 import { STORAGE_KEYS } from "./storageKeyRegistry";
 
-export const QUESTION_MASTER_AUTHORITY = "github-content" as const;
+export const QUESTION_MASTER_AUTHORITY = "cloudflare-d1" as const;
 export const QUESTION_MASTER_CACHE_ROLE = "derived-offline-cache" as const;
 
 const CONTENT_STATE_LIMIT = 100_000;
@@ -106,7 +111,7 @@ export const defaultQuestionMasterRootUrl = (): URL => {
   return new URL("content/", document.baseURI);
 };
 
-const fetchRemoteQuestionMaster = async (
+const fetchBundledQuestionMaster = async (
   fetcher: typeof fetch,
   rootUrl: URL,
 ): Promise<QuestionMasterSnapshot> => {
@@ -135,6 +140,26 @@ const fetchRemoteQuestionMaster = async (
   return { manifest, datasets, questions };
 };
 
+export const parseQuestionMasterSnapshot = (value: unknown): QuestionMasterSnapshot => {
+  if (!isRecord(value)) throw new Error("D1問題マスターの応答形式が不正です。");
+  const manifest = parseQuestionMasterManifest(value.manifest);
+  const datasetValues = value.datasets;
+  if (!Array.isArray(datasetValues)) {
+    throw new Error("D1問題マスターのデータセット形式が不正です。");
+  }
+  const datasets = manifest.datasets.map((descriptor) => {
+    const candidate = datasetValues.find(
+      (item: unknown) => isRecord(item) && item.datasetId === descriptor.id,
+    );
+    return parseQuestionMasterDataset(candidate, descriptor);
+  });
+  const questions = datasets.flatMap((dataset) => dataset.questions);
+  if (new Set(questions.map((question) => question.id)).size !== questions.length) {
+    throw new Error("D1問題マスターで問題IDが重複しています。");
+  }
+  return { manifest, datasets, questions };
+};
+
 const parseCachedQuestionMaster = (value: unknown): QuestionMasterSnapshot => {
   if (!isRecord(value)) throw new Error("問題マスターキャッシュが不正です。");
   const manifest = parseQuestionMasterManifest(value.manifest);
@@ -153,29 +178,67 @@ const parseCachedQuestionMaster = (value: unknown): QuestionMasterSnapshot => {
   return { manifest, datasets, questions };
 };
 
-export const fetchQuestionMaster = async (
+export const fetchQuestionMasterWithSource = async (
   fetcher: typeof fetch = fetch,
-  rootUrl: URL = defaultQuestionMasterRootUrl(),
-): Promise<QuestionMasterSnapshot> => {
+  bundledRootUrl: URL = defaultQuestionMasterRootUrl(),
+  apiBaseUrl: URL | null = configuredContentApiBaseUrl(),
+): Promise<LoadedQuestionMaster> => {
+  let d1Error: unknown = null;
+  if (apiBaseUrl) {
+    try {
+      const snapshot = parseQuestionMasterSnapshot(
+        await fetchD1QuestionMasterValue(apiBaseUrl, fetcher),
+      );
+      void writeQuestionMasterCacheRecord({
+        key: "latest",
+        cachedAt: new Date().toISOString(),
+        contentVersion: snapshot.manifest.contentVersion,
+        payload: snapshot,
+      }).catch(() => undefined);
+      return { snapshot, source: "d1" };
+    } catch (error) {
+      d1Error = error;
+    }
+  }
+
   try {
-    const snapshot = await fetchRemoteQuestionMaster(fetcher, rootUrl);
+    const snapshot = await fetchBundledQuestionMaster(fetcher, bundledRootUrl);
     void writeQuestionMasterCacheRecord({
       key: "latest",
       cachedAt: new Date().toISOString(),
       contentVersion: snapshot.manifest.contentVersion,
       payload: snapshot,
     }).catch(() => undefined);
-    return snapshot;
-  } catch (networkError) {
+    return {
+      snapshot,
+      source: "bundled-snapshot",
+      ...(d1Error
+        ? { warning: "D1へ接続できないため同梱スナップショットを使用しました。" }
+        : {}),
+    };
+  } catch (bundledError) {
     try {
       const cached = await readQuestionMasterCacheRecord();
-      if (cached) return parseCachedQuestionMaster(cached.payload);
+      if (cached) {
+        return {
+          snapshot: parseCachedQuestionMaster(cached.payload),
+          source: "indexeddb-cache",
+          warning: "通信できないため端末内の検証済みスナップショットを使用しました。",
+        };
+      }
     } catch {
-      // キャッシュ自体が不正・利用不能なら元のネットワークエラーを返す。
+      // キャッシュ自体が不正・利用不能なら元の取得エラーを返す。
     }
-    throw networkError;
+    throw d1Error ?? bundledError;
   }
 };
+
+export const fetchQuestionMaster = async (
+  fetcher: typeof fetch = fetch,
+  bundledRootUrl: URL = defaultQuestionMasterRootUrl(),
+  apiBaseUrl: URL | null = configuredContentApiBaseUrl(),
+): Promise<QuestionMasterSnapshot> =>
+  (await fetchQuestionMasterWithSource(fetcher, bundledRootUrl, apiBaseUrl)).snapshot;
 
 const stableValue = (value: unknown): unknown => {
   if (Array.isArray(value)) return value.map(stableValue);
@@ -191,7 +254,9 @@ export const stableJson = (value: unknown): string =>
   JSON.stringify(stableValue(value));
 
 export const questionFingerprint = (question: Question): string => {
-  const text = stableJson(question);
+  // distributionは端末側の公開方針であり、共有コンテンツのfingerprintへ含めない。
+  const { distribution: _distribution, ...content } = question;
+  const text = stableJson(content);
   let hash = 0x811c9dc5;
   for (let index = 0; index < text.length; index += 1) {
     hash ^= text.charCodeAt(index);
@@ -261,8 +326,8 @@ const createNextState = (
   ),
   questionFingerprints: fingerprintQuestions(snapshot.questions),
   checkedAt,
-  ...(previous?.lastPullRequest
-    ? { lastPullRequest: previous.lastPullRequest }
+  ...(previous?.lastD1Write
+    ? { lastD1Write: previous.lastD1Write }
     : {}),
 });
 
@@ -287,7 +352,16 @@ export const planQuestionMasterMerge = (
   for (const remote of snapshot.questions) {
     const local = localById.get(remote.id);
     if (!local) {
-      actions.push({ kind: "add", questionId: remote.id, after: remote });
+      actions.push({
+        kind: "add",
+        questionId: remote.id,
+        after: { ...remote, distribution: "shared" },
+      });
+      continue;
+    }
+    // 利用者が端末限定へ切り替えた問題は、同じIDがD1にあっても自動更新しない。
+    if (local.distribution === "local-only") {
+      unchangedCount += 1;
       continue;
     }
     const localFingerprint = questionFingerprint(local);
@@ -302,7 +376,7 @@ export const planQuestionMasterMerge = (
         kind: "update",
         questionId: remote.id,
         before: local,
-        after: remote,
+        after: { ...remote, distribution: "shared" },
       });
       continue;
     }
@@ -322,6 +396,10 @@ export const planQuestionMasterMerge = (
 
   for (const local of localQuestions) {
     if (remoteById.has(local.id)) continue;
+    if (local.distribution === "local-only") {
+      unchangedCount += 1;
+      continue;
+    }
     const previousFingerprint = previousFingerprints[local.id];
     if (!previousFingerprint) {
       unchangedCount += 1;

@@ -2,7 +2,7 @@
 
 ## 1. 目的
 
-既存問題を外部AIへ自動送信せず、利用者が対象と処理単位を確認したうえで品質レビュー用プロンプトを発行する。生成結果は既存version 1 JSONとして取り込み、変更前後を確認して適用・却下・再生成する。既存の問題、品質提案、ファクトチェック、初期データ更新、GitHub PR連携との境界を維持する。
+既存問題を外部AIへ自動送信せず、利用者が対象と処理単位を確認したうえで品質レビュー用プロンプトを発行する。生成結果は既存version 1 JSONとして取り込み、変更前後を確認して適用・却下・再生成する。既存の問題、品質提案、ファクトチェック、初期データ更新、D1共有変更との境界を維持する。
 
 ## 2. 現状調査
 
@@ -143,7 +143,7 @@ JSON契約は従来の`study-quiz-question-quality-proposals` version 1を維持
 - 品質提案version 1、storage key、完全バックアップversion 10を変更しない。
 - 適用済み提案のseed update version 1を維持し、`appVersion`だけ現行4.7.0へ合わせる。
 - `apply_question_seed_updates.mjs`の既存overrideマージと検証を維持する。
-- GitHub PR連携は適用後の現行Question差分を従来どおり扱う。Worker、API、問題マスターJSONを変更しない。
+- D1連携は適用後の`shared` Question差分だけを扱い、`local-only`は送信しない。D1 Worker、API、offline snapshotの契約を変更しない。
 - 問題ID、問題マスター、初期問題、履歴、FSRS、schema 9、IndexedDB 2は変更しない。
 
 ## 9. 検証観点
@@ -155,4 +155,4 @@ JSON契約は従来の`study-quiz-question-quality-proposals` version 1を維持
 - 対象件数・問題・分割・個別調整UI
 - 回答方式・正答・選択肢・解説・出典・難易度のレビューUI
 - 既存JSON取込、適用、却下、バックアップ、seed update
-- ファクトチェック、問題マスター、GitHub PR連携の回帰
+- ファクトチェック、D1問題マスター、local-only除外の回帰

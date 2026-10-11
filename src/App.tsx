@@ -74,6 +74,13 @@ import {
 } from "./services/questionAnnotationStorage";
 import { loadQuestions, saveQuestions } from "./services/questionStorage";
 import {
+  applyQuestionMasterMerge,
+  fetchQuestionMasterWithSource,
+  loadQuestionMasterSyncState,
+  planQuestionMasterMerge,
+  saveQuestionMasterSyncState,
+} from "./services/questionMasterService";
+import {
   loadQuestionStates,
   updateQuestionStates,
 } from "./services/questionStateService";
@@ -342,7 +349,27 @@ export default function App() {
       setAiPromptTemplates(safeLoad(loadAiPromptTemplates, []));
       setDailyTimeLimit(safeLoad(loadDailyTimeLimit, 0));
       setQuestionStates(safeLoad(() => loadQuestionStates(loadedHistory), []));
-      setStoredQuestions(safeLoad(loadQuestions, questions));
+      let loadedQuestions = safeLoad(loadQuestions, questions);
+      setStoredQuestions(loadedQuestions);
+      try {
+        // D1を優先して取得し、同梱snapshot／IndexedDBへfallbackする。
+        // 三者比較で安全と判定した更新だけを起動時に端末へ反映する。
+        const loadedMaster = await fetchQuestionMasterWithSource();
+        if (cancelled) return;
+        const plan = planQuestionMasterMerge(
+          loadedQuestions,
+          loadedMaster.snapshot,
+          loadQuestionMasterSyncState(),
+        );
+        if (plan.actions.length > 0) {
+          loadedQuestions = applyQuestionMasterMerge(loadedQuestions, plan);
+          saveQuestions(loadedQuestions);
+          setStoredQuestions(loadedQuestions);
+        }
+        saveQuestionMasterSyncState(plan.nextState);
+      } catch {
+        // D1・snapshot・cacheがすべて利用不能でも、既存端末問題で完全offline継続する。
+      }
       try {
         const loadedExamScopes = await readExamScopes();
         if (cancelled) return;
@@ -1551,8 +1578,8 @@ export default function App() {
             />
             <FeatureLink
               icon="shield-check"
-              title="問題マスター・GitHub連携"
-              description="差分確認、最新版同期、Pull Request作成"
+              title="問題マスター・D1連携"
+              description="D1最新版同期、ローカル専用保護、共有変更の反映"
               tone="green"
               onClick={() => setScreen("questionMaster")}
             />

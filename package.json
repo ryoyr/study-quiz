@@ -1,7 +1,7 @@
 {
   "name": "study-quiz",
   "private": true,
-  "version": "4.7.0",
+  "version": "5.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,7 +10,14 @@
     "test:e2e": "node scripts/e2e-accessibility.mjs",
     "typecheck": "tsc -b",
     "build": "tsc -b && vite build",
-    "check": "npm run verify:structure && npm run test && npm run build && npm run test:e2e"
+    "check": "npm run verify:structure && npm run d1:seed:build && npm run verify:d1-migrations && npm run test && npm run typecheck && npm run worker:typecheck && npm run build && npm run test:e2e",
+    "d1:seed:build": "node scripts/generate-d1-seed.mjs",
+    "verify:d1-migrations": "python3 scripts/verify-d1-migrations.py",
+    "d1:migrate:local": "npx wrangler d1 migrations apply study-quiz-db --local --config workers/quiz-content-db/wrangler.toml",
+    "d1:migrate:remote": "npx wrangler d1 migrations apply study-quiz-db --remote --config workers/quiz-content-db/wrangler.toml",
+    "worker:dev": "npx wrangler dev --config workers/quiz-content-db/wrangler.toml",
+    "worker:deploy": "npx wrangler deploy --config workers/quiz-content-db/wrangler.toml",
+    "worker:typecheck": "tsc -p workers/quiz-content-db/tsconfig.json"
   },
   "dependencies": {
     "react": "19.3.0",

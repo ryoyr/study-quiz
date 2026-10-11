@@ -1,32 +1,33 @@
 import { useMemo, useState } from "react";
 import ConfirmDialog from "../components/ConfirmDialog";
 import {
+  applyD1ChangesWithAccessSession,
   configuredContentApiBaseUrl,
-  ContentPullRequestApiError,
-  createContentPullRequestWithAccessSession,
-  getContentPullRequestStatusWithAccessSession,
-} from "../services/contentPullRequestApi";
+  D1ContentApiError,
+} from "../services/d1ContentApi";
 import {
   buildQuestionMasterChanges,
-  createContentPullRequestCommand,
+  countLocalOnlyQuestions,
+  createApplyD1ChangesCommand,
 } from "../services/questionMasterChangeService";
 import {
   applyQuestionMasterMerge,
-  fetchQuestionMaster,
+  fetchQuestionMasterWithSource,
   loadQuestionMasterSyncState,
   planQuestionMasterMerge,
   saveQuestionMasterSyncState,
 } from "../services/questionMasterService";
-import type { Question } from "../types/Question";
 import {
   appendQuestionRevision,
   createQuestionRevision,
   loadQuestionRevisions,
   saveQuestionRevisions,
 } from "../services/questionRevisionService";
+import type { Question } from "../types/Question";
 import type {
-  CreateContentPullRequestCommand,
-  CreateContentPullRequestResult,
+  ApplyD1ChangesCommand,
+  ApplyD1ChangesResult,
+  LoadedQuestionMaster,
   QuestionMasterChange,
   QuestionMasterMergePlan,
   QuestionMasterSnapshot,
@@ -38,122 +39,75 @@ type Props = {
   onBack: () => void;
 };
 
-type PageState =
-  | "idle"
-  | "loading"
-  | "ready"
-  | "sending"
-  | "success"
-  | "error";
+type PageState = "idle" | "loading" | "ready" | "sending" | "success" | "error";
 
 const fieldLabels: Record<string, string> = {
-  id: "問題ID",
-  examScopeId: "試験枠",
-  category: "カテゴリ",
-  subcategory: "サブカテゴリ",
-  text: "問題文",
-  questionType: "回答方式",
-  choices: "選択肢",
-  answerIndex: "正解",
-  answerIndices: "複数正解",
-  acceptedAnswers: "許容回答",
-  explanation: "解説",
-  source: "出典",
-  tags: "タグ",
-  weight: "ウェイト",
-  difficulty: "難易度",
+  id: "問題ID", examScopeId: "試験枠", category: "カテゴリ", subcategory: "サブカテゴリ",
+  text: "問題文", questionType: "回答方式", choices: "選択肢", answerIndex: "正解",
+  answerIndices: "複数正解", acceptedAnswers: "許容回答", explanation: "解説",
+  source: "出典", tags: "タグ", weight: "ウェイト", difficulty: "難易度",
   archivedAt: "アーカイブ日時",
 };
 
-const operationLabel = (change: QuestionMasterChange): string => {
-  if (change.operation === "add") return "新規追加";
-  if (change.operation === "archive") return "アーカイブ";
-  return "更新";
+const operationLabel = (change: QuestionMasterChange): string =>
+  change.operation === "add" ? "新規追加" : change.operation === "archive" ? "アーカイブ" : "更新";
+
+const displayValue = (value: unknown): string =>
+  value === undefined ? "（なし）" : Array.isArray(value) ? value.join(" / ") || "（空）" : String(value);
+
+const sourceLabel = (loaded: LoadedQuestionMaster | null): string => {
+  if (!loaded) return "未確認";
+  if (loaded.source === "d1") return "Cloudflare D1";
+  if (loaded.source === "indexeddb-cache") return "端末IndexedDB cache";
+  return "同梱offline snapshot";
 };
 
-const statusLabel = (state: CreateContentPullRequestResult["state"]): string => {
-  if (state === "merged") return "マージ済み";
-  if (state === "closed") return "クローズ済み";
-  return "作成済み・未マージ";
-};
-
-const displayValue = (value: unknown): string => {
-  if (value === undefined) return "（なし）";
-  if (Array.isArray(value)) return value.join(" / ") || "（空）";
-  return String(value);
-};
-
-export default function QuestionMasterPage({
-  questions,
-  onQuestionsChange,
-  onBack,
-}: Props) {
+export default function QuestionMasterPage({ questions, onQuestionsChange, onBack }: Props) {
   const [pageState, setPageState] = useState<PageState>("idle");
+  const [loadedMaster, setLoadedMaster] = useState<LoadedQuestionMaster | null>(null);
   const [snapshot, setSnapshot] = useState<QuestionMasterSnapshot | null>(null);
   const [mergePlan, setMergePlan] = useState<QuestionMasterMergePlan | null>(null);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
-  const [title, setTitle] = useState("問題マスターを更新");
-  const [body, setBody] = useState(
-    "アプリ内で確認した問題マスターの変更です。追加・更新・アーカイブ内容をレビューしてください。",
-  );
-  const [commitMessage, setCommitMessage] = useState("Update quiz content master");
-  const [pendingCommand, setPendingCommand] =
-    useState<CreateContentPullRequestCommand | null>(null);
-  const [pullRequest, setPullRequest] =
-    useState<CreateContentPullRequestResult | null>(null);
+  const [changeMessage, setChangeMessage] = useState("確認済みの問題・解説をD1共有マスターへ反映");
+  const [pendingCommand, setPendingCommand] = useState<ApplyD1ChangesCommand | null>(null);
+  const [writeResult, setWriteResult] = useState<ApplyD1ChangesResult | null>(null);
 
   const apiBaseUrl = useMemo(() => {
-    try {
-      return configuredContentApiBaseUrl();
-    } catch {
-      return null;
-    }
+    try { return configuredContentApiBaseUrl(); } catch { return null; }
   }, []);
-
   const changes = useMemo(
     () => (snapshot ? buildQuestionMasterChanges(snapshot, questions) : []),
     [questions, snapshot],
   );
-  const counts = useMemo(
-    () => ({
-      add: changes.filter((change) => change.operation === "add").length,
-      update: changes.filter((change) => change.operation === "update").length,
-      archive: changes.filter((change) => change.operation === "archive").length,
-    }),
-    [changes],
-  );
+  const localOnlyCount = useMemo(() => countLocalOnlyQuestions(questions), [questions]);
+  const counts = useMemo(() => ({
+    add: changes.filter((item) => item.operation === "add").length,
+    update: changes.filter((item) => item.operation === "update").length,
+    archive: changes.filter((item) => item.operation === "archive").length,
+  }), [changes]);
 
   const refreshMaster = async () => {
     setPageState("loading");
     setError("");
     setMessage("");
     try {
-      const loadedSnapshot = await fetchQuestionMaster();
-      const state = loadQuestionMasterSyncState();
-      const plan = planQuestionMasterMerge(questions, loadedSnapshot, state);
-      setSnapshot(loadedSnapshot);
+      const loaded = await fetchQuestionMasterWithSource();
+      const plan = planQuestionMasterMerge(
+        questions,
+        loaded.snapshot,
+        loadQuestionMasterSyncState(),
+      );
+      setLoadedMaster(loaded);
+      setSnapshot(loaded.snapshot);
       setMergePlan(plan);
       setPageState("ready");
       setMessage(
-        `問題マスター ${loadedSnapshot.manifest.contentVersion} を確認しました。`,
+        `問題マスター ${loaded.snapshot.manifest.contentVersion} を${sourceLabel(loaded)}から確認しました。${loaded.warning ?? ""}`,
       );
-      if (state?.lastPullRequest) {
-        setPullRequest({
-          number: state.lastPullRequest.number,
-          url: state.lastPullRequest.url,
-          branch: state.lastPullRequest.branch,
-          state: state.lastPullRequest.state,
-          reused: true,
-        });
-      }
     } catch (caught) {
       setPageState("error");
-      setError(
-        caught instanceof Error
-          ? caught.message
-          : "問題マスターを取得できませんでした。",
-      );
+      setError(caught instanceof Error ? caught.message : "問題マスターを取得できませんでした。");
     }
   };
 
@@ -161,7 +115,7 @@ export default function QuestionMasterPage({
     if (!snapshot || !mergePlan) return;
     if (mergePlan.actions.length === 0) {
       saveQuestionMasterSyncState(mergePlan.nextState);
-      setMessage("安全に適用できる更新はありません。確認基準だけを更新しました。");
+      setMessage("安全に適用できる更新はありません。同期基準だけを更新しました。");
       return;
     }
     const next = applyQuestionMasterMerge(questions, mergePlan);
@@ -173,176 +127,109 @@ export default function QuestionMasterPage({
     try {
       let revisions = loadQuestionRevisions();
       for (const action of mergePlan.actions) {
-        revisions = appendQuestionRevision(
-          revisions,
-          createQuestionRevision({
-            before: action.before ?? null,
-            after: action.after,
-            source: "master-sync",
-            summary:
-              action.kind === "add"
-                ? "問題マスターから追加"
-                : action.kind === "archive"
-                  ? "問題マスター削除をアーカイブとして反映"
-                  : "問題マスター更新を反映",
-          }),
-        );
+        revisions = appendQuestionRevision(revisions, createQuestionRevision({
+          before: action.before ?? null,
+          after: action.after,
+          source: "master-sync",
+          summary: action.kind === "add"
+            ? "D1問題マスターから追加"
+            : action.kind === "archive"
+              ? "D1削除を端末アーカイブとして反映"
+              : "D1問題マスター更新を反映",
+        }));
       }
       saveQuestionRevisions(revisions);
-    } catch (revisionError) {
-      revisionWarning = ` 改訂履歴は保存できませんでした: ${
-        revisionError instanceof Error ? revisionError.message : String(revisionError)
-      }`;
+    } catch (caught) {
+      revisionWarning = ` 改訂履歴は保存できませんでした: ${caught instanceof Error ? caught.message : String(caught)}`;
     }
     saveQuestionMasterSyncState(mergePlan.nextState);
-    const nextPlan = planQuestionMasterMerge(next, snapshot, mergePlan.nextState);
-    setMergePlan(nextPlan);
-    setMessage(
-      `${mergePlan.actions.length}件の安全な更新を適用しました。競合は上書きしていません。${revisionWarning}`,
-    );
+    setMergePlan(planQuestionMasterMerge(next, snapshot, mergePlan.nextState));
+    setMessage(`${mergePlan.actions.length}件の安全な更新を端末へ適用しました。競合は上書きしていません。${revisionWarning}`);
     setError("");
   };
 
   const prepareSubmission = async () => {
-    if (!snapshot) {
-      setError("先に最新の問題マスターを確認してください。");
-      return;
-    }
-    if (!apiBaseUrl) {
-      setError(
-        "Workers APIが未設定です。VITE_QUIZ_CONTENT_API_URLを設定して再ビルドしてください。",
-      );
-      return;
-    }
+    if (!snapshot) return setError("先にD1問題マスターを確認してください。");
+    if (!apiBaseUrl) return setError("D1 Worker APIが未設定です。VITE_QUIZ_CONTENT_API_URLを設定してください。");
     try {
-      const command = await createContentPullRequestCommand(snapshot, changes, {
-        title,
-        body,
-        commitMessage,
-      });
-      setPendingCommand(command);
+      setPendingCommand(await createApplyD1ChangesCommand(snapshot, changes, changeMessage));
       setError("");
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "送信内容を確定できませんでした。");
+      setError(caught instanceof Error ? caught.message : "D1送信内容を確定できませんでした。");
     }
   };
 
-  const submitPullRequest = async () => {
+  const submitD1Changes = async () => {
     if (!pendingCommand || !apiBaseUrl) return;
     const command = pendingCommand;
     setPendingCommand(null);
     setPageState("sending");
     setError("");
-    setMessage("Pull Requestを作成しています。画面を閉じずにお待ちください。");
+    setMessage("Cloudflare Access認証後、D1へ変更を反映しています。");
     try {
-      const result = await createContentPullRequestWithAccessSession(
-        command,
-        apiBaseUrl,
-      );
-      setPullRequest(result);
+      const result = await applyD1ChangesWithAccessSession(command, apiBaseUrl);
+      setWriteResult(result);
+      const reloaded = await fetchQuestionMasterWithSource();
+      const baseState = planQuestionMasterMerge(
+        questions,
+        reloaded.snapshot,
+        loadQuestionMasterSyncState(),
+      ).nextState;
+      saveQuestionMasterSyncState({
+        ...baseState,
+        lastD1Write: {
+          contentVersion: result.contentVersion,
+          appliedCount: result.appliedCount,
+          updatedAt: result.updatedAt,
+        },
+      });
+      setLoadedMaster(reloaded);
+      setSnapshot(reloaded.snapshot);
+      setMergePlan(planQuestionMasterMerge(questions, reloaded.snapshot, baseState));
       setPageState("success");
       setMessage(
         result.reused
-          ? `既存のPull Request #${result.number}を確認しました。`
-          : `Pull Request #${result.number}を作成しました。GitHub上で確認・マージしてください。`,
+          ? `同じ送信は既に反映済みです。D1版 ${result.contentVersion} を確認しました。`
+          : `${result.appliedCount}件をD1へ反映しました。D1版 ${result.contentVersion}。`,
       );
-      if (snapshot) {
-        const previous = loadQuestionMasterSyncState();
-        const baseState = planQuestionMasterMerge(
-          questions,
-          snapshot,
-          previous,
-        ).nextState;
-        saveQuestionMasterSyncState({
-          ...baseState,
-          lastPullRequest: {
-            number: result.number,
-            url: result.url,
-            branch: result.branch,
-            state: result.state,
-            updatedAt: new Date().toISOString(),
-          },
-        });
-      }
     } catch (caught) {
       setPageState("error");
-      const action =
-        caught instanceof ContentPullRequestApiError && caught.action
-          ? ` ${caught.action}`
-          : "";
-      setError(
-        `${caught instanceof Error ? caught.message : "Pull Requestを作成できませんでした。"}${action}`,
-      );
-      setMessage("端末内の編集内容は保持されています。");
-    }
-  };
-
-  const refreshPullRequestStatus = async () => {
-    if (!pullRequest || !apiBaseUrl) return;
-    setPageState("loading");
-    setError("");
-    try {
-      const result = await getContentPullRequestStatusWithAccessSession(
-        pullRequest.number,
-        apiBaseUrl,
-      );
-      setPullRequest(result);
-      setPageState("success");
-      setMessage(`Pull Request #${result.number}: ${statusLabel(result.state)}`);
-      const state = loadQuestionMasterSyncState();
-      if (state) {
-        saveQuestionMasterSyncState({
-          ...state,
-          lastPullRequest: {
-            number: result.number,
-            url: result.url,
-            branch: result.branch,
-            state: result.state,
-            updatedAt: new Date().toISOString(),
-          },
-        });
-      }
-    } catch (caught) {
-      setPageState("error");
-      setError(caught instanceof Error ? caught.message : "状態を確認できませんでした。");
+      const action = caught instanceof D1ContentApiError && caught.action ? ` ${caught.action}` : "";
+      setError(`${caught instanceof Error ? caught.message : "D1へ反映できませんでした。"}${action}`);
+      setMessage("端末内の問題・履歴は変更せず保持しています。");
     }
   };
 
   return (
     <main className="app-shell">
       <section className="home-card question-master-card">
-        <p className="eyebrow">CONTENT GOVERNANCE</p>
-        <h1>問題マスター・GitHub連携</h1>
+        <p className="eyebrow">D1 CONTENT GOVERNANCE</p>
+        <h1>問題マスター・Cloudflare D1連携</h1>
         <p>
-          端末内の問題編集は従来どおり先に保存されます。GitHubへは、確認した差分だけをWorkers経由で送り、専用ブランチとPull Requestを作成します。
+          D1を共有問題・解説の正本として取得し、端末編集を保護して安全な更新だけを適用します。
+          「この端末のみ」の問題は差分作成時に除外され、Worker側でも拒否されます。
         </p>
 
         <section className="question-master-status" aria-label="接続状態">
-          <div><span>問題マスター</span><strong>{snapshot?.manifest.contentVersion ?? "未確認"}</strong></div>
-          <div><span>Workers API</span><strong>{apiBaseUrl ? apiBaseUrl.origin : "未設定"}</strong></div>
-          <div><span>対象リポジトリ／ベースブランチ</span><strong>Workers側の許可設定で固定</strong></div>
+          <div><span>問題マスター版</span><strong>{snapshot?.manifest.contentVersion ?? "未確認"}</strong></div>
+          <div><span>取得元</span><strong>{sourceLabel(loadedMaster)}</strong></div>
+          <div><span>D1 Worker API</span><strong>{apiBaseUrl?.origin ?? "未設定"}</strong></div>
+          <div><span>ローカル専用</span><strong>{localOnlyCount}件（送信対象外）</strong></div>
         </section>
 
         {error && <div className="error-box" role="alert">{error}</div>}
         {message && <div className="backup-success" role="status">{message}</div>}
 
         <div className="question-master-actions">
-          <button
-            className="primary-button"
-            type="button"
-            disabled={pageState === "loading" || pageState === "sending"}
-            onClick={() => void refreshMaster()}
-          >
-            最新マスターと差分を確認
+          <button className="primary-button" type="button" disabled={pageState === "loading" || pageState === "sending"} onClick={() => void refreshMaster()}>
+            D1最新版と差分を確認
           </button>
-          <button className="secondary-button" type="button" onClick={onBack}>
-            前のメニューへ戻る
-          </button>
+          <button className="secondary-button" type="button" onClick={onBack}>前のメニューへ戻る</button>
         </div>
 
         {mergePlan && (
           <section className="master-sync-panel" aria-labelledby="master-sync-title">
-            <h2 id="master-sync-title">最新版の端末適用</h2>
+            <h2 id="master-sync-title">D1最新版の端末適用</h2>
             <div className="master-count-grid">
               <span><strong>{mergePlan.actions.length}</strong>安全に適用可能</span>
               <span><strong>{mergePlan.conflicts.length}</strong>競合・保留</span>
@@ -351,26 +238,17 @@ export default function QuestionMasterPage({
             {mergePlan.conflicts.length > 0 && (
               <div className="master-conflict-list" role="alert">
                 <strong>端末編集を保護した競合</strong>
-                {mergePlan.conflicts.map((conflict) => (
-                  <span key={conflict.questionId}>
-                    {conflict.questionId}: {conflict.reason}
-                  </span>
-                ))}
+                {mergePlan.conflicts.map((item) => <span key={item.questionId}>{item.questionId}: {item.reason}</span>)}
               </div>
             )}
-            <button
-              className="secondary-button"
-              type="button"
-              onClick={applySafeUpdates}
-            >
-              安全な更新だけを端末へ適用
-            </button>
+            <button className="secondary-button" type="button" onClick={applySafeUpdates}>安全な更新だけを端末へ適用</button>
           </section>
         )}
 
         {snapshot && (
           <section className="master-change-panel" aria-labelledby="master-change-title">
-            <h2 id="master-change-title">GitHub送信前の変更確認</h2>
+            <h2 id="master-change-title">D1反映前の共有変更確認</h2>
+            <p className="planning-note">ローカル専用 {localOnlyCount}件はこの一覧と送信payloadから除外済みです。</p>
             <div className="master-count-grid" aria-label="変更件数">
               <span><strong>{changes.length}</strong>合計</span>
               <span><strong>{counts.add}</strong>新規</span>
@@ -380,11 +258,7 @@ export default function QuestionMasterPage({
             <div className="master-change-list">
               {changes.map((change) => (
                 <details key={change.questionId} className="master-change-item">
-                  <summary>
-                    <b>{operationLabel(change)}</b>
-                    <span>{change.questionId}</span>
-                    <small>{change.changedFields.map((field) => fieldLabels[field] ?? field).join("、")}</small>
-                  </summary>
+                  <summary><b>{operationLabel(change)}</b><span>{change.questionId}</span><small>{change.changedFields.map((field) => fieldLabels[field] ?? field).join("、")}</small></summary>
                   {change.changedFields.map((field) => (
                     <div className="master-field-diff" key={field}>
                       <strong>{fieldLabels[field] ?? field}</strong>
@@ -394,59 +268,35 @@ export default function QuestionMasterPage({
                   ))}
                 </details>
               ))}
-              {changes.length === 0 && <div className="empty-state">GitHubへ送信する変更はありません。</div>}
+              {changes.length === 0 && <div className="empty-state">D1へ反映する共有変更はありません。</div>}
             </div>
-
-            <div className="form-grid master-pr-form">
-              <label className="form-item">
-                <span>Pull Requestタイトル</span>
-                <input maxLength={200} value={title} onChange={(event) => setTitle(event.target.value)} />
-              </label>
-              <label className="form-item">
-                <span>コミットメッセージ</span>
-                <input maxLength={500} value={commitMessage} onChange={(event) => setCommitMessage(event.target.value)} />
-              </label>
-              <label className="form-item">
-                <span>Pull Request説明</span>
-                <textarea maxLength={20_000} value={body} onChange={(event) => setBody(event.target.value)} />
-              </label>
-            </div>
-            <button
-              className="primary-button"
-              type="button"
-              disabled={changes.length === 0 || pageState === "sending"}
-              onClick={() => void prepareSubmission()}
-            >
-              送信内容を確定してPull Requestを作成
+            <label className="form-item">
+              <span>変更理由（監査ログへ保存）</span>
+              <textarea maxLength={2_000} value={changeMessage} onChange={(event) => setChangeMessage(event.target.value)} />
+            </label>
+            <button className="primary-button" type="button" disabled={changes.length === 0 || pageState === "sending"} onClick={() => void prepareSubmission()}>
+              送信内容を確定してD1へ反映
             </button>
             <p className="master-security-note">
-              確定後にCloudflare Access認証ウィンドウを開き、認証済みウィンドウから同一オリジンで送信します。この操作はメインブランチへ直接コミットせず、自動マージもしません。Access JWTやGitHubの秘密鍵・トークンはブラウザーへ保存しません。
+              書込みはCloudflare Access認証popupから同一オリジンで実行します。Access JWT、許可メール、競合fingerprint、冪等キーをWorkerで再検証し、学習履歴・メモ・ローカル専用問題は送信しません。
             </p>
           </section>
         )}
 
-        {pullRequest && (
-          <section className="master-pr-result" aria-label="Pull Request結果">
-            <strong>Pull Request #{pullRequest.number}</strong>
-            <span>{statusLabel(pullRequest.state)}</span>
-            <small>ブランチ: {pullRequest.branch}</small>
-            <a href={pullRequest.url} target="_blank" rel="noreferrer">GitHubでPull Requestを開く</a>
-            <button type="button" onClick={() => void refreshPullRequestStatus()}>
-              GitHub上の状態を再確認
-            </button>
+        {writeResult && (
+          <section className="master-pr-result" aria-label="D1反映結果">
+            <strong>D1 content version {writeResult.contentVersion}</strong>
+            <span>{writeResult.appliedCount}件反映</span>
+            <small>{new Date(writeResult.updatedAt).toLocaleString("ja-JP")}</small>
           </section>
         )}
       </section>
       <ConfirmDialog
         open={pendingCommand !== null}
-        title="GitHubへ変更を送信しますか？"
-        description={
-          pendingCommand
-            ? `${pendingCommand.changes.length}件の変更から専用ブランチとPull Requestを作成します。メインブランチへの直接反映・自動マージは行いません。`
-            : ""
-        }
-        confirmLabel="Pull Requestを作成"
-        onConfirm={() => void submitPullRequest()}
+        title="共有問題をD1へ反映しますか？"
+        description={pendingCommand ? `${pendingCommand.changes.length}件を共有マスターへ反映します。ローカル専用問題と個人データは含みません。` : ""}
+        confirmLabel="D1へ反映"
+        onConfirm={() => void submitD1Changes()}
         onCancel={() => setPendingCommand(null)}
       />
     </main>

@@ -1,6 +1,6 @@
 # Study Quiz
 
-LPIC-1 Exam 101向けのローカルファースト学習PWAです。問題管理、CSV取込、適応型セッション、FSRS復習、弱点分析、履歴・統計、メモ、バックアップ、Gemini補助を1つのブラウザーアプリで扱います。
+LPIC-1 Exam 101向けのローカルファースト学習PWAです。Cloudflare D1を共有問題・解説の正本としつつ、学習用データとローカル専用問題は端末に保持し、完全オフラインでも利用できます。
 
 ## 主な機能
 
@@ -27,9 +27,10 @@ LPIC-1 Exam 101向けのローカルファースト学習PWAです。問題管�
 - 問題品質対象の複合選択・件数確認・個別調整・8問推奨分割と、正答・誤答・解説・根拠・重複を確認する品質重視プロンプト
 - 品質提案の全回答定義比較、適用・却下・再生成、初期データ更新JSON
 - 問題編集の保存前プレビュー、問題改訂履歴、解説の改行・段落・箇条書き安全表示
-- GitHubを唯一の配布問題マスター正本とし、IndexedDB v3を検証済みオフラインcacheとして利用
-- 問題マスターJSON・マニフェストの版管理と、端末編集を保護する安全同期
-- Cloudflare Access認証popupの同一オリジンrelayと、GitHub App経由の専用ブランチ・Pull Request作成
+- Cloudflare D1を共有問題・解説の正本とし、IndexedDB v3を検証済みオフラインcacheとして利用
+- D1 snapshot・同梱snapshot・IndexedDB・端末seedの多段fallback
+- `local-only`問題をD1 payloadから除外する端末／Worker二重境界
+- Cloudflare Access JWTを検証する同一オリジンpopup relay、D1監査・冪等性・短期排他
 
 ## 動作環境
 
@@ -50,13 +51,37 @@ npm run dev
 VITE_BASE_PATH=/ npm run build
 ```
 
-GitHub連携を有効にする場合は、公開Workers URLだけを設定します。GitHubの秘密鍵やトークンを`VITE_*`へ設定してはいけません。
+D1連携を有効にする場合は、公開Worker URLだけを設定します。Access設定や秘密値を`VITE_*`へ設定してはいけません。
 
 ```bash
-VITE_QUIZ_CONTENT_API_URL=https://study-quiz-content-pr.forxdevelop.workers.dev/ npm run build
+VITE_QUIZ_CONTENT_API_URL=https://<your-worker>.workers.dev/ npm run build
 ```
 
-GitHub Pages `https://ryoyr.github.io/study-quiz/`からのPR作成では、Cloudflare Access保護下の認証popupを開き、popupからWorker APIへ同一オリジンで送信します。Google等の外部IdP、Access JWT検証、許可メール検証を維持しつつ、GitHub PagesからWorkerへのクロスサイトCookieには依存しません。
+GitHub PagesからのD1書込みではCloudflare Access保護下の認証popupを開き、popupからWorker APIへ同一オリジンで送信します。読取りAPIは公開できますが、書込みAPIはAccess JWT、許可メール、Origin/relay、fingerprint、冪等キーをWorkerで再検証します。
+
+## Cloudflare D1セットアップ
+
+指定済みbindingは次のとおりです。
+
+```text
+binding = DB
+database_name = study-quiz-db
+database_id = e342a769-d2fc-493f-88a7-9aac70f7914c
+```
+
+本番適用前にD1をexportし、Access設定を`workers/quiz-content-db/wrangler.toml`へ反映してください。
+
+```bash
+npm run d1:seed:build
+npm run d1:migrate:local
+npm run worker:dev
+npm run check
+npx wrangler d1 export study-quiz-db --remote --output study-quiz-db-before-v5.sql --config workers/quiz-content-db/wrangler.toml
+npm run d1:migrate:remote
+npm run worker:deploy
+```
+
+設計、データ所有権、rollbackは`D1_MIGRATION_PLAN.md`、進捗は`TASKS_D1.md`を参照してください。
 
 ## 品質確認
 
@@ -99,9 +124,9 @@ npm run test:e2e
 
 ## データ保存
 
-通常データはブラウザーの `localStorage`、初回設定の互換保存はIndexedDBを使用します。Gemini APIキーは完全バックアップへ含めません。保存形式は起動時およびバックアップ復元時に現行形式へ正規化されます。完全バックアップversion 10には偶発的な破損・編集を検知するチェックサムを付与します（電子署名ではありません）。
+学習で実際に使う問題、ローカル専用問題、履歴、設定はブラウザーの`localStorage`へ保持します。D1には共有問題・解説だけを保存し、学習履歴・メモ・APIキーは送信しません。初回設定と検証済みD1 snapshotの互換保存はIndexedDBを使用します。完全バックアップversion 10には偶発的な破損・編集を検知するチェックサムを付与します（電子署名ではありません）。
 
-配布元の問題マスターは`public/content`で管理します。最新版適用では前回配布フィンガープリントと端末データを比較し、端末で独自編集した問題を自動上書きしません。配布元から削除された問題も、履歴・FSRSの問題ID参照を維持するため端末ではアーカイブします。
+共有問題マスターの正本はD1です。`public/content`はmigration生成元兼offline snapshotへ降格しました。最新版適用では前回配布fingerprintと端末データを比較し、端末編集を自動上書きしません。D1から削除された問題も、履歴・FSRSの問題ID参照を維持するため端末ではアーカイブします。
 
 問題・解説の品質向上では、問題JSONの出力、修正・補足提案JSONの取込、適用前後レビュー、実行環境への適用ができます。適用済み内容は初期データ更新JSONとして出力し、次で新規環境の初期問題へ反映します。
 
@@ -124,13 +149,13 @@ node tools/apply_question_seed_updates.mjs <seed-update-pack.json>
 - `scripts`: 構成検証とE2E試験
 - `docs`: 要件、基本設計、詳細設計、トレーサビリティ
 - `tools`: 配布資材の再生成補助
-- `workers/quiz-content-pr`: Access認証とGitHub Pull Request作成Worker
+- `workers/quiz-content-db`: D1 schema、Access認証、read/write API、監査
 
-GitHub連携の現状調査は`docs/github-integration-assessment.md`、設定・運用は`docs/github-cloudflare-setup.md`、回収進捗は`docs/github-integration-progress.md`を参照してください。既存全体の現状分析は`CURRENT_STATE_ASSESSMENT.md`、変更内容は`CHANGE_SUMMARY.md`、タスクは`TASK_MANAGEMENT.md`にあります。
+D1の正本評価は`docs/question-master-authority-assessment.md`、Cloudflare設定は`docs/d1-cloudflare-setup.md`、要件・設計・追跡関係は`docs/requirements.md`、`docs/basic-design.md`、`docs/detailed-design.md`、`docs/traceability.md`を参照してください。旧GitHub PR Workerは5.0.0の実行・ビルド・デプロイ対象ではありません。
 
 ## バージョン
 
-- アプリ: 4.7.0
+- アプリ: 5.0.0
 - ストレージスキーマ: 9
 - 完全バックアップ形式: 10
 

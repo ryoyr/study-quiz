@@ -44,7 +44,7 @@ test("アーカイブ日時を含む問題を保存・再読込できる", () =>
   installStorage();
   const archived = { ...question, archivedAt: "2026-10-05T00:00:00.000Z" };
   saveQuestions([archived]);
-  assert.deepEqual(loadQuestions(), [archived]);
+  assert.deepEqual(loadQuestions(), [{ ...archived, distribution: "local-only" }]);
 });
 
 test("重複IDまたは不正な選択肢は保存しない", () => {
@@ -75,7 +75,10 @@ test("複数選択・入力回答の問題を保存して再読込できる", ()
     acceptedAnswers: ["LVM"],
   };
   saveQuestions([multiple, text]);
-  assert.deepEqual(loadQuestions(), [multiple, text]);
+  assert.deepEqual(loadQuestions(), [
+    { ...multiple, distribution: "local-only" },
+    { ...text, distribution: "local-only" },
+  ]);
 });
 
 test("複数選択の重複正解と入力回答の空許容回答を拒否する", () => {

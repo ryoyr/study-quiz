@@ -1,57 +1,29 @@
-# PROGRESS — 総合改良プロジェクト
+# PROGRESS — Study Quiz 5.0.0 D1整合修復
 
-## 2026-10-11 調査
+## 完了
 
-- 最新ダンプ197テキストを安全復元。
-- 直前完全版からダンプ外PWA／tools／Worker資材を補完。
-- AI、品質提案、類似問題、編集、保存、DB、PWA、backup、Access／GitHub境界を調査。
-- DB正本化は現行インフラ不足により本番切替不可と判断。GitHub正本を維持し、DB cache準備を今回範囲に決定。
+- 添付dump 211ファイルを安全復元。
+- D1正本・書込み・公開API・Access・同期・local-only経路を確認。
+- 旧GitHub PR Workerが現行runtimeから未参照であることを確認。
+- 旧PR型とD1型の混在をTypeScript失敗の根本原因と特定。
+- 旧PR専用API、Worker、テスト、文書を現行成果物から除外。
+- D1 API成功応答検証とpopup status検証を強化。
+- D1 API、Worker HTTP、Access、local-onlyの回帰試験を追加。
+- 構成検証をpackage scripts、tsconfig、CI、migration、retired paths、runtime tokenまで拡張。
+- D1設計文書へ統一。
+- D1 schema変更不要を確認。
 
-## 2026-10-11 実装
+## 検証完了
 
-- AI JSON共通pipelineを追加。
-- 類似問題と品質提案へJSON抽出・限定修復を統合。
-- Gemini類似問題生成へ最大3回の検証付き再生成を追加。
-- 問題改訂履歴を追加し、手動編集・品質適用・master同期へ接続。
-- 改行・段落・箇条書き安全表示を追加。
-- 問題編集へ保存前previewと直近revision表示を追加。
-- IndexedDB v3へ`questionMasterCache`を追加。
-- 問題マスター取得失敗時の検証済みDB cache fallbackを追加。
-- Service Worker v24と`CLEAR_CONTENT_CACHE`を追加。
+- 全単体210/210、型検査、Worker型検査、build、Chromium E2E、統合check成功。
 
-## 互換性確認中
+## パッケージ
 
-- 問題IDとQuestion型を維持。
-- 学習履歴、FSRS、お気に入り、メモ、設定の既存キーを維持。
-- 品質提案JSON v1、seed update v1、question master v1を維持。
-- Cloudflare Access relayとGitHub PR APIを変更しない。
-- 実DB、実GitHubへ書き込まない。
+- 内部checksum、ZIP圧縮検査、展開後照合を完了。
 
-## 次の処理
+## 本作業で実施しない
 
-1. 全追加試験。
-2. 既存全試験。
-3. 型・bundle・PWA・E2E。
-4. 秘密情報検査。
-5. 文書とchecksum。
-6. ZIP作成・展開後再検証。
-
-
-## 2026-10-11 検証完了
-
-- 重点・セキュリティ回帰58/58成功。
-- 一時adapterによる全既存・追加試験214/214成功。
-- 変更サービスstrict TypeScript成功。
-- Worker strict TypeScript成功。
-- 全フロントbundle成功。
-- 構成検証成功。
-- 製品相当一時bundleによるChrome E2E成功。
-- 秘密情報検査成功。
-- 問題マスター・初期問題・個人データ型・Worker認証コードの保全をhash／byte比較で確認。
-- 公式npmゲートはVite取得HTTP 403のため未完走。結果と代替検証を`TEST_REPORT.md`へ記録。
-
-## 2026-10-11 納品完了
-
-- Release Manifestとchecksumを更新。
-- ZIPを作成し、圧縮データ検査、展開後SHA、構成、型、PWA／E2E構文、重点試験、秘密情報検査に成功。
-- 本番DB、実GitHub、実データ削除などの外部変更は行っていない。
+- remote D1 migration
+- Worker本番deploy
+- 本番データ変更・削除
+- Cloudflare Access policy変更

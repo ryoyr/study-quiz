@@ -1,4 +1,15 @@
-# 変更内容一覧 — 4.4.0 → 4.7.0
+# 変更内容一覧
+
+## 5.0.0 D1整合修復
+
+- D1を共有問題・解説の唯一の正本として実行・ビルド・テスト経路を再確認。
+- 旧GitHub PR Workerのruntime依存がないことを確認し、旧API・型・テスト・設定・専用文書を除外。
+- D1 API応答検証、Access popup、Worker HTTP、local-only拒否の試験を追加。
+- package scripts、tsconfig、CI、Wrangler、migration、retired pathを構成検証へ統合。
+- Access JWT、許可メール、冪等性、競合、監査、write lock、local-only禁止を維持。
+- D1 schemaは変更せず、migration追加なし。
+
+## 過去の変更 — 4.4.0 → 4.7.0
 
 ## 4.7.0 総合改良
 

@@ -130,6 +130,12 @@ export const questionValidationErrors = (value: unknown): string[] => {
   )
     errors.push("難易度は1～5の整数です。");
   if (
+    value.distribution !== undefined &&
+    value.distribution !== "shared" &&
+    value.distribution !== "local-only"
+  )
+    errors.push("問題の公開範囲が不正です。");
+  if (
     value.archivedAt !== undefined &&
     (typeof value.archivedAt !== "string" || !Number.isFinite(Date.parse(value.archivedAt)))
   )

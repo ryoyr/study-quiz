@@ -46,6 +46,7 @@ const emptyQuestion = (): Question => ({
   tags: [],
   weight: 1,
   difficulty: 1,
+  distribution: "local-only",
 });
 
 const parseTags = (value: string): string[] => [
@@ -307,6 +308,22 @@ export default function QuestionManagementPage({
               <select value={editing.examScopeId} onChange={(event) => setEditing({ ...editing, examScopeId: event.target.value })}>
                 {examScopes.filter((item) => item.active).map((item) => <option key={item.id} value={item.id}>{item.name} ({item.examCode})</option>)}
               </select>
+            </label>
+            <label className="form-item">
+              <span>保存・公開範囲</span>
+              <select
+                value={editing.distribution ?? "shared"}
+                onChange={(event) =>
+                  setEditing({
+                    ...editing,
+                    distribution: event.target.value as NonNullable<Question["distribution"]>,
+                  })
+                }
+              >
+                <option value="local-only">この端末のみ（D1へ送信しない）</option>
+                <option value="shared">共有候補（確認後にD1へ反映可能）</option>
+              </select>
+              <small>新規問題は安全のため「この端末のみ」が既定です。</small>
             </label>
             <label className="form-item">
               <span>カテゴリ</span>
@@ -649,6 +666,7 @@ export default function QuestionManagementPage({
                       (state) => state.questionId === question.id,
                     )?.masteryLevel ?? "UNLEARNED",
                   )}
+                  {question.distribution === "local-only" ? "・この端末のみ" : "・D1共有対象"}
                   {question.archivedAt ? "・アーカイブ済み" : ""}
                 </small>
                 {(question.tags?.length ?? 0) > 0 && (

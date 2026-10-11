@@ -273,7 +273,7 @@ JSON契約、提案状態、適用トランザクション、初期データ反�
 
 ### 互換境界
 
-`QuestionQualityProposal`、localStorage key、品質提案JSON version 1、seed update version 1、backup version 10、共通Question検証、適用トランザクションは変更しない。ファクトチェック、問題マスター、Cloudflare Worker、GitHub PRサービスは変更しない。
+`QuestionQualityProposal`、localStorage key、品質提案JSON version 1、seed update version 1、backup version 10、共通Question検証、適用トランザクションは変更しない。ファクトチェックとD1問題マスター経路は維持する。旧GitHub PRサービスはD1移行後の実行経路に含めない。
 
 
 ## 4.7.0 AI JSON・改訂履歴・DB cache詳細
@@ -320,4 +320,44 @@ before, after, createdAt, proposalId?
 - remote取得成功後にbest-effort保存。
 - remote失敗時だけ読込み、manifest／dataset／ID重複を再検証。
 - cache不正時は元のnetwork errorを返す。
-- authorityは`github-content`、cache roleは`derived-offline-cache`。
+- authorityは`cloudflare-d1`、cache roleは`derived-offline-cache`。
+
+
+## 5.0.0 D1詳細
+
+### API command
+
+```ts
+interface ApplyD1ChangesCommand {
+  schemaVersion: 1;
+  baseContentVersion: string;
+  baseDatasetVersions: Record<string, number>;
+  changes: QuestionMasterChange[];
+  message: string;
+  idempotencyKey: string;
+}
+```
+
+GitHub PR固有の`title`、`body`、`commitMessage`、PR番号・URL・branchは使用しない。D1監査理由は`message`へ一本化する。
+
+### local-only境界
+
+1. 新規作成・CSV・類似問題で`distribution="local-only"`を既定化。
+2. `buildQuestionMasterChanges`でlocal-onlyを除外。
+3. shared Questionから端末属性`distribution`を除去してcommandを作成。
+4. Worker `isQuestion`は`distribution`プロパティを持つ入力を拒否。
+5. 自動同期ではlocal-onlyを更新・アーカイブしない。
+
+### D1更新順序
+
+1. idempotency既存応答を確認。
+2. TTL付きlockを取得。
+3. lock取得後にidempotencyを再確認。
+4. content version、dataset version、question hashを確認。
+5. D1 batchで問題、revision、dataset version、content version、idempotency応答を更新。
+6. mutation件数を確認。
+7. finallyでlockを解放。
+
+### migration
+
+`0001_schema.sql`と`0002_seed_content.sql`の適用済み構造は今回変更しない。旧PR実装整理はアプリ・Worker契約の重複解消であり、保存データ変換を伴わない。

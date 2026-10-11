@@ -108,6 +108,19 @@ test("端末で未変更の配布問題だけを安全に更新する", () => {
   );
 });
 
+test("local-onlyへ切り替えた問題はD1更新・削除から独立する", () => {
+  const baseline = clone(bundledQuestions.slice(0, 2));
+  const local = clone(baseline);
+  local[0] = { ...local[0], distribution: "local-only" };
+  local[1] = { ...local[1], distribution: "local-only" };
+  const remote = clone([baseline[0]]);
+  remote[0].explanation = "D1側の更新";
+  const plan = planQuestionMasterMerge(local, snapshotOf(remote), stateOf(baseline));
+  assert.equal(plan.actions.length, 0);
+  assert.equal(plan.conflicts.length, 0);
+  assert.deepEqual(applyQuestionMasterMerge(local, plan), local);
+});
+
 test("配布元から消えた未編集問題は物理削除せずアーカイブする", () => {
   const baseline = clone(bundledQuestions.slice(0, 2));
   const plan = planQuestionMasterMerge(

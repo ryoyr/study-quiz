@@ -12,7 +12,7 @@ import {
 } from "./questionAnswerModel.ts";
 import { isQuestion, questionValidationErrors } from "./questionValidation.ts";
 
-const APP_VERSION = "4.7.0";
+const APP_VERSION = "5.0.0";
 const MAX_JSON_BYTES = 5 * 1024 * 1024;
 const MAX_PROPOSALS = 10_000;
 const MAX_TEXT = 20_000;

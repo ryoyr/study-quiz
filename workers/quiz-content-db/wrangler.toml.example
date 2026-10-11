@@ -1,0 +1,16 @@
+name = "study-quiz-content-db"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+
+[vars]
+ALLOWED_ORIGIN = "https://<github-user>.github.io"
+ACCESS_TEAM_DOMAIN = "<team>.cloudflareaccess.com"
+ACCESS_AUD = "<access-application-aud>"
+ALLOWED_EMAILS = "editor@example.com"
+ALLOW_LOCAL_WRITE = "false"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "study-quiz-db"
+database_id = "e342a769-d2fc-493f-88a7-9aac70f7914c"
+migrations_dir = "migrations"
